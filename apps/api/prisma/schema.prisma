@@ -1,0 +1,1523 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// region Auth & User Management
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String?
+  name          String?
+  avatarUrl     String?
+  isActive      Boolean   @default(true)
+  emailVerified Boolean   @default(false)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions         Session[]
+  ownedWorkspaces  Workspace[]       @relation("WorkspaceOwner")
+  workspaceMembers WorkspaceMember[]
+  templates        Template[]
+  contentPosts     ContentPost[]     @relation("ContentAuthor")
+  contentRevisions ContentRevision[] @relation("ContentEditedBy")
+  authAccounts     AuthAccount[]
+
+  @@index([isActive])
+  @@index([createdAt])
+}
+
+model Session {
+  id               String    @id @default(cuid())
+  userId           String
+  refreshToken     String    @unique
+  refreshTokenHash String
+  userAgent        String?
+  ipAddress        String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  type      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+}
+
+model AuthAccount {
+  id                String   @id @default(cuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  accessToken       String?
+  refreshToken      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// endregion
+
+// region Workspaces & Templates
+enum WorkspaceMemberRole {
+  OWNER
+  ADMIN
+  EDITOR
+  MARKETER
+  ANALYST
+  SUPPORT
+  VIEWER
+}
+
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  ownerId     String
+  logoUrl     String?
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner         User              @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members       WorkspaceMember[]
+  subscriptions Subscription[]
+  sites         Site[]
+
+  @@index([ownerId])
+  @@index([isActive])
+  @@index([createdAt])
+}
+
+model WorkspaceMember {
+  id          String              @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceMemberRole @default(EDITOR)
+  permissions Json?
+  invitedById String?
+  joinedAt    DateTime            @default(now())
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+  @@index([workspaceId, role])
+}
+
+// endregion
+
+// region Subscriptions & Billing
+enum PlanCode {
+  FREE
+  BASIC
+  BUSINESS
+  PRO
+}
+
+enum BillingInterval {
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum BillingPaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  CANCELED
+}
+
+model Plan {
+  id           String   @id @default(cuid())
+  code         PlanCode @unique
+  name         String
+  description  String?
+  priceMonthly Decimal  @default(0) @db.Decimal(10, 2)
+  priceYearly  Decimal? @db.Decimal(10, 2)
+
+  maxSites           Int @default(1)
+  maxPagesPerSite    Int @default(1)
+  maxSectionsPerPage Int @default(10)
+  maxProducts        Int @default(0)
+  maxPosts           Int @default(0)
+
+  allowCustomDomain Boolean @default(false)
+  allowForms        Boolean @default(false)
+  allowAnalytics    Boolean @default(false)
+  allowCustomCode   Boolean @default(false)
+  allowEcommerce    Boolean @default(false)
+  allowBlog         Boolean @default(false)
+  allowNews         Boolean @default(false)
+  allowTemplates    Boolean @default(false)
+
+  trialDays Int      @default(0)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscriptions Subscription[]
+
+  @@index([isActive, sortOrder])
+}
+
+model Subscription {
+  id              String             @id @default(cuid())
+  workspaceId     String
+  planId          String
+  status          SubscriptionStatus @default(TRIALING)
+  billingInterval BillingInterval    @default(MONTHLY)
+  isCurrent       Boolean            @default(true)
+
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  trialStartAt       DateTime?
+  trialEndAt         DateTime?
+  canceledAt         DateTime?
+  endedAt            DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  plan      Plan      @relation(fields: [planId], references: [id])
+
+  payments Payment[]
+
+  @@index([workspaceId])
+  @@index([planId])
+  @@index([status])
+  @@index([isCurrent])
+  @@index([currentPeriodEnd])
+}
+
+model Payment {
+  id             String @id @default(cuid())
+  subscriptionId String
+
+  provider    String
+  providerRef String? @unique
+
+  amount   Decimal              @db.Decimal(10, 2)
+  currency String               @default("THB")
+  status   BillingPaymentStatus @default(PENDING)
+
+  paidAt    DateTime?
+  failedAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([paidAt])
+}
+
+//  endregion
+
+// region Sites
+
+enum SiteStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Site {
+  id          String @id @default(cuid())
+  workspaceId String
+
+  name   String
+  slug   String
+  status SiteStatus @default(DRAFT)
+
+  logoUrl    String?
+  faviconUrl String?
+
+  defaultSeoTitle       String?
+  defaultSeoDescription String?
+  defaultSeoKeywords    String?
+
+  defaultOgImageUrl String?
+  themeConfig       Json?
+
+  primaryLanguage String @default("th")
+  timezone        String @default("Asia/Bangkok")
+  currency        String @default("THB")
+
+  ecommerceEnabled Boolean @default(false)
+  contentEnabled   Boolean @default(false)
+
+  isTemplateSource Boolean   @default(false)
+  publishedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  pages       Page[]
+  domains     Domain[]
+  publishLogs PublishLog[]
+  forms       Form[]
+  assets      Asset[]
+
+  categories     Category[]
+  products       Product[]
+  customers      Customer[]
+  carts          Cart[]
+  orders         Order[]
+  coupons        Coupon[]
+  shippingZones  ShippingZone[]
+  paymentMethods SitePaymentMethod[]
+
+  analyticsEvents      AnalyticsEvent[]
+  analyticsDaily       AnalyticsDailySummary[]
+  trackingIntegrations SiteTrackingIntegration[]
+  customScripts        SiteCustomScript[]
+  eventMappings        SiteEventMapping[]
+
+  templateInstalls TemplateInstall[]
+
+  contentPosts      ContentPost[]
+  contentCategories ContentCategory[]
+  contentTags       ContentTag[]
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// endregion
+
+// region Pages & Content Management
+
+enum PageType {
+  LANDING
+  NORMAL
+  BLOG
+  NEWS
+  PRODUCT
+  CHECKOUT
+  CUSTOM
+}
+
+enum SectionType {
+  HERO
+  FEATURE
+  ABOUT
+  GALLERY
+  TESTIMONIAL
+  PRICING
+  FAQ
+  CONTACT
+  CTA
+  RICH_TEXT
+  IMAGE
+  VIDEO
+  FORM
+  PRODUCT_GRID
+  BLOG_LIST
+  NEWS_LIST
+  CUSTOM
+}
+
+model Page {
+  id     String @id @default(cuid())
+  siteId String
+
+  title    String
+  slug     String
+  pageType PageType @default(LANDING)
+
+  path        String?
+  isHomePage  Boolean @default(false)
+  isPublished Boolean @default(false)
+  sortOrder   Int     @default(0)
+
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String?
+  ogImageUrl     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site            Site             @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  sections        Section[]
+  forms           Form[]
+  analyticsEvents AnalyticsEvent[]
+
+  @@unique([siteId, slug])
+  @@index([siteId, sortOrder])
+  @@index([siteId, pageType])
+  @@index([siteId, isHomePage])
+}
+
+model Section {
+  id     String @id @default(cuid())
+  pageId String
+
+  type      SectionType
+  name      String?
+  sortOrder Int         @default(0)
+  isVisible Boolean     @default(true)
+
+  props     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, sortOrder])
+  @@index([pageId, type])
+}
+
+// endregion
+
+// region Domain & Publishing
+
+enum DomainType {
+  SUBDOMAIN
+  CUSTOM
+}
+
+enum DomainStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum PublishAction {
+  PUBLISH
+  UNPUBLISH
+  ROLLBACK
+}
+
+model Domain {
+  id     String @id @default(cuid())
+  siteId String
+
+  host      String       @unique
+  type      DomainType
+  status    DomainStatus @default(PENDING)
+  isPrimary Boolean      @default(false)
+
+  verificationKey String?
+  verifiedAt      DateTime?
+  sslIssuedAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@index([siteId, isPrimary])
+  @@index([status])
+}
+
+model PublishLog {
+  id     String @id @default(cuid())
+  siteId String
+
+  version  Int
+  action   PublishAction @default(PUBLISH)
+  snapshot Json
+  notes    String?
+
+  publishedById String?
+  createdAt     DateTime @default(now())
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, version])
+  @@index([siteId, createdAt])
+}
+
+// endregion
+
+// region Forms & Submissions
+
+enum FormStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum FormFieldType {
+  TEXT
+  TEXTAREA
+  EMAIL
+  PHONE
+  NUMBER
+  SELECT
+  RADIO
+  CHECKBOX
+  DATE
+  FILE
+  HIDDEN
+}
+
+model Form {
+  id     String  @id @default(cuid())
+  siteId String
+  pageId String?
+
+  name   String
+  slug   String?
+  status FormStatus @default(ACTIVE)
+
+  submitButtonText String?
+  successMessage   String?
+  redirectUrl      String?
+
+  notifyEmail     String?
+  webhookUrl      String?
+  lineNotifyToken String?
+
+  settings  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site Site  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  page Page? @relation(fields: [pageId], references: [id], onDelete: SetNull)
+
+  fields      FormField[]
+  submissions FormSubmission[]
+
+  @@unique([siteId, slug])
+  @@index([siteId])
+  @@index([pageId])
+  @@index([status])
+}
+
+model FormField {
+  id     String @id @default(cuid())
+  formId String
+
+  label       String
+  name        String
+  fieldType   FormFieldType
+  placeholder String?
+
+  helpText     String?
+  defaultValue String?
+  isRequired   Boolean @default(false)
+  sortOrder    Int     @default(0)
+
+  options     Json?
+  validations Json?
+  width       String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId, sortOrder])
+  @@index([formId, fieldType])
+}
+
+model FormSubmission {
+  id     String @id @default(cuid())
+  formId String
+
+  data        Json
+  referrer    String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId, createdAt])
+}
+
+// endregion
+
+// region assets, media
+enum AssetType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  AUDIO
+  OTHER
+}
+
+model Asset {
+  id     String @id @default(cuid())
+  siteId String
+
+  type         AssetType @default(IMAGE)
+  fileName     String
+  originalName String
+  mimeType     String
+  extension    String?
+
+  size   Int
+  url    String
+  cdnUrl String?
+
+  altText     String?
+  caption     String?
+  description String?
+
+  width       Int?
+  height      Int?
+  durationSec Int?
+
+  folder String?
+  meta   Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, type])
+  @@index([siteId, createdAt])
+  @@index([mimeType])
+}
+
+// endregion
+
+// region E-commerce
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum InventoryPolicy {
+  DENY
+  CONTINUE
+}
+
+model Category {
+  id     String @id @default(cuid())
+  siteId String
+
+  name        String
+  slug        String
+  description String?
+  imageUrl    String?
+
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site     Site              @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  products ProductCategory[]
+
+  @@unique([siteId, slug])
+  @@index([siteId, sortOrder])
+  @@index([siteId, isActive])
+}
+
+model Product {
+  id     String @id @default(cuid())
+  siteId String
+
+  name String
+  slug String
+  sku  String?
+
+  description      String?
+  shortDescription String?
+
+  status           ProductStatus @default(DRAFT)
+  featuredImageUrl String?
+  gallery          Json?
+
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String?
+
+  price          Decimal? @db.Decimal(10, 2)
+  compareAtPrice Decimal? @db.Decimal(10, 2)
+  cost           Decimal? @db.Decimal(10, 2)
+
+  trackInventory  Boolean         @default(true)
+  inventoryPolicy InventoryPolicy @default(DENY)
+
+  isPhysical Boolean @default(true)
+  isFeatured Boolean @default(false)
+  sortOrder  Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site       Site              @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  variants   ProductVariant[]
+  categories ProductCategory[]
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+
+  @@unique([siteId, slug])
+  @@index([siteId, status, sortOrder])
+  @@index([siteId, isFeatured])
+  @@index([siteId, sku])
+}
+
+model ProductVariant {
+  id        String @id @default(cuid())
+  productId String
+
+  name    String?
+  sku     String?
+  barcode String?
+
+  optionValues   Json?
+  price          Decimal  @db.Decimal(10, 2)
+  compareAtPrice Decimal? @db.Decimal(10, 2)
+  cost           Decimal? @db.Decimal(10, 2)
+
+  weightGrams     Int?
+  trackInventory  Boolean         @default(true)
+  inventoryPolicy InventoryPolicy @default(DENY)
+  isDefault       Boolean         @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventory  Inventory?
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@index([productId])
+  @@index([sku])
+  @@index([barcode])
+}
+
+model Inventory {
+  id        String @id @default(cuid())
+  variantId String @unique
+
+  availableQuantity Int @default(0)
+  reservedQuantity  Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+}
+
+model ProductCategory {
+  productId  String
+  categoryId String
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
+  @@index([categoryId])
+}
+
+// endregion
+
+// region Cart / Checkout / Order
+
+enum AddressType {
+  SHIPPING
+  BILLING
+}
+
+enum OrderStatus {
+  PENDING
+  UNPAID
+  PAID
+  PROCESSING
+  SHIPPED
+  COMPLETED
+  CANCELED
+  REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+  EXPIRED
+}
+
+enum PaymentMethodType {
+  BANK_TRANSFER
+  PROMPTPAY
+  CREDIT_CARD
+  COD
+  MANUAL
+}
+
+enum ShipmentStatus {
+  PENDING
+  PACKING
+  SHIPPED
+  DELIVERED
+  RETURNED
+  CANCELED
+}
+
+model Customer {
+  id     String @id @default(cuid())
+  siteId String
+
+  email     String?
+  phone     String?
+  firstName String?
+  lastName  String?
+  note      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site      Site              @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  addresses CustomerAddress[]
+  carts     Cart[]
+  orders    Order[]
+
+  @@index([siteId])
+  @@index([email])
+  @@index([phone])
+}
+
+model CustomerAddress {
+  id         String @id @default(cuid())
+  customerId String
+
+  type     AddressType
+  fullName String?
+  phone    String?
+
+  line1       String
+  line2       String?
+  subdistrict String?
+  district    String?
+  province    String?
+  postalCode  String?
+  country     String  @default("TH")
+
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, type])
+}
+
+model Cart {
+  id         String  @id @default(cuid())
+  siteId     String
+  customerId String?
+  sessionKey String?
+
+  currency  String   @default("THB")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site     Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  customer Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items    CartItem[]
+
+  @@index([siteId])
+  @@index([customerId])
+  @@index([sessionKey])
+}
+
+model CartItem {
+  id        String @id @default(cuid())
+  cartId    String
+  productId String
+  variantId String
+
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart    Cart           @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([cartId, variantId])
+  @@index([cartId])
+}
+
+model Order {
+  id         String  @id @default(cuid())
+  siteId     String
+  customerId String?
+
+  orderNumber String
+  status      OrderStatus @default(PENDING)
+
+  currency      String  @default("THB")
+  subtotal      Decimal @db.Decimal(10, 2)
+  discountTotal Decimal @default(0) @db.Decimal(10, 2)
+  shippingTotal Decimal @default(0) @db.Decimal(10, 2)
+  taxTotal      Decimal @default(0) @db.Decimal(10, 2)
+  grandTotal    Decimal @db.Decimal(10, 2)
+
+  paymentStatus     PaymentStatus  @default(PENDING)
+  fulfillmentStatus ShipmentStatus @default(PENDING)
+
+  customerEmail String?
+  customerPhone String?
+
+  shippingFullName    String?
+  shippingPhone       String?
+  shippingLine1       String?
+  shippingLine2       String?
+  shippingSubdistrict String?
+  shippingDistrict    String?
+  shippingProvince    String?
+  shippingPostalCode  String?
+  shippingCountry     String?
+
+  billingFullName    String?
+  billingPhone       String?
+  billingLine1       String?
+  billingLine2       String?
+  billingSubdistrict String?
+  billingDistrict    String?
+  billingProvince    String?
+  billingPostalCode  String?
+  billingCountry     String?
+
+  note      String?
+  placedAt  DateTime?
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  site         Site                 @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  customer     Customer?            @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items        OrderItem[]
+  payments     PaymentTransaction[]
+  shipments    Shipment[]
+  couponUsages CouponUsage[]
+
+  @@unique([siteId, orderNumber])
+  @@index([siteId, createdAt])
+  @@index([customerId])
+  @@index([status])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String?
+  variantId String?
+
+  productName String
+  variantName String?
+  sku         String?
+  imageUrl    String?
+
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  lineTotal Decimal @db.Decimal(10, 2)
+
+  productSnapshot Json?
+  createdAt       DateTime @default(now())
+
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+}
+
+model PaymentTransaction {
+  id      String @id @default(cuid())
+  orderId String
+
+  methodType  PaymentMethodType
+  provider    String?
+  providerRef String?
+
+  amount   Decimal       @db.Decimal(10, 2)
+  currency String        @default("THB")
+  status   PaymentStatus @default(PENDING)
+
+  slipUrl String?
+  meta    Json?
+
+  paidAt    DateTime?
+  expiredAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([providerRef])
+  @@index([status])
+}
+
+model Shipment {
+  id      String @id @default(cuid())
+  orderId String
+
+  status         ShipmentStatus @default(PENDING)
+  carrier        String?
+  trackingNumber String?
+
+  shippedAt   DateTime?
+  deliveredAt DateTime?
+  note        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([trackingNumber])
+}
+
+enum CouponDiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+model Coupon {
+  id     String @id @default(cuid())
+  siteId String
+
+  code        String
+  name        String?
+  description String?
+
+  discountType     CouponDiscountType
+  discountValue    Decimal            @db.Decimal(10, 2)
+  minOrderValue    Decimal?           @db.Decimal(10, 2)
+  maxDiscountValue Decimal?           @db.Decimal(10, 2)
+
+  usageLimit Int?
+  usedCount  Int  @default(0)
+
+  startsAt DateTime?
+  endsAt   DateTime?
+  isActive Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site   Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  usages CouponUsage[]
+
+  @@unique([siteId, code])
+  @@index([siteId, isActive])
+}
+
+model CouponUsage {
+  id       String @id @default(cuid())
+  couponId String
+  orderId  String
+
+  discount  Decimal  @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([couponId, orderId])
+  @@index([orderId])
+}
+
+model ShippingZone {
+  id     String @id @default(cuid())
+  siteId String
+
+  name      String
+  countries Json?
+  provinces Json?
+
+  fee       Decimal  @db.Decimal(10, 2)
+  freeAbove Decimal? @db.Decimal(10, 2)
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+}
+
+model SitePaymentMethod {
+  id     String @id @default(cuid())
+  siteId String
+
+  methodType PaymentMethodType
+  label      String
+  isEnabled  Boolean           @default(true)
+  config     Json?
+  sortOrder  Int               @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, sortOrder])
+}
+
+// endregion
+
+// region analytics
+
+enum AnalyticsEventType {
+  PAGE_VIEW
+  SESSION_START
+  CTA_CLICK
+  LINK_CLICK
+  BUTTON_CLICK
+  FORM_VIEW
+  FORM_SUBMIT
+  PRODUCT_VIEW
+  ADD_TO_CART
+  REMOVE_FROM_CART
+  BEGIN_CHECKOUT
+  ADD_PAYMENT_INFO
+  PURCHASE
+  CUSTOM
+}
+
+model AnalyticsEvent {
+  id     String  @id @default(cuid())
+  siteId String
+  pageId String?
+
+  sessionKey String?
+  eventType  AnalyticsEventType
+  eventName  String?
+
+  path     String?
+  referrer String?
+
+  source   String?
+  medium   String?
+  campaign String?
+
+  deviceType String?
+  browser    String?
+  country    String?
+
+  ipHash    String?
+  userAgent String?
+
+  meta       Json?
+  occurredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  site Site  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  page Page? @relation(fields: [pageId], references: [id], onDelete: SetNull)
+
+  @@index([siteId, occurredAt])
+  @@index([siteId, eventType, occurredAt])
+  @@index([sessionKey])
+  @@index([pageId])
+}
+
+model AnalyticsDailySummary {
+  id     String   @id @default(cuid())
+  siteId String
+  date   DateTime
+
+  pageViews      Int @default(0)
+  sessions       Int @default(0)
+  uniqueVisitors Int @default(0)
+
+  formSubmits Int @default(0)
+  addToCarts  Int @default(0)
+  checkouts   Int @default(0)
+  purchases   Int @default(0)
+
+  revenue Decimal @default(0) @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, date])
+  @@index([siteId, date])
+}
+
+// endregion
+// region Tracking Integration
+enum TrackingProvider {
+  META_PIXEL
+  GOOGLE_TAG_MANAGER
+  GOOGLE_ANALYTICS
+  GOOGLE_ADS
+  CUSTOM_SCRIPT
+}
+
+enum TrackingPlacement {
+  HEAD
+  BODY_START
+  BODY_END
+}
+
+enum ScriptStatus {
+  ACTIVE
+  DISABLED
+}
+
+model SiteTrackingIntegration {
+  id     String @id @default(cuid())
+  siteId String
+
+  provider TrackingProvider
+  name     String?
+
+  pixelId         String?
+  measurementId   String?
+  containerId     String?
+  conversionId    String?
+  conversionLabel String?
+
+  isEnabled Boolean @default(true)
+  config    Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site          Site               @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  eventMappings SiteEventMapping[]
+
+  @@index([siteId, provider])
+  @@index([siteId, isEnabled])
+}
+
+model SiteCustomScript {
+  id     String @id @default(cuid())
+  siteId String
+
+  name      String?
+  placement TrackingPlacement
+  code      String
+
+  status    ScriptStatus @default(ACTIVE)
+  sortOrder Int          @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, placement, sortOrder])
+}
+
+model SiteEventMapping {
+  id            String @id @default(cuid())
+  siteId        String
+  integrationId String
+
+  internalEvent AnalyticsEventType
+  externalEvent String
+
+  isEnabled Boolean @default(true)
+  config    Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site        Site                    @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  integration SiteTrackingIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@index([integrationId])
+}
+
+// endregion
+
+// region Template Library
+
+enum TemplateStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum TemplateVisibility {
+  PRIVATE
+  PUBLIC
+  OFFICIAL
+}
+
+model Template {
+  id   String @id @default(cuid())
+  name String
+  slug String @unique
+
+  description  String?
+  thumbnailUrl String?
+  previewUrl   String?
+
+  categoryId  String?
+  createdById String?
+
+  status     TemplateStatus     @default(DRAFT)
+  visibility TemplateVisibility @default(PRIVATE)
+
+  isFree Boolean  @default(true)
+  price  Decimal? @db.Decimal(10, 2)
+
+  installCount Int    @default(0)
+  ratingAvg    Float?
+  ratingCount  Int    @default(0)
+
+  tags Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category  TemplateCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdBy User?             @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  versions TemplateVersion[]
+  installs TemplateInstall[]
+
+  @@index([status, visibility])
+  @@index([categoryId])
+}
+
+model TemplateCategory {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  templates Template[]
+
+  @@index([isActive, sortOrder])
+}
+
+model TemplateVersion {
+  id         String @id @default(cuid())
+  templateId String
+
+  version Int
+  name    String?
+
+  snapshot Json
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  template         Template          @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  templateInstalls TemplateInstall[]
+
+  @@unique([templateId, version])
+  @@index([templateId])
+}
+
+model TemplateInstall {
+  id         String  @id @default(cuid())
+  templateId String
+  siteId     String
+  versionId  String?
+
+  installedById String?
+  createdAt     DateTime @default(now())
+
+  template Template         @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  version  TemplateVersion? @relation(fields: [versionId], references: [id], onDelete: SetNull)
+  site     Site             @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@index([templateId])
+}
+
+// endregion
+// region Content Management
+enum ContentType {
+  BLOG
+  NEWS
+  ARTICLE
+  ANNOUNCEMENT
+  UPDATE
+}
+
+enum ContentStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  ARCHIVED
+}
+
+model ContentPost {
+  id         String  @id @default(cuid())
+  siteId     String
+  authorId   String?
+  categoryId String?
+
+  title  String
+  slug   String
+  type   ContentType   @default(BLOG)
+  status ContentStatus @default(DRAFT)
+
+  excerpt          String?
+  content          Json?
+  contentHtml      String?
+  featuredImageUrl String?
+
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String?
+
+  isPinned      Boolean @default(false)
+  isFeatured    Boolean @default(false)
+  allowComments Boolean @default(false)
+
+  publishedAt DateTime?
+  scheduledAt DateTime?
+  viewCount   Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site     Site             @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  author   User?            @relation("ContentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  category ContentCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  tags      ContentPostTag[]
+  revisions ContentRevision[]
+
+  @@unique([siteId, slug])
+  @@index([siteId, type, status, publishedAt])
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([status, scheduledAt])
+}
+
+model ContentCategory {
+  id     String @id @default(cuid())
+  siteId String
+
+  name        String
+  slug        String
+  description String?
+
+  sortOrder Int     @default(0)
+  isActive  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site  Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  posts ContentPost[]
+
+  @@unique([siteId, slug])
+  @@index([siteId, sortOrder])
+}
+
+model ContentTag {
+  id     String @id @default(cuid())
+  siteId String
+
+  name String
+  slug String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site  Site             @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  posts ContentPostTag[]
+
+  @@unique([siteId, slug])
+  @@index([siteId])
+}
+
+model ContentPostTag {
+  postId String
+  tagId  String
+
+  post ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  ContentTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@index([tagId])
+}
+
+model ContentRevision {
+  id         String  @id @default(cuid())
+  postId     String
+  editedById String?
+
+  title       String
+  excerpt     String?
+  content     Json?
+  contentHtml String?
+
+  createdAt DateTime @default(now())
+
+  post     ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  editedBy User?       @relation("ContentEditedBy", fields: [editedById], references: [id], onDelete: SetNull)
+
+  @@index([postId, createdAt])
+}

@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "dist",
+    "strict": true,
+    "noEmit": false,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"],
+      "@finnweb/shared": ["../../packages/shared/src/index.ts"],
+      "@finnweb/shared/*": ["../../packages/shared/src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "generated/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
