@@ -9,9 +9,16 @@ import { AuthRepository } from "./auth.repository";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import { AuthResponse, SafeUser } from "@finnweb/shared";
-import { hashPassword, verifyPassword } from "./utils/auth-token.util";
+import {
+  hashPassword,
+  hashRefreshToken,
+  verifyPassword,
+  verifyRefreshToken,
+} from "./utils/auth-token.util";
 import { JwtPayload } from "../../common/interfaces/jwt-payload.interface";
 import { jwtConfig } from "./utils/jwtConfig";
+
+import * as crypto from "crypto";
 
 @Injectable()
 export class AuthService {
@@ -62,7 +69,19 @@ export class AuthService {
       expiresIn: jwtConfig.refreshExpiresIn,
     });
   }
+  private slugify(input: string) {
+    return input
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
+      .slice(0, 50);
+  }
 
+  private async generateWorkspaceSlug(base: string) {
+    const raw = this.slugify(base) || "workspace";
+    return `${raw}-${Math.random().toString(36).slice(2, 8)}`;
+  }
   private getRefreshExpiryDate() {
     const now = new Date();
     const result = new Date(now);
@@ -73,68 +92,85 @@ export class AuthService {
   async register(
     dto: RegisterDto,
     meta?: { userAgent?: string; ipAddress?: string },
-  ): Promise<AuthResponse> {
-    const existing = await this.authRepository.findUserByEmail(dto.email);
+  ) {
+    const email = dto.email.trim().toLowerCase();
+
+    const existing = await this.authRepository.findUserByEmail(email);
     if (existing) {
       throw new BadRequestException("EMAIL_ALREADY_EXISTS");
     }
 
     const passwordHash = await hashPassword(dto.password);
 
-    const user = await this.authRepository.createUser({
-      email: dto.email,
+    const displayName =
+      dto.name?.trim() || email.split("@")[0] || "My Workspace";
+
+    const workspaceName = `${displayName}'s Workspace`;
+    const workspaceSlug = await this.generateWorkspaceSlug(displayName);
+
+    const bootstrap = await this.authRepository.registerWithWorkspaceBootstrap({
+      email,
       passwordHash,
       name: dto.name,
+      workspaceName,
+      workspaceSlug,
+      createInitialSite: true,
     });
 
-    const bootstrapSession = await this.authRepository.createSession({
-      userId: user.id,
-      refreshToken: "bootstrap",
+    const expiresAt = this.getRefreshExpiryDate();
+
+    const session = await this.authRepository.createSession({
+      userId: bootstrap.user.id,
+      refreshTokenHash: "PENDING",
       userAgent: meta?.userAgent ?? null,
       ipAddress: meta?.ipAddress ?? null,
-      expiresAt: this.getRefreshExpiryDate(),
+      expiresAt,
     });
 
     const refreshToken = await this.generateRefreshToken(
-      user,
-      bootstrapSession.id,
+      bootstrap.user,
+      session.id,
     );
 
-    await this.authRepository.deleteSession(bootstrapSession.id);
+    const refreshTokenHash = await hashRefreshToken(refreshToken);
 
-    const session = await this.authRepository.createSession({
-      userId: user.id,
-      refreshToken,
-      userAgent: meta?.userAgent ?? null,
-      ipAddress: meta?.ipAddress ?? null,
-      expiresAt: this.getRefreshExpiryDate(),
-    });
+    await this.authRepository.updateSessionRefreshTokenHash(
+      session.id,
+      refreshTokenHash,
+      expiresAt,
+    );
 
-    const finalRefreshToken = await this.generateRefreshToken(user, session.id);
-    await this.authRepository.deleteSession(session.id);
-
-    const finalSession = await this.authRepository.createSession({
-      userId: user.id,
-      refreshToken: finalRefreshToken,
-      userAgent: meta?.userAgent ?? null,
-      ipAddress: meta?.ipAddress ?? null,
-      expiresAt: this.getRefreshExpiryDate(),
-    });
-
-    const accessToken = await this.generateAccessToken(user);
+    const accessToken = await this.generateAccessToken(bootstrap.user);
 
     return {
-      user: this.toSafeUser(user),
+      user: this.toSafeUser(bootstrap.user),
+      workspace: {
+        id: bootstrap.workspace.id,
+        name: bootstrap.workspace.name,
+        slug: bootstrap.workspace.slug,
+      },
+      subscription: {
+        id: bootstrap.subscription.id,
+      },
+      site: bootstrap.site
+        ? {
+            id: bootstrap.site.id,
+            name: bootstrap.site.name,
+            slug: bootstrap.site.slug,
+          }
+        : null,
       accessToken,
-      refreshToken: finalRefreshToken,
+      refreshToken,
     };
   }
 
   async login(
     dto: LoginDto,
     meta?: { userAgent?: string; ipAddress?: string },
-  ): Promise<AuthResponse> {
-    const user = await this.authRepository.findUserByEmail(dto.email);
+  ) {
+    const email = dto.email.trim().toLowerCase();
+
+    const user = await this.authRepository.findUserByEmail(email);
 
     if (!user || !user.passwordHash) {
       throw new UnauthorizedException("INVALID_CREDENTIALS");
@@ -149,25 +185,24 @@ export class AuthService {
       throw new UnauthorizedException("INVALID_CREDENTIALS");
     }
 
-    const tempSession = await this.authRepository.createSession({
+    const expiresAt = this.getRefreshExpiryDate();
+
+    const session = await this.authRepository.createSession({
       userId: user.id,
-      refreshToken: "bootstrap",
+      refreshTokenHash: "PENDING",
       userAgent: meta?.userAgent ?? null,
       ipAddress: meta?.ipAddress ?? null,
-      expiresAt: this.getRefreshExpiryDate(),
+      expiresAt,
     });
 
-    const refreshToken = await this.generateRefreshToken(user, tempSession.id);
+    const refreshToken = await this.generateRefreshToken(user, session.id);
+    const refreshTokenHash = await hashRefreshToken(refreshToken);
 
-    await this.authRepository.deleteSession(tempSession.id);
-
-    const finalSession = await this.authRepository.createSession({
-      userId: user.id,
-      refreshToken,
-      userAgent: meta?.userAgent ?? null,
-      ipAddress: meta?.ipAddress ?? null,
-      expiresAt: this.getRefreshExpiryDate(),
-    });
+    await this.authRepository.updateSessionRefreshTokenHash(
+      session.id,
+      refreshTokenHash,
+      expiresAt,
+    );
 
     await this.authRepository.updateLastLogin(user.id);
 
@@ -180,9 +215,7 @@ export class AuthService {
     };
   }
 
-  async refresh(
-    refreshToken: string,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  async refresh(refreshToken: string) {
     let payload: JwtPayload;
 
     try {
@@ -197,8 +230,9 @@ export class AuthService {
       throw new UnauthorizedException("INVALID_REFRESH_TOKEN");
     }
 
-    const session =
-      await this.authRepository.findSessionByRefreshToken(refreshToken);
+    const session = await this.authRepository.findSessionById(
+      payload.sessionId,
+    );
     if (!session) {
       throw new UnauthorizedException("SESSION_NOT_FOUND");
     }
@@ -211,35 +245,29 @@ export class AuthService {
       throw new UnauthorizedException("SESSION_EXPIRED");
     }
 
+    const isTokenMatch = await verifyRefreshToken(
+      refreshToken,
+      session.refreshTokenHash,
+    );
+
+    if (!isTokenMatch) {
+      throw new UnauthorizedException("INVALID_REFRESH_TOKEN");
+    }
+
     const user = await this.authRepository.findUserById(payload.sub);
     if (!user || !user.isActive) {
       throw new UnauthorizedException("USER_NOT_FOUND_OR_DISABLED");
     }
 
-    await this.authRepository.deleteSession(session.id);
+    const newExpiresAt = this.getRefreshExpiryDate();
+    const newRefreshToken = await this.generateRefreshToken(user, session.id);
+    const newRefreshTokenHash = await hashRefreshToken(newRefreshToken);
 
-    const newTempSession = await this.authRepository.createSession({
-      userId: user.id,
-      refreshToken: "bootstrap",
-      userAgent: session.userAgent,
-      ipAddress: session.ipAddress,
-      expiresAt: this.getRefreshExpiryDate(),
-    });
-
-    const newRefreshToken = await this.generateRefreshToken(
-      user,
-      newTempSession.id,
+    await this.authRepository.updateSessionRefreshTokenHash(
+      session.id,
+      newRefreshTokenHash,
+      newExpiresAt,
     );
-
-    await this.authRepository.deleteSession(newTempSession.id);
-
-    await this.authRepository.createSession({
-      userId: user.id,
-      refreshToken: newRefreshToken,
-      userAgent: session.userAgent,
-      ipAddress: session.ipAddress,
-      expiresAt: this.getRefreshExpiryDate(),
-    });
 
     const newAccessToken = await this.generateAccessToken(user);
 
@@ -250,14 +278,30 @@ export class AuthService {
   }
 
   async logout(refreshToken: string) {
-    const session =
-      await this.authRepository.findSessionByRefreshToken(refreshToken);
-    if (!session) {
+    try {
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(
+        refreshToken,
+        {
+          secret: process.env.JWT_REFRESH_SECRET,
+        },
+      );
+
+      if (payload.type !== "refresh" || !payload.sessionId) {
+        return { success: true };
+      }
+
+      const session = await this.authRepository.findSessionById(
+        payload.sessionId,
+      );
+      if (!session) {
+        return { success: true };
+      }
+
+      await this.authRepository.revokeSession(session.id);
+      return { success: true };
+    } catch {
       return { success: true };
     }
-
-    await this.authRepository.revokeSession(session.id);
-    return { success: true };
   }
 
   async me(userId: string) {
@@ -267,5 +311,175 @@ export class AuthService {
     }
 
     return this.toSafeUser(user);
+  }
+
+  async logoutAllSessions(userId: string) {
+    await this.authRepository.revokeAllSessions(userId);
+
+    return {
+      success: true,
+      message: "Logged out from all sessions",
+    };
+  }
+
+  async changePassword(
+    userId: string,
+    dto: { currentPassword: string; newPassword: string },
+  ) {
+    const user = await this.authRepository.findUserById(userId);
+
+    if (!user || !user.passwordHash) {
+      throw new UnauthorizedException("USER_NOT_FOUND");
+    }
+
+    const isValid = await verifyPassword(
+      dto.currentPassword,
+      user.passwordHash,
+    );
+    if (!isValid) {
+      throw new UnauthorizedException("INVALID_CURRENT_PASSWORD");
+    }
+
+    const newPasswordHash = await hashPassword(dto.newPassword);
+
+    await this.authRepository.updateUserPassword(userId, newPasswordHash);
+
+    // revoke ทุก session เพื่อ security
+    await this.authRepository.revokeAllSessions(userId);
+
+    return {
+      success: true,
+      message: "Password changed successfully",
+    };
+  }
+
+  async sendVerificationEmail(userId: string) {
+    const user = await this.authRepository.findUserById(userId);
+
+    if (!user) {
+      throw new BadRequestException("USER_NOT_FOUND");
+    }
+
+    if (user.emailVerified) {
+      return {
+        success: true,
+        message: "Email already verified",
+      };
+    }
+
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
+
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 60 * 24);
+
+    await this.authRepository.createEmailVerificationToken({
+      userId,
+      tokenHash,
+      expiresAt,
+    });
+
+    const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${rawToken}`;
+
+    // TODO: send email
+    console.log("VERIFY URL:", verifyUrl);
+
+    return {
+      success: true,
+      message: "Verification email sent",
+    };
+  }
+
+  async verifyEmail(dto: { token: string }) {
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(dto.token)
+      .digest("hex");
+
+    const record =
+      await this.authRepository.findValidEmailVerificationToken(tokenHash);
+
+    if (!record) {
+      throw new BadRequestException("INVALID_OR_EXPIRED_VERIFICATION_TOKEN");
+    }
+
+    await this.authRepository.verifyUserEmail(record.userId);
+
+    await this.authRepository.markEmailVerificationUsed(record.id);
+
+    return {
+      success: true,
+      message: "Email verified successfully",
+    };
+  }
+
+  async forgotPassword(dto: { email: string }) {
+    const email = dto.email.trim().toLowerCase();
+
+    const user = await this.authRepository.findUserByEmail(email);
+
+    // กัน email enumeration
+    if (!user) {
+      return {
+        success: true,
+        message: "If the email exists, a reset link has been sent",
+      };
+    }
+
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
+    const expiresAt = new Date(Date.now() + 1000 * 60 * 30); // 30 นาที
+
+    await this.authRepository.createPasswordResetToken({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+    });
+
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${rawToken}`;
+
+    // TODO: เปลี่ยนเป็น mail service จริง
+    console.log("PASSWORD_RESET_URL:", resetUrl);
+
+    return {
+      success: true,
+      message: "If the email exists, a reset link has been sent",
+    };
+  }
+
+  async resetPassword(dto: { token: string; newPassword: string }) {
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(dto.token)
+      .digest("hex");
+
+    const record =
+      await this.authRepository.findValidPasswordResetToken(tokenHash);
+
+    if (!record) {
+      throw new BadRequestException({
+        code: "INVALID_OR_EXPIRED_RESET_TOKEN",
+        message: "Reset token is invalid or expired",
+      });
+    }
+
+    const newPasswordHash = await hashPassword(dto.newPassword);
+
+    await this.authRepository.updateUserPassword(
+      record.userId,
+      newPasswordHash,
+    );
+    await this.authRepository.markPasswordResetUsed(record.id);
+    await this.authRepository.revokeAllSessions(record.userId);
+
+    return {
+      success: true,
+      message: "Password reset successfully",
+    };
   }
 }

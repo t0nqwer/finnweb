@@ -1,0 +1,5 @@
+
+
+> @finnweb/worker@0.0.1 typecheck /Volumes/GRIZZLY/GitHub/finnweb/apps/worker
+> tsc -p tsconfig.json --noEmit
+

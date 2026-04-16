@@ -5,6 +5,7 @@
   "exports": {
     "./constants": "./src/constants.ts",
     "./types": "./src/types.ts",
+    "./jobs": "./src/jobs.ts",
     ".": "./src/index.ts"
   },
   "scripts": {

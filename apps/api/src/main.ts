@@ -7,11 +7,16 @@ import {
 } from "@nestjs/platform-fastify";
 import { AppModule } from "./app.module";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { AllExceptionsFilter } from "./common/filters/all-exceptions.filter";
+import { validationExceptionFactory } from "./common/validation/validation-exception.factory";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter(),
+    {
+      rawBody: true,
+    },
   );
 
   app.setGlobalPrefix("api");
@@ -21,11 +26,14 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.useGlobalFilters(new AllExceptionsFilter());
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       transform: true,
       forbidNonWhitelisted: true,
+      exceptionFactory: validationExceptionFactory,
     }),
   );
 

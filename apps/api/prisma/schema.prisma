@@ -14,33 +14,35 @@ datasource db {
 
 // region Auth & User Management
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  passwordHash  String?
-  name          String?
-  avatarUrl     String?
-  isActive      Boolean   @default(true)
-  emailVerified Boolean   @default(false)
-  lastLoginAt   DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String?
+  name            String?
+  avatarUrl       String?
+  isActive        Boolean   @default(true)
+  emailVerified   Boolean   @default(false)
+  lastLoginAt     DateTime?
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  sessions         Session[]
-  ownedWorkspaces  Workspace[]       @relation("WorkspaceOwner")
-  workspaceMembers WorkspaceMember[]
-  templates        Template[]
-  contentPosts     ContentPost[]     @relation("ContentAuthor")
-  contentRevisions ContentRevision[] @relation("ContentEditedBy")
-  authAccounts     AuthAccount[]
+  passwordResetTokens     PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  sessions                Session[]
+  ownedWorkspaces         Workspace[]              @relation("WorkspaceOwner")
+  workspaceMembers        WorkspaceMember[]
+  templates               Template[]
+  contentPosts            ContentPost[]            @relation("ContentAuthor")
+  contentRevisions        ContentRevision[]        @relation("ContentEditedBy")
+  authAccounts            AuthAccount[]
 
   @@index([isActive])
   @@index([createdAt])
 }
 
 model Session {
-  id               String    @id @default(cuid())
+  id               String    @id @default(uuid()) @db.Uuid
   userId           String
-  refreshToken     String    @unique
   refreshTokenHash String
   userAgent        String?
   ipAddress        String?
@@ -65,6 +67,34 @@ model VerificationToken {
   createdAt DateTime @default(now())
 
   @@index([email])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
   @@index([expiresAt])
 }
 
@@ -176,6 +206,9 @@ model Plan {
   priceMonthly Decimal  @default(0) @db.Decimal(10, 2)
   priceYearly  Decimal? @db.Decimal(10, 2)
 
+  stripePriceMonthlyId String?
+  stripePriceYearlyId  String?
+
   maxSites           Int @default(1)
   maxPagesPerSite    Int @default(1)
   maxSectionsPerPage Int @default(10)
@@ -217,6 +250,11 @@ model Subscription {
   canceledAt         DateTime?
   endedAt            DateTime?
 
+  stripeCustomerId     String?
+  stripeSubscriptionId String? @unique
+  stripePriceId        String?
+  cancelAtPeriodEnd    Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -247,6 +285,9 @@ model Payment {
   failedAt  DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  stripeInvoiceId         String? @unique
+  stripeCheckoutSessionId String? @unique
 
   subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 

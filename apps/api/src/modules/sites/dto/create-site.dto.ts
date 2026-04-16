@@ -14,6 +14,10 @@ export class CreateSiteDto {
 
   @IsOptional()
   @IsString()
+  workspaceId?: string;
+
+  @IsOptional()
+  @IsString()
   @Matches(/^[a-z0-9-]+$/)
   slug?: string;
 }

@@ -31,10 +31,129 @@ export class AuthRepository {
     });
   }
 
+  async registerWithWorkspaceBootstrap(data: {
+    email: string;
+    passwordHash: string;
+    name?: string | null;
+    workspaceName: string;
+    workspaceSlug: string;
+    createInitialSite?: boolean;
+  }) {
+    try {
+      return this.prisma.$transaction(async (tx) => {
+        const freePlan = await tx.plan.findUnique({
+          where: { code: "FREE" },
+        });
+
+        if (!freePlan) {
+          throw new Error("FREE_PLAN_NOT_FOUND");
+        }
+
+        const user = await tx.user.create({
+          data: {
+            email: data.email.toLowerCase(),
+            passwordHash: data.passwordHash,
+            name: data.name ?? null,
+          },
+        });
+
+        const workspace = await tx.workspace.create({
+          data: {
+            name: data.workspaceName,
+            slug: data.workspaceSlug,
+            ownerId: user.id,
+          },
+        });
+
+        await tx.workspaceMember.create({
+          data: {
+            workspaceId: workspace.id,
+            userId: user.id,
+            role: "OWNER",
+          },
+        });
+
+        const now = new Date();
+
+        const subscription = await tx.subscription.create({
+          data: {
+            workspaceId: workspace.id,
+            planId: freePlan.id,
+            status: "ACTIVE",
+            billingInterval: "MONTHLY",
+            isCurrent: true,
+            currentPeriodStart: now,
+          },
+        });
+
+        let site: any = null;
+
+        if (data.createInitialSite) {
+          site = await tx.site.create({
+            data: {
+              workspaceId: workspace.id,
+              name: "My First Site",
+              slug: `${workspace.slug}-site`,
+              defaultSeoTitle: "My First Site",
+            },
+          });
+
+          await tx.page.create({
+            data: {
+              siteId: site.id,
+              title: "Home",
+              slug: "home",
+              path: "/",
+              pageType: "LANDING",
+              isHomePage: true,
+              isPublished: false,
+            },
+          });
+        }
+
+        return {
+          user,
+          workspace,
+          subscription,
+          site,
+        };
+      });
+    } catch (error) {
+      console.error("❌ BOOTSTRAP ERROR", error);
+
+      // ถ้าเป็น Prisma error จะได้ detail เพิ่ม
+      if (error instanceof Error) {
+        console.error("message:", error.message);
+        console.error("stack:", error.stack);
+      }
+
+      throw error;
+    }
+  }
+
   updateLastLogin(userId: string) {
     return this.prisma.user.update({
       where: { id: userId },
       data: { lastLoginAt: new Date() },
+    });
+  }
+
+  updateUserPassword(userId: string, passwordHash: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash,
+      },
+    });
+  }
+
+  verifyUserEmail(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
+      },
     });
   }
 
@@ -80,7 +199,7 @@ export class AuthRepository {
     });
   }
 
-  revokeAllUserSessions(userId: string) {
+  revokeAllSessions(userId: string) {
     return this.prisma.session.updateMany({
       where: {
         userId,
@@ -95,6 +214,68 @@ export class AuthRepository {
   deleteSession(id: string) {
     return this.prisma.session.delete({
       where: { id },
+    });
+  }
+
+  createPasswordResetToken(data: {
+    userId: string;
+    tokenHash: string;
+    expiresAt: Date;
+  }) {
+    return this.prisma.passwordResetToken.create({
+      data,
+    });
+  }
+
+  findValidPasswordResetToken(tokenHash: string) {
+    return this.prisma.passwordResetToken.findFirst({
+      where: {
+        tokenHash,
+        usedAt: null,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+    });
+  }
+
+  markPasswordResetUsed(id: string) {
+    return this.prisma.passwordResetToken.update({
+      where: { id },
+      data: {
+        usedAt: new Date(),
+      },
+    });
+  }
+
+  createEmailVerificationToken(data: {
+    userId: string;
+    tokenHash: string;
+    expiresAt: Date;
+  }) {
+    return this.prisma.emailVerificationToken.create({
+      data,
+    });
+  }
+
+  findValidEmailVerificationToken(tokenHash: string) {
+    return this.prisma.emailVerificationToken.findFirst({
+      where: {
+        tokenHash,
+        usedAt: null,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+    });
+  }
+
+  markEmailVerificationUsed(id: string) {
+    return this.prisma.emailVerificationToken.update({
+      where: { id },
+      data: {
+        usedAt: new Date(),
+      },
     });
   }
 }

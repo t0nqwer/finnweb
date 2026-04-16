@@ -1,0 +1,5 @@
+
+
+> @finnweb/shared@0.0.1 typecheck /Volumes/GRIZZLY/GitHub/finnweb/packages/shared
+> tsc -p tsconfig.json --noEmit
+
