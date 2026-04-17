@@ -234,4 +234,88 @@ export class BillingRepository {
       },
     });
   }
+
+  getCurrentSubscriptionWithPlan(workspaceId: string) {
+    return this.prisma.subscription.findFirst({
+      where: {
+        workspaceId,
+        isCurrent: true,
+      },
+      include: {
+        plan: {
+          select: {
+            code: true,
+            name: true,
+            description: true,
+            priceMonthly: true,
+            priceYearly: true,
+            maxSites: true,
+            maxPagesPerSite: true,
+            maxSectionsPerPage: true,
+            maxProducts: true,
+            maxPosts: true,
+            allowCustomDomain: true,
+            allowForms: true,
+            allowAnalytics: true,
+            allowCustomCode: true,
+            allowEcommerce: true,
+            allowBlog: true,
+            allowNews: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  }
+
+  getLatestPayment(subscriptionId: string) {
+    return this.prisma.payment.findFirst({
+      where: {
+        subscriptionId,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  }
+
+  async countWorkspaceSites(workspaceId: string) {
+    const result = await this.prisma.site.count({
+      where: {
+        workspaceId,
+      },
+    });
+    return result;
+  }
+
+  async countWorkspacePages(workspaceId: string) {
+    // Count total pages across all sites in workspace
+    const totalPages = await this.prisma.page.count({
+      where: {
+        site: {
+          workspaceId,
+        },
+      },
+    });
+
+    // Get site IDs where pages exceed their per-site limit
+    // This requires checking each site individually
+    const sites = await this.prisma.site.findMany({
+      where: { workspaceId },
+      select: { id: true },
+    });
+
+    const siteIdsOverLimit: string[] = [];
+    // Note: Actual checking of per-site limits is done at
+    // usage time in sites.service since the limit depends
+    // on the current plan
+    // For now, this tracks all sites for potential analysis
+
+    return {
+      total: totalPages,
+      siteIds: siteIdsOverLimit,
+    };
+  }
 }

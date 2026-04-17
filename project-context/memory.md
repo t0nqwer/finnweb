@@ -1,2 +1,9 @@
 - Working pricing baseline in this codebase is: Free / Basic / Business / Pro.
 - Treat pricing tiers above as the default for implementation and documentation unless a new decision overrides it.
+- In user-facing pricing UI, do not introduce alternate tier names (for example `Ultimate`) for existing plan codes; display canonical names only.
+- Rate limiting for auth endpoints uses Redis-backed counters (guards in `/common/guards/rate-limit.guard.ts`) wrapped by convenient decorators in `/common/decorators/rate-limit.decorator.ts`. Key generator can be IP-based or email-based. Error responses use HttpException with error codes that frontend can translate.
+- Stripe billing flow: checkout session (POST /billing/checkout-session) → Stripe hosted checkout → checkout.session.completed webhook → customer.subscription.created/updated webhook → subscription upserted to DB with isCurrent=true, marking previous subscriptions as not current. Frontend queries GET /billing/subscription?workspaceId=X to fetch current plan details for dashboard display.
+- Subscription cancellation is reversible: cancel_at_period_end flag on Stripe + cancelAtPeriodEnd boolean in DB; POST /billing/reactivate removes the flag before period ends to allow user to undo; GET /billing/subscription exposes both cancelAtPeriodEnd and latestPaymentStatus for UI to show recovery CTA and payment failure state. Payment failures (invoice.payment_failed webhook) create FAILED payment record and set subscription to PAST_DUE status; on subscription deletion, system automatically creates FREE subscription fallback (handleSubscriptionDeleted).
+- Brand system source of truth: `project-context/brand-book.md`.
+- Frontend default theme: Deep Space dark mode (`#1A1C23`) unless explicitly changed by product decision.
+- Thai-centric UI copy and typography rules are required for customer-facing surfaces (Kanit; line-height >= 1.7 for Thai-heavy text blocks).

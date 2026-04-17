@@ -7,7 +7,17 @@
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "sync:tasks": "tsx scripts/sync-tasks-to-gdoc.ts",
+    "sync:tasks:watch": "tsx scripts/sync-tasks-to-gdoc.ts watch",
+    "sync:tasks:watch:window": "powershell -ExecutionPolicy Bypass -File scripts/start-sync-tasks-watch.ps1",
+    "sync:tasks:startup:install": "powershell -ExecutionPolicy Bypass -File scripts/install-sync-watcher-startup.ps1",
+    "sync:tasks:startup:uninstall": "powershell -ExecutionPolicy Bypass -File scripts/uninstall-sync-watcher-startup.ps1"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.3",
+    "dotenv": "^17.2.3",
+    "googleapis": "^155.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

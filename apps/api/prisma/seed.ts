@@ -18,7 +18,7 @@ async function main() {
     create: {
       code: "FREE",
       name: "Free",
-      description: "Starter plan for new users",
+      description: "Free plan for new users",
       priceMonthly: 0,
       priceYearly: 0,
 

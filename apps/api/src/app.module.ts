@@ -7,6 +7,7 @@ import { SitesModule } from "./modules/sites/sites.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { BillingModule } from "./modules/billing/billing.module";
 import { JobsModule } from "./jobs/jobs.module";
+import { RedisModule } from "./modules/redis/redis.module";
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { JobsModule } from "./jobs/jobs.module";
       envFilePath: ".env",
       load: [configuration],
     }),
+    RedisModule,
     PrismaModule,
     JobsModule,
     HealthModule,

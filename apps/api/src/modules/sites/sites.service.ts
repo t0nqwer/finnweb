@@ -5,13 +5,34 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { PrismaService } from "@/prisma/prisma.service";
+import { PLAN_GATING_ERROR_CODES } from "@/common/constants/plan-gating-errors.constant";
+import type * as runtime from "@prisma/client/runtime/client";
 import { CreatePageDto } from "./dto/create-page.dto";
 import { CreateSiteDto } from "./dto/create-site.dto";
 import { UpdatePageDto } from "./dto/update-page.dto";
+import { CreateSectionDto } from "./dto/create-section.dto";
+import { UpdateSectionDto } from "./dto/update-section.dto";
+import { ReorderSectionsDto } from "./dto/reorder-sections.dto";
+import { GetSiteLeadsQueryDto } from "./dto/get-site-leads-query.dto";
 
 @Injectable()
 export class SitesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private pickLeadValue(
+    data: Record<string, unknown>,
+    candidateKeys: string[],
+  ): string | null {
+    for (const key of candidateKeys) {
+      const value = data[key];
+
+      if (typeof value === "string" && value.trim()) {
+        return value.trim();
+      }
+    }
+
+    return null;
+  }
 
   private makeSlug(value: string): string {
     return value
@@ -245,7 +266,9 @@ export class SitesService {
     const maxSites = currentSubscription?.plan?.maxSites ?? 1;
 
     if (workspace._count.sites >= maxSites) {
-      throw new BadRequestException("SITE_LIMIT_REACHED");
+      throw new BadRequestException(
+        PLAN_GATING_ERROR_CODES.SITE_LIMIT_REACHED.code,
+      );
     }
 
     const slug = await this.ensureUniqueSlug(workspace.id, baseSlug);
@@ -323,7 +346,9 @@ export class SitesService {
     const maxPagesPerSite = currentSubscription?.plan?.maxPagesPerSite ?? 1;
 
     if (site._count.pages >= maxPagesPerSite) {
-      throw new BadRequestException("PAGE_LIMIT_REACHED");
+      throw new BadRequestException(
+        PLAN_GATING_ERROR_CODES.PAGE_LIMIT_REACHED.code,
+      );
     }
 
     const baseSlug = dto.slug ? this.makeSlug(dto.slug) : this.makeSlug(title);
@@ -588,5 +613,406 @@ export class SitesService {
       id: pageId,
       deleted: true,
     };
+  }
+
+  // Section Methods
+
+  private async getAccessiblePage(
+    userId: string,
+    siteId: string,
+    pageId: string,
+  ) {
+    await this.getAccessibleSite(userId, siteId);
+
+    const page = await this.prisma.page.findFirst({
+      where: {
+        id: pageId,
+        siteId,
+      },
+      include: {
+        site: {
+          include: {
+            workspace: {
+              include: {
+                subscriptions: {
+                  where: {
+                    isCurrent: true,
+                  },
+                  include: {
+                    plan: true,
+                  },
+                  orderBy: {
+                    createdAt: "desc",
+                  },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            sections: true,
+          },
+        },
+      },
+    });
+
+    if (!page) {
+      throw new NotFoundException("PAGE_NOT_FOUND");
+    }
+
+    return page;
+  }
+
+  async createSection(
+    userId: string,
+    siteId: string,
+    pageId: string,
+    dto: CreateSectionDto,
+  ) {
+    const page = await this.getAccessiblePage(userId, siteId, pageId);
+
+    const currentSubscription = page.site.workspace.subscriptions[0];
+    const maxSectionsPerPage =
+      currentSubscription?.plan?.maxSectionsPerPage ?? 10;
+
+    if (page._count.sections >= maxSectionsPerPage) {
+      throw new BadRequestException(
+        PLAN_GATING_ERROR_CODES.SECTION_LIMIT_REACHED.code,
+      );
+    }
+
+    // Validate section props based on type
+    const validatedProps = this.validateSectionProps(dto.type, dto.props || {});
+
+    return this.prisma.section.create({
+      data: {
+        pageId,
+        type: dto.type,
+        name: dto.name || null,
+        sortOrder: dto.sortOrder ?? page._count.sections,
+        props: validatedProps,
+      },
+    });
+  }
+
+  async findSections(userId: string, siteId: string, pageId: string) {
+    await this.getAccessiblePage(userId, siteId, pageId);
+
+    return this.prisma.section.findMany({
+      where: {
+        pageId,
+      },
+      orderBy: {
+        sortOrder: "asc",
+      },
+    });
+  }
+
+  async findSection(
+    userId: string,
+    siteId: string,
+    pageId: string,
+    sectionId: string,
+  ) {
+    await this.getAccessiblePage(userId, siteId, pageId);
+
+    const section = await this.prisma.section.findFirst({
+      where: {
+        id: sectionId,
+        pageId,
+      },
+    });
+
+    if (!section) {
+      throw new NotFoundException("SECTION_NOT_FOUND");
+    }
+
+    return section;
+  }
+
+  async updateSection(
+    userId: string,
+    siteId: string,
+    pageId: string,
+    sectionId: string,
+    dto: UpdateSectionDto,
+  ) {
+    const section = await this.findSection(userId, siteId, pageId, sectionId);
+
+    const updateData: Record<string, unknown> = {};
+
+    if (dto.name !== undefined) {
+      updateData.name = dto.name || null;
+    }
+
+    if (dto.sortOrder !== undefined) {
+      updateData.sortOrder = dto.sortOrder;
+    }
+
+    if (dto.isVisible !== undefined) {
+      updateData.isVisible = dto.isVisible;
+    }
+
+    if (dto.props !== undefined) {
+      const validatedProps = this.validateSectionProps(section.type, dto.props);
+      updateData.props = validatedProps;
+    }
+
+    return this.prisma.section.update({
+      where: {
+        id: sectionId,
+      },
+      data: updateData,
+    });
+  }
+
+  async deleteSection(
+    userId: string,
+    siteId: string,
+    pageId: string,
+    sectionId: string,
+  ) {
+    await this.findSection(userId, siteId, pageId, sectionId);
+
+    await this.prisma.section.delete({
+      where: {
+        id: sectionId,
+      },
+    });
+
+    return {
+      id: sectionId,
+      deleted: true,
+    };
+  }
+
+  async reorderSections(
+    userId: string,
+    siteId: string,
+    pageId: string,
+    dto: ReorderSectionsDto,
+  ) {
+    await this.getAccessiblePage(userId, siteId, pageId);
+
+    // Verify all section IDs belong to this page
+    const sections = await this.prisma.section.findMany({
+      where: {
+        pageId,
+        id: {
+          in: dto.sectionIds,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (sections.length !== dto.sectionIds.length) {
+      throw new BadRequestException("INVALID_SECTION_IDS");
+    }
+
+    // Update sortOrder for each section
+    return this.prisma.$transaction(
+      dto.sectionIds.map((sectionId, index) =>
+        this.prisma.section.update({
+          where: { id: sectionId },
+          data: { sortOrder: index },
+        }),
+      ),
+    );
+  }
+
+  async findLeads(userId: string, siteId: string, query: GetSiteLeadsQueryDto) {
+    const site = await this.getAccessibleSite(userId, siteId);
+
+    const fromDate = query.from ? new Date(query.from) : undefined;
+    const toDate = query.to ? new Date(query.to) : undefined;
+
+    if (fromDate && toDate && fromDate > toDate) {
+      throw new BadRequestException("LEAD_DATE_RANGE_INVALID");
+    }
+
+    const leads = await this.prisma.formSubmission.findMany({
+      where: {
+        form: {
+          siteId,
+          ...(query.pageId ? { pageId: query.pageId } : {}),
+        },
+        ...(fromDate || toDate
+          ? {
+              createdAt: {
+                ...(fromDate ? { gte: fromDate } : {}),
+                ...(toDate ? { lte: toDate } : {}),
+              },
+            }
+          : {}),
+      },
+      include: {
+        form: {
+          select: {
+            id: true,
+            name: true,
+            page: {
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                path: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: query.limit ?? 50,
+    });
+
+    const items = leads.map((lead) => {
+      const data =
+        typeof lead.data === "object" && lead.data !== null
+          ? (lead.data as Record<string, unknown>)
+          : {};
+
+      return {
+        id: lead.id,
+        createdAt: lead.createdAt.toISOString(),
+        form: {
+          id: lead.form.id,
+          name: lead.form.name,
+        },
+        page: lead.form.page
+          ? {
+              id: lead.form.page.id,
+              title: lead.form.page.title,
+              slug: lead.form.page.slug,
+              path: lead.form.page.path,
+            }
+          : null,
+        contact: {
+          name: this.pickLeadValue(data, ["name", "fullName", "fullname"]),
+          email: this.pickLeadValue(data, ["email", "emailAddress"]),
+          phone: this.pickLeadValue(data, ["phone", "phoneNumber", "tel"]),
+          message: this.pickLeadValue(data, ["message", "detail", "note"]),
+        },
+        data,
+      };
+    });
+
+    return {
+      site: {
+        id: site.id,
+        name: site.name,
+        slug: site.slug,
+      },
+      filters: {
+        pageId: query.pageId ?? null,
+        from: query.from ?? null,
+        to: query.to ?? null,
+        limit: query.limit ?? 50,
+      },
+      total: items.length,
+      items,
+    };
+  }
+
+  async getPublicPageByDomainAndPath(domain: string, pathOrSlug: string) {
+    const normalizedDomain = domain
+      .trim()
+      .toLowerCase()
+      .replace(/^https?:\/\//, "")
+      .replace(/\/$/, "")
+      .split(":")[0];
+
+    const normalizedInput = pathOrSlug.trim();
+    const normalizedPath = this.normalizePath(normalizedInput).toLowerCase();
+    const normalizedSlug = normalizedInput
+      .replace(/^\//, "")
+      .replace(/\/+$/, "")
+      .toLowerCase();
+
+    const page = await this.prisma.page.findFirst({
+      where: {
+        isPublished: true,
+        OR: [{ path: normalizedPath }, { slug: normalizedSlug }],
+        site: {
+          domains: {
+            some: {
+              host: normalizedDomain,
+            },
+          },
+        },
+      },
+      include: {
+        site: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            logoUrl: true,
+            faviconUrl: true,
+            defaultSeoTitle: true,
+            defaultSeoDescription: true,
+            defaultSeoKeywords: true,
+            defaultOgImageUrl: true,
+            primaryLanguage: true,
+            timezone: true,
+          },
+        },
+        sections: {
+          where: {
+            isVisible: true,
+          },
+          orderBy: {
+            sortOrder: "asc",
+          },
+          select: {
+            id: true,
+            type: true,
+            name: true,
+            sortOrder: true,
+            isVisible: true,
+            props: true,
+          },
+        },
+      },
+    });
+
+    if (!page) {
+      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
+    }
+
+    return {
+      site: page.site,
+      page: {
+        id: page.id,
+        title: page.title,
+        slug: page.slug,
+        path: page.path,
+        pageType: page.pageType,
+        isHomePage: page.isHomePage,
+        seoTitle: page.seoTitle,
+        seoDescription: page.seoDescription,
+        seoKeywords: page.seoKeywords,
+        ogImageUrl: page.ogImageUrl,
+      },
+      sections: page.sections,
+    };
+  }
+
+  private validateSectionProps(type: string, props: Record<string, unknown>) {
+    // Basic validation - ensure props is an object
+    if (typeof props !== "object" || props === null) {
+      throw new BadRequestException("SECTION_PROPS_INVALID");
+    }
+
+    // Type-specific validation can be added here
+    // For MVP, we accept any props structure per section type
+    // This can be expanded later with detailed schema validation
+
+    return props as runtime.InputJsonValue;
   }
 }

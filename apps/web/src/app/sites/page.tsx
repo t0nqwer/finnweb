@@ -333,6 +333,13 @@ export default function SitesPage() {
                   </div>
                 </div>
 
+                {sites.length === 0 && !isLoading && (
+                  <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                    ยังไม่มีเว็บไซต์ใน workspace นี้
+                    เริ่มต้นโดยสร้างเว็บไซต์แรกด้านล่าง
+                  </div>
+                )}
+
                 <form className="space-y-3" onSubmit={handleCreateSite}>
                   <div>
                     <p className="text-sm font-medium">Create a new site</p>
@@ -360,7 +367,11 @@ export default function SitesPage() {
                       />
                     </div>
                   </div>
-                  <Button type="submit" disabled={isCreating}>
+                  <Button
+                    type="submit"
+                    disabled={isCreating}
+                    className="w-full sm:w-auto"
+                  >
                     {isCreating ? "Creating site..." : "Create site"}
                   </Button>
                 </form>
@@ -429,6 +440,10 @@ export default function SitesPage() {
               <CardDescription>
                 Sign in and select a site to load page CRUD tools here.
               </CardDescription>
+              <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                Tip: เลือก active site ด้านบนก่อน จากนั้นเครื่องมือจัดการหน้า
+                (create/edit/delete/publish) จะโหลดอัตโนมัติ
+              </div>
             </CardHeader>
           </Card>
         )}

@@ -66,7 +66,7 @@ const navigation = {
     },
     {
       title: "Subscription",
-      url: "/subscription",
+      url: "/dashboard/subscription",
       icon: <CreditCardIcon />,
     },
     {
@@ -85,6 +85,11 @@ const navigation = {
       name: "Billing Status",
       url: "/dashboard/billing",
       icon: <FileChartColumnIcon />,
+    },
+    {
+      name: "Leads",
+      url: "/dashboard/leads",
+      icon: <FileIcon />,
     },
     {
       name: "Pricing Guide",

@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
 import { CurrentUser } from "@/common/decorators/current-user.decorator";
 import { AccessJwtGuard } from "@/common/guards/access-jwt.guard";
 import { BillingService } from "./billing.service";
@@ -9,6 +9,22 @@ import { CancelSubscriptionDto } from "./dto/cancel-subscription.dto";
 @Controller("billing")
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
+
+  @Get("subscription")
+  async getCurrentSubscription(
+    @Query("workspaceId") workspaceId: string,
+    @CurrentUser("sub") userId: string,
+  ) {
+    return this.billingService.getCurrentSubscription(workspaceId, userId);
+  }
+
+  @Get("plan-usage")
+  async getPlanUsage(
+    @Query("workspaceId") workspaceId: string,
+    @CurrentUser("sub") userId: string,
+  ) {
+    return this.billingService.getPlanUsage(workspaceId, userId);
+  }
 
   @Post("checkout-session")
   async createCheckoutSession(
@@ -24,5 +40,13 @@ export class BillingController {
     @CurrentUser("sub") userId: string,
   ) {
     return this.billingService.cancelAtPeriodEnd(dto.workspaceId, userId);
+  }
+
+  @Post("reactivate")
+  async reactivateSubscription(
+    @Body() dto: CancelSubscriptionDto,
+    @CurrentUser("sub") userId: string,
+  ) {
+    return this.billingService.reactivateSubscription(dto.workspaceId, userId);
   }
 }

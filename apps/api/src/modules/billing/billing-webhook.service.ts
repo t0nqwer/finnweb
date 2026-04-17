@@ -210,6 +210,12 @@ export class BillingWebhookService {
     session: Stripe.Checkout.Session,
   ) {
     this.logger.log(`checkout.session.completed: ${session.id}`);
+
+    // Note: The actual subscription creation is handled by the
+    // customer.subscription.created/updated webhook events that follow.
+    // This handler logs the event for monitoring/audit purposes.
+    // No database update is needed here as the subscription webhook
+    // handlers will create/update the subscription record.
   }
 
   private async handleSubscriptionUpsert(subscription: Stripe.Subscription) {

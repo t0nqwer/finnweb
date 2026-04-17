@@ -28,6 +28,11 @@ import { Public } from "../../common/decorators/public.decorator";
 import { AccessJwtGuard } from "../../common/guards/access-jwt.guard";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { FastifyRequest } from "fastify/types/request";
+import {
+  RateLimitLogin,
+  RateLimitForgotPassword,
+  RateLimitResetPassword,
+} from "../../common/decorators/rate-limit.decorator";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -101,7 +106,9 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 401, description: "Invalid credentials" })
+  @ApiResponse({ status: 429, description: "Too many login attempts" })
   @Public()
+  @RateLimitLogin()
   @Post("login")
   login(@Body() dto: LoginDto, @Req() req: FastifyRequest, @Ip() ip?: string) {
     const userAgent =
@@ -206,7 +213,9 @@ export class AuthController {
       },
     },
   })
+  @ApiResponse({ status: 429, description: "Too many password reset attempts" })
   @Public()
+  @RateLimitForgotPassword()
   @HttpCode(200)
   @Post("forgot-password")
   forgotPassword(@Body() dto: ForgotPasswordDto) {
@@ -229,7 +238,9 @@ export class AuthController {
     status: 400,
     description: "Invalid or expired reset token",
   })
+  @ApiResponse({ status: 429, description: "Too many password reset attempts" })
   @Public()
+  @RateLimitResetPassword()
   @HttpCode(200)
   @Post("reset-password")
   resetPassword(@Body() dto: ResetPasswordDto) {

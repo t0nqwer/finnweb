@@ -3,59 +3,628 @@
   "tasks": [
     {
       "id": "pricing-consistency-audit",
-      "title": "Verify pricing consistency across app and billing",
-      "status": "in_progress",
+      "title": "ตรวจสอบความสอดคล้องของราคาในแอปและระบบชำระเงิน",
+      "status": "done",
       "priority": "high",
+      "phase": "phase-0",
+      "epic": "pricing",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": [],
       "scope": [
-        "Subscription UI pricing labels and ordering",
-        "Prisma plan seed values",
-        "Stripe price mapping and webhook handling"
+        "ป้ายราคาและลำดับแพลนใน UI สมาชิก",
+        "ค่า seed แผนใน Prisma",
+        "การจับคู่ราคา Stripe และการจัดการ webhook"
+      ],
+      "progressNotes": [
+        "แก้ชื่อแพลนในหน้า landing pricing ให้ตรงกับ baseline เป็น Basic / Business / Pro และลบชื่อ Ultimate",
+        "ยืนยันการจับคู่ Stripe price กับ BASIC / BUSINESS / PRO ใน billing webhook และปรับ seed FREE description ให้ไม่อ้าง Starter plan"
       ],
       "acceptanceCriteria": [
-        "All user-visible pricing uses Free / Basic / Business / Pro",
-        "Seeded plans and Stripe mapping match UI tiers",
-        "No mismatched plan names in API responses or docs"
+        "ราคาที่แสดงต่อผู้ใช้ใช้ชื่อ Free / Basic / Business / Pro ทั้งหมด",
+        "แผนที่ seed และการจับคู่ Stripe ตรงกับ tier ใน UI",
+        "ไม่มีชื่อแผนที่ไม่ตรงกันใน API response หรือเอกสาร"
       ]
     },
     {
       "id": "auth-production-hardening",
-      "title": "Harden auth for production readiness",
-      "status": "in_progress",
+      "title": "เสริมความแข็งแกร่งให้ระบบ auth สำหรับ production",
+      "status": "done",
       "priority": "high",
+      "phase": "phase-1",
+      "epic": "auth",
+      "estimatePoints": 8,
+      "owner": "unassigned",
+      "dependsOn": [],
       "scope": [
-        "Frontend access-token refresh flow with retry",
-        "Replace auth email URL console logs with real mail provider",
-        "Add auth integration tests for register/login/refresh/logout/reset"
+        "ระบบ refresh access-token ฝั่ง frontend พร้อม retry",
+        "แทนที่ console.log URL อีเมล auth ด้วย mail provider จริง",
+        "เพิ่ม integration test ของ auth สำหรับ register/login/refresh/logout/reset"
       ],
       "progressNotes": [
-        "Completed frontend refresh flow with automatic retry through shared web API client.",
-        "Added integration test coverage for 401 -> /auth/refresh -> retried request success in apps/web/src/lib/api-client.test.ts.",
-        "Wired API auth verification/reset email sending to Resend via EmailService and removed auth URL console log placeholders.",
-        "Added passing API integration tests for register/login/refresh/logout/reset in apps/api/src/modules/auth/auth.integration.test.ts.",
-        "Hardened backend auth by making DI explicit for auth controller/service/repository under the current test runtime and ensuring refresh token rotation includes a unique jti.",
-        "Added verify-email route coverage to the API auth integration suite, including send-verification-email -> verify-email -> emailVerified assertion.",
-        "Fixed the billing webhook Stripe typing so package-wide API typecheck is green again.",
-        "Added a GitHub Actions workflow that provisions Postgres, pushes the Prisma schema, seeds plans, runs the focused API auth integration suite, and runs API typecheck.",
-        "Pending first green GitHub Actions run before marking this task complete."
+        "เสร็จสิ้น refresh flow ฝั่ง frontend พร้อม retry อัตโนมัติผ่าน web API client กลาง",
+        "เพิ่ม integration test ครอบคลุม 401 -> /auth/refresh -> retry request สำเร็จ ใน apps/web/src/lib/api-client.test.ts",
+        "เชื่อมต่อการส่งอีเมล verify/reset ของ API auth กับ Resend ผ่าน EmailService และลบ console.log placeholder ออก",
+        "เพิ่ม API integration test ผ่านสำหรับ register/login/refresh/logout/reset ใน apps/api/src/modules/auth/auth.integration.test.ts",
+        "เสริมความแข็งแกร่ง backend auth โดยทำให้ DI ชัดเจนสำหรับ auth controller/service/repository และให้ refresh token rotation มี jti ไม่ซ้ำ",
+        "เพิ่ม coverage route verify-email ใน API auth integration suite รวมถึง send-verification-email -> verify-email -> ยืนยัน emailVerified",
+        "แก้ Stripe typing ใน billing webhook ให้ typecheck ทั้งแพ็กเกจผ่านอีกครั้ง",
+        "เพิ่ม GitHub Actions workflow ที่จัดเตรียม Postgres push schema Prisma seed แผน รัน API auth integration suite และ typecheck",
+        "GitHub Actions workflow auth ของ API ผ่านเรียบร้อยแล้ว"
       ],
       "acceptanceCriteria": [
-        "Expired access token can recover through refresh without forcing re-login",
-        "Verify-email and reset-password send through configured mail provider",
-        "Auth critical-path tests pass in CI/local"
+        "access token หมดอายุสามารถฟื้นฟูผ่าน refresh ได้โดยไม่ต้อง login ใหม่",
+        "verify-email และ reset-password ส่งผ่าน mail provider ที่กำหนดค่าไว้",
+        "test critical-path ของ auth ผ่านใน CI และ local"
       ]
     },
     {
       "id": "pricing-tier-positioning",
-      "title": "Confirm Business tier launch positioning",
-      "status": "todo",
+      "title": "ยืนยันตำแหน่ง Business tier สำหรับการเปิดตัว",
+      "status": "done",
       "priority": "medium",
+      "phase": "phase-0",
+      "epic": "pricing",
+      "estimatePoints": 2,
+      "owner": "unassigned",
+      "dependsOn": ["pricing-consistency-audit"],
       "scope": [
-        "Decide whether Business is a permanent public tier",
-        "Confirm pricing copy for Thai market launch"
+        "ตัดสินใจว่า Business เป็น tier สาธารณะถาวรหรือไม่",
+        "ยืนยัน copy ราคาสำหรับตลาดไทย"
+      ],
+      "progressNotes": [
+        "ล็อกการตัดสินใจ: Business tier คือเลเวอร์หลักสำหรับสัมชัมชาไทย (490 บาท/เดือน, 3 websites) ตำแหน่งเป็น แนะนำ",
+        "ยืนยันกลยุทธ์ tier ถาวร: Free = funnel entry; Business = core value; Pro = advanced/agencies",
+        "ตรวจสอบ marketing copy ในหน้า landing และ pricing: มีความสอดคล้องกันแล้วและสะท้อนการตัดสินใจ"
       ],
       "acceptanceCriteria": [
-        "Decision recorded in project-context/decisions.md",
-        "Marketing and product copy reflect final tier strategy"
+        "การตัดสินใจบันทึกไว้ใน project-context/decisions.md",
+        "สื่อการตลาดและ copy ผลิตภัณฑ์สะท้อนกลยุทธ์ tier ขั้นสุดท้าย"
+      ]
+    },
+    {
+      "id": "auth-rate-limit-and-abuse-guard",
+      "title": "เพิ่มระบบป้องกันการโจมตี auth",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-1",
+      "epic": "auth",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": ["auth-production-hardening"],
+      "scope": [
+        "จำกัด rate ของ endpoint login และ password reset",
+        "ทำให้ error response ใช้งานง่ายและรองรับภาษาไทย"
+      ],
+      "progressNotes": [
+        "สร้าง RedisModule เป็น global provider เพื่อให้ rate limiting ใช้ได้ทุก modules",
+        "สร้าง RateLimitGuard ที่ใช้ Redis เพื่อตรวจสอบจำนวน request ต่อ IP/email/endpoint",
+        "สร้าง decorators @RateLimitLogin @RateLimitForgotPassword @RateLimitResetPassword ใช้งานง่าย",
+        "กำหนด rate limits: login 10 attempts/15min per IP, forgot-password/reset 5 attempts/40min per email",
+        "ปรับปรุง error responses เพื่อไม่มีข้อมูลที่ละเอียดอ่อนรั่ว (no internal error details)",
+        "สร้าง AUTH_ERROR_CODES constant พร้อม Thai translations สำหรับ error messages"
+      ],
+      "acceptanceCriteria": [
+        "การพยายาม brute-force ถูกควบคุมความเร็ว",
+        "ไม่มีข้อมูลภายใน auth ที่ละเอียดอ่อนรั่วไหลใน error response"
+      ]
+    },
+    {
+      "id": "billing-checkout-success-path",
+      "title": "ตรวจสอบเส้นทาง checkout จนถึง subscription ที่ active",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-1",
+      "epic": "billing",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": ["pricing-consistency-audit"],
+      "scope": [
+        "การสร้าง checkout session",
+        "การประมวลผล webhook สำหรับ subscription upsert",
+        "อัปเดต subscription ปัจจุบันของ workspace"
+      ],
+      "progressNotes": [
+        "Stripe checkout session creation already implemented (POST /billing/checkout-session)",
+        "Webhook handling for subscription upsert already implemented (customer.subscription.created/updated)",
+        "Added handleCheckoutSessionCompleted webhook handler with proper documentation",
+        "Added GET /billing/subscription endpoint to fetch current plan with full details",
+        "Added getCurrentSubscriptionWithPlan repository method with plan feature details",
+        "Returns plan code, name, status, billing interval, and period dates to frontend"
+      ],
+      "acceptanceCriteria": [
+        "Stripe checkout ที่สำเร็จอัปเดตแผนที่ active ใน DB",
+        "Dashboard แสดงแผนที่อัปเดตแล้วโดยไม่ต้องแก้ DB ด้วยตนเอง"
+      ]
+    },
+    {
+      "id": "billing-failure-and-cancel-path",
+      "title": "ปรับปรุงประสบการณ์เมื่อชำระเงินไม่ผ่านและยกเลิก",
+      "status": "done",
+      "priority": "medium",
+      "phase": "phase-1",
+      "epic": "billing",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": ["billing-checkout-success-path"],
+      "scope": [
+        "จัดการ invoice.payment_failed",
+        "UX + API สำหรับยกเลิกเมื่อสิ้นสุดรอบบิล",
+        "จัดการการ fallback กลับสู่แผน free"
+      ],
+      "acceptanceCriteria": [
+        "สถานะการชำระเงินล้มเหลวมองเห็นได้และดำเนินการได้",
+        "ขั้นตอนยกเลิกสามารถย้อนกลับได้ก่อนสิ้นสุดรอบบิล"
+      ],
+      "progressNotes": "Implemented reactivateSubscription() method to reverse cancel_at_period_end before period ends; enhanced GET /billing/subscription to expose cancelAtPeriodEnd and latestPaymentStatus for UI to show recovery options; added POST /billing/reactivate endpoint for undo workflow; verified handleInvoicePaymentFailed webhook handler (invoice.payment_failed → PAST_DUE status) working correctly; fallback to FREE plan on subscription deletion confirmed in handleSubscriptionDeleted; typechecks successfully."
+    },
+    {
+      "id": "plan-gating-enforcement",
+      "title": "บังคับใช้ขีดจำกัดแผนในการดำเนินการ site และ page",
+      "status": "in-progress",
+      "priority": "high",
+      "phase": "phase-1",
+      "epic": "billing",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": ["billing-checkout-success-path"],
+      "scope": [
+        "บังคับใช้ maxSites และ maxPagesPerSite",
+        "error ที่สม่ำเสมอสำหรับการกระทำที่เกินขีดจำกัด",
+        "ลิงก์แนะนำให้อัปเกรดเมื่อถูกบล็อก"
+      ],
+      "acceptanceCriteria": [
+        "การบังคับใช้ขีดจำกัดสม่ำเสมอทั้งใน API และ UI",
+        "ผู้ใช้เข้าใจว่าทำไมการกระทำถูกบล็อกและจะอัปเกรดได้อย่างไร"
+      ],
+      "progressNotes": [
+        "PHASE 1 (Backend API Enhancement) - COMPLETE:",
+        "✅ Created plan-gating-errors.constant.ts with standardized error codes (SITE_LIMIT_REACHED, PAGE_LIMIT_REACHED, SECTION_LIMIT_REACHED, PRODUCT_LIMIT_REACHED, POST_LIMIT_REACHED, FEATURE_NOT_AVAILABLE) with Thai translations",
+        "✅ Mapped error codes to upgrade hints (all suggest BUSINESS tier as next step)",
+        "✅ Added getPlanUsage(workspaceId, userId) method to billing.service.ts returning plan limits + current usage stats",
+        "✅ Added GET /billing/plan-usage?workspaceId=X endpoint for frontend to display usage progress bars",
+        "✅ Enhanced billing.repository.ts with countWorkspaceSites() and countWorkspacePages() helpers",
+        "✅ Updated getCurrentSubscriptionWithPlan() select to include maxSectionsPerPage, maxPosts, allowCustomCode, allowNews",
+        "✅ Updated sites.service error throws to use PLAN_GATING_ERROR_CODES constants (site, page, section creation)",
+        "✅ TypeScript compilation: Exit Code 0",
+        "",
+        "PHASE 2 (Frontend Integration) - PENDING:",
+        "- [x] Verification pass (2026-04-17): confirmed frontend maps plan-gating error codes in apps/web/src/app/page-crud-dashboard.tsx and shows upgrade CTA to /dashboard/subscription",
+        "- [ ] Wire GET /billing/plan-usage to dashboard/workspace views so users can see plan limit usage before hitting errors",
+        "- [ ] Call GET /billing/plan-usage endpoint on dashboard/workspace load",
+        "- [ ] Display current usage as progress bars next to plan limits (e.g., 1/3 websites used)",
+        "- [ ] Disable create site/page/section buttons when limits reached with tooltip explaining limit",
+        "- [ ] Handle error codes (SITE_LIMIT_REACHED, etc.) in frontend error boundary",
+        "- [ ] Show upgrade CTA when user hits a limit (suggest BUSINESS tier if on FREE/BASIC)",
+        "- [ ] Make error messages user-friendly (use Thai translations from constants)",
+        "",
+        "PHASE 3 (Testing & Documentation) - PENDING:",
+        "- [ ] Integration tests for each gating scenario (site limit, page limit, section limit)",
+        "- [ ] Test that upgrade path unlocks blocked operations after plan change",
+        "- [ ] Update changelog.md with completion entry",
+        "- [ ] Mark task as 'done' in tasks.json when all phases complete"
+      ]
+    },
+    {
+      "id": "builder-sections-core",
+      "title": "สร้าง schema และการแก้ไข section builder สำหรับ MVP",
+      "status": "done",
+      "priority": "critical",
+      "phase": "phase-2",
+      "epic": "builder",
+      "estimatePoints": 8,
+      "owner": "unassigned",
+      "dependsOn": ["auth-production-hardening"],
+      "scope": [
+        "Section Hero, Text, Image, CTA, Form",
+        "การตรวจสอบและบันทึก Section JSON",
+        "การเรียงลำดับ section อย่างง่าย"
+      ],
+      "acceptanceCriteria": [
+        "ผู้ใช้สามารถสร้างและแก้ไข section ที่จำเป็นสำหรับ MVP ได้",
+        "payload section ที่ไม่ถูกต้องถูกปฏิเสธพร้อมข้อความที่ชัดเจน"
+      ]
+    },
+    {
+      "id": "builder-page-editing-flow",
+      "title": "สรุป workflow การแก้ไข page แบบ CRUD",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "builder",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": ["builder-sections-core"],
+      "scope": [
+        "สร้าง/แก้ไข/ลบ page",
+        "แจ้งเตือนความไม่ซ้ำกันของ slug/path",
+        "สถานะ published กับ draft"
+      ],
+      "progressNotes": [
+        "Page CRUD API fully implemented with all validation logic",
+        "Created comprehensive error code mapping with user-friendly messages",
+        "All DTO validation tests passing (20/20)",
+        "Slug/path uniqueness enforced at service layer with clear error codes",
+        "Home page state management prevents deletion of only home page",
+        "Publish/unpublish workflow fully supported",
+        "Created detailed API documentation for frontend integration",
+        "TypeScript compilation passes without errors"
+      ],
+      "acceptanceCriteria": [
+        "ผู้ใช้ที่ไม่ใช่นักเทคนิคสามารถจัดการ lifecycle ของ page ได้โดยไม่สับสน",
+        "error ของ path และการเผยแพร่ชัดเจนและแก้ไขได้"
+      ]
+    },
+    {
+      "id": "frontend-recreate-create-landing-page",
+      "title": "รีบิลด์ flow สร้างหน้า Landing จากฝั่ง Frontend",
+      "status": "todo",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "builder",
+      "estimatePoints": 8,
+      "owner": "unassigned",
+      "dependsOn": ["builder-page-editing-flow", "publish-public-render"],
+      "scope": [
+        "ออกแบบ flow ใหม่สำหรับ create landing page ให้ผู้ใช้เริ่มได้ในไม่กี่คลิก",
+        "เชื่อมต่อกับ API page CRUD และ section ที่มีอยู่โดยไม่ใช้หน้า debug",
+        "รองรับ draft/publish และ preview เส้นทางสาธารณะหลังสร้างเสร็จ",
+        "เพิ่มข้อความนำทางภาษาไทยและ empty state สำหรับผู้ใช้ SME"
+      ],
+      "acceptanceCriteria": [
+        "ผู้ใช้ใหม่สามารถสร้าง landing page แรกได้ภายใน flow เดียวโดยไม่ต้องตั้งค่าเชิงเทคนิค",
+        "หน้า Landing ที่สร้างแล้วบันทึกได้และเผยแพร่เป็น public URL ได้สำเร็จ",
+        "UX บนมือถือใช้งานได้โดยไม่มี horizontal scroll และปุ่มหลักกดง่าย"
+      ],
+      "progressNotes": [
+        "Task added on 2026-04-17 to track frontend rebuild of landing page creation flow"
+      ]
+    },
+    {
+      "id": "publish-public-render",
+      "title": "สร้าง route แสดงผลสาธารณะสำหรับ page ที่เผยแพร่แล้ว",
+      "status": "done",
+      "priority": "critical",
+      "phase": "phase-2",
+      "epic": "publishing",
+      "estimatePoints": 8,
+      "owner": "unassigned",
+      "dependsOn": ["builder-page-editing-flow"],
+      "progressNotes": [
+        "Switched focus from plan-gating frontend work to backend publishing route implementation.",
+        "Kickoff: implement public route resolution by domain + page path/slug with published-only guard.",
+        "Plan: return 404 for draft or missing pages and map section JSON for public render payload.",
+        "✅ Step 1 complete: Added unguarded endpoint GET /api/public/sites/page?domain={domain}&path={pathOrSlug} in public-sites.controller.ts.",
+        "✅ Step 2 complete: Implemented published-only lookup in sites.service.ts (isPublished=true); returns NotFound PUBLIC_PAGE_NOT_FOUND for draft/missing.",
+        "✅ Step 3 complete: Response now includes public render payload with site metadata, page fields, and ordered visible sections JSON (props).",
+        "✅ Validation: API typecheck passes after adding the public route and resolver method.",
+        "✅ Task closed: acceptance criteria met for public access on published pages and 404 behavior for draft/not-found pages."
+      ],
+      "scope": [
+        "ค้นหา site และ page ด้วย domain/slug",
+        "แสดง section JSON เป็น public page",
+        "คืน 404 สำหรับ page ที่ยังไม่เผยแพร่หรือไม่พบ"
+      ],
+      "acceptanceCriteria": [
+        "Page ที่เผยแพร่แล้วเข้าถึงได้จาก URL สาธารณะ",
+        "Page ฉบับร่างไม่เผยแพร่สู่สาธารณะ"
+      ]
+    },
+    {
+      "id": "publish-seo-metadata",
+      "title": "เพิ่ม SEO metadata บน public page",
+      "status": "todo",
+      "priority": "medium",
+      "phase": "phase-2",
+      "epic": "publishing",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": ["publish-public-render"],
+      "scope": [
+        "Title, description, keywords, OG image",
+        "ใช้ค่าเริ่มต้นของ site เมื่อ metadata ของ page ว่างเปล่า"
+      ],
+      "acceptanceCriteria": [
+        "metadata ของ page มองเห็นได้ใน page source",
+        "ค่าเริ่มต้นถูกนำไปใช้อย่างสม่ำเสมอ"
+      ]
+    },
+    {
+      "id": "forms-schema-and-submission",
+      "title": "สร้างระบบรับฟอร์มและบันทึก submission",
+      "status": "todo",
+      "priority": "medium",
+      "phase": "phase-2",
+      "epic": "forms",
+      "estimatePoints": 8,
+      "owner": "unassigned",
+      "dependsOn": ["builder-sections-core"],
+      "scope": [
+        "ฟิลด์ฟอร์ม: ชื่อ, อีเมล, โทรศัพท์, ข้อความ",
+        "endpoint รับ submission และการตรวจสอบ",
+        "บันทึก lead พร้อม context ของ page และ site"
+      ],
+      "acceptanceCriteria": [
+        "ผู้เยี่ยมชมสามารถส่งฟอร์ม lead ได้สำเร็จ",
+        "ข้อมูล lead สืบค้นได้ใน dashboard"
+      ]
+    },
+    {
+      "id": "forms-notification-email",
+      "title": "ส่งการแจ้งเตือน lead ทางอีเมล",
+      "status": "todo",
+      "priority": "low",
+      "phase": "phase-2",
+      "epic": "forms",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": ["forms-schema-and-submission"],
+      "scope": [
+        "template อีเมล transactional",
+        "พฤติกรรม retry ที่ปลอดภัยจากความล้มเหลว"
+      ],
+      "acceptanceCriteria": [
+        "การส่ง lead กระตุ้นการส่งอีเมลแจ้งเตือน",
+        "ความล้มเหลวชั่วคราวไม่ทำให้สูญเสียข้อมูล lead"
+      ]
+    },
+    {
+      "id": "forms-notification-line",
+      "title": "ส่งการแจ้งเตือน lead ผ่าน LINE",
+      "status": "todo",
+      "priority": "low",
+      "phase": "phase-2",
+      "epic": "forms",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": ["forms-schema-and-submission"],
+      "scope": [
+        "การผสานรวม LINE notification",
+        "การตั้งค่า LINE ระดับ workspace"
+      ],
+      "acceptanceCriteria": [
+        "การส่ง lead สามารถแจ้งเตือนผ่าน LINE ได้",
+        "การผสานรวมสามารถปิดใช้งานได้โดยไม่กระทบฟอร์ม"
+      ]
+    },
+    {
+      "id": "dashboard-sites-and-pages",
+      "title": "ปรับปรุง UX การจัดการ site และ page ใน dashboard",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "dashboard",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": ["builder-page-editing-flow", "plan-gating-enforcement"],
+      "scope": [
+        "ความสม่ำเสมอของ site switcher และรายการ page",
+        "ข้อความ empty state และขีดจำกัดที่ชัดเจน",
+        "ตัวควบคุมที่เหมาะกับมือถือ"
+      ],
+      "progressNotes": [
+        "ปรับปรุง UX หน้า sites ให้สอดคล้องกับ workflow เลือก site แล้วจัดการ page ต่อทันที",
+        "เพิ่ม empty state ชัดเจนทั้งกรณีไม่มีเว็บไซต์และกรณียังไม่เลือก active site",
+        "ปรับปุ่มหลักให้ใช้งานง่ายบนมือถือ (full-width บนจอเล็ก) สำหรับ create site และ action ต่างๆ",
+        "เพิ่ม search ใน page manager เพื่อค้นหา title/slug/path พร้อมแสดงจำนวนผลลัพธ์",
+        "ปรับรายการ page และปุ่ม Edit/Delete ให้เหมาะกับมือถือ (responsive action area)",
+        "เพิ่มข้อความ error ที่เป็นมิตรขึ้นสำหรับ slug/path/home page/plan limits และเพิ่ม CTA ไปหน้า subscription เมื่อชน limit",
+        "ตรวจสอบ TypeScript ของ apps/web ผ่าน (tsc --noEmit)"
+      ],
+      "acceptanceCriteria": [
+        "ผู้ใช้ SME ไทยสามารถค้นหาและจัดการ page ได้รวดเร็วบนมือถือ",
+        "ไม่มี UI state ที่ไม่มีทางออกใน dashboard"
+      ]
+    },
+    {
+      "id": "dashboard-leads-view",
+      "title": "เพิ่มหน้าแสดงรายการ lead ใน dashboard",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "dashboard",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": ["forms-schema-and-submission"],
+      "scope": [
+        "แสดง lead ล่าสุดของแต่ละ site",
+        "ตัวกรองพื้นฐานตามวันที่และ page"
+      ],
+      "progressNotes": [
+        "เพิ่ม API endpoint ใหม่ GET /sites/:siteId/leads สำหรับดึง lead ล่าสุดพร้อมตัวกรอง page/date",
+        "สร้าง DTO query filter รองรับ pageId, from, to, limit และ validation ครบ",
+        "เพิ่ม logic ใน SitesService เพื่อ normalize lead contact fields (name/email/phone/message) และส่ง page context",
+        "สร้างหน้า dashboard leads ที่ /dashboard/leads",
+        "หน้าใหม่รองรับ site selector, page filter, date range filter และแสดง lead list แบบ mobile-friendly",
+        "แสดง context ของ page สำหรับแต่ละ lead (page title + path) ตาม acceptance criteria",
+        "เพิ่ม shortcut เมนู Leads ใน sidebar เพื่อเข้าถึงหน้าได้เร็ว",
+        "ตรวจสอบ typecheck ผ่านทั้ง apps/api และ apps/web"
+      ],
+      "acceptanceCriteria": [
+        "ผู้ใช้สามารถดู lead ใหม่และฟิลด์ติดต่อสำคัญได้",
+        "context ของ page มองเห็นได้สำหรับแต่ละ lead"
+      ]
+    },
+    {
+      "id": "dashboard-subscription-view",
+      "title": "สรุปหน้าจัดการ subscription",
+      "status": "done",
+      "priority": "medium",
+      "phase": "phase-3",
+      "epic": "dashboard",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": [
+        "billing-checkout-success-path",
+        "billing-failure-and-cancel-path"
+      ],
+      "scope": ["แสดงแผนปัจจุบันและวันต่ออายุ", "การดำเนินการอัปเกรดและยกเลิก"],
+      "progressNotes": [
+        "เพิ่มหน้า dashboard subscription ใหม่ที่ /dashboard/subscription",
+        "ดึงข้อมูลแผนปัจจุบันผ่าน GET /billing/subscription และแสดง plan/status/billing interval/renewal date",
+        "เพิ่มการเลือก workspace ผ่าน site selector เพื่อดูสถานะแผนของ workspace ที่ต้องการ",
+        "เพิ่มปุ่มดำเนินการอัปเกรด (ลิงก์ไป /subscription), ยกเลิกเมื่อสิ้นสุดรอบบิล, และเปิดใช้งานใหม่",
+        "เชื่อมต่อ API POST /billing/cancel และ POST /billing/reactivate พร้อมข้อความ feedback",
+        "อัปเดต sidebar ให้เมนู Subscription ชี้ไปที่ /dashboard/subscription",
+        "ตรวจสอบ TypeScript ของ apps/web ผ่าน (tsc --noEmit)"
+      ],
+      "acceptanceCriteria": [
+        "ผู้ใช้เข้าใจสถานะแผนได้โดยไม่ต้องติดต่อ support",
+        "เส้นทางอัปเกรดและยกเลิกเข้าถึงได้ด้วยคลิกเดียว"
+      ]
+    },
+    {
+      "id": "templates-mvp-pack",
+      "title": "เตรียม template เริ่มต้นสำหรับ MVP",
+      "status": "todo",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "templates",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": ["builder-sections-core"],
+      "scope": [
+        "Template seeds: สินค้า, บริการ, คลินิก, ร้านอาหาร",
+        "นำ template ไปใช้กับ site ใหม่ด้วยคลิกเดียว"
+      ],
+      "acceptanceCriteria": [
+        "ผู้ใช้ใหม่สามารถเริ่มจาก template ที่พร้อมใช้ได้",
+        "เนื้อหา template แก้ไขและเผยแพร่ได้"
+      ],
+      "progressNotes": [
+        "ปรับ priority ขึ้นเพื่อรองรับเป้าหมายทดลอง flow การสร้างเว็บไซต์จาก frontend ก่อน",
+        "ลดความสำคัญงาน lead/forms ชั่วคราวเพื่อเร่งเส้นทาง create-site จากฝั่งผู้ใช้"
+      ]
+    },
+    {
+      "id": "mobile-first-ux-pass",
+      "title": "ตรวจสอบ UX แบบ mobile-first สำหรับ flow MVP ทั้งหมด",
+      "status": "todo",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "quality",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "dashboard-sites-and-pages",
+        "dashboard-leads-view",
+        "dashboard-subscription-view"
+      ],
+      "scope": [
+        "ลงทะเบียน/เข้าสู่ระบบ",
+        "สร้าง/แก้ไข/เผยแพร่ page",
+        "ส่งฟอร์มและตรวจสอบ lead",
+        "อัปเกรดแผน"
+      ],
+      "acceptanceCriteria": [
+        "flow หลักทั้งหมดใช้งานได้บนโทรศัพท์โดยไม่ต้องเลื่อนแนวนอน",
+        "การกระทำหลักชัดเจนและกดได้ง่าย"
+      ]
+    },
+    {
+      "id": "performance-budget-pass",
+      "title": "ผ่าน baseline ประสิทธิภาพสำหรับ MVP",
+      "status": "todo",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "quality",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": ["publish-public-render"],
+      "scope": [
+        "ประสิทธิภาพการโหลดครั้งแรกของ public page",
+        "ความตอบสนองของ route ใน dashboard",
+        "หลีกเลี่ยง client bundle ขนาดใหญ่สำหรับ flow หลัก"
+      ],
+      "acceptanceCriteria": [
+        "Public page รู้สึกเร็วบนมือถือระดับกลาง",
+        "ไม่มี UI กระตุกใน core action"
+      ]
+    },
+    {
+      "id": "integration-test-suite-mvp",
+      "title": "สร้าง integration test suite สำหรับ MVP",
+      "status": "todo",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "quality",
+      "estimatePoints": 8,
+      "owner": "unassigned",
+      "dependsOn": [
+        "auth-production-hardening",
+        "billing-checkout-success-path",
+        "forms-schema-and-submission",
+        "publish-public-render"
+      ],
+      "scope": [
+        "ทดสอบ Auth flow",
+        "ทดสอบ Billing webhook",
+        "ทดสอบ CRUD ของ site/page",
+        "ทดสอบการส่ง form"
+      ],
+      "acceptanceCriteria": [
+        "flow MVP สำคัญมี automated regression coverage",
+        "test suite รันใน CI ได้ผลลัพธ์ที่เสถียร"
+      ]
+    },
+    {
+      "id": "staging-release-pipeline",
+      "title": "เตรียม pipeline release สำหรับ staging",
+      "status": "todo",
+      "priority": "medium",
+      "phase": "phase-3",
+      "epic": "release",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": ["integration-test-suite-mvp"],
+      "scope": [
+        "deploy flow ของ API, web และ worker",
+        "checklist environment variable",
+        "หมายเหตุการ rollback"
+      ],
+      "acceptanceCriteria": [
+        "คำสั่งเดียวหรือ pipeline เดียวสามารถ deploy staging ได้",
+        "ทีมสามารถตรวจสอบ MVP end-to-end บน staging ได้"
+      ]
+    },
+    {
+      "id": "mvp-uat-thai-sme",
+      "title": "รัน UAT checklist จากมุมมอง SME ไทย",
+      "status": "todo",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "release",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": ["mobile-first-ux-pass", "staging-release-pipeline"],
+      "scope": [
+        "ทดสอบแบบ task-based สำหรับผู้ใช้ที่ไม่ใช่นักเทคนิค",
+        "ความชัดเจนของ copy และข้อความ error",
+        "ความเข้าใจราคาและการอัปเกรด"
+      ],
+      "acceptanceCriteria": [
+        "ไม่มีความสับสนสำคัญใน onboarding และ publish flow",
+        "ปัญหา UAT อันดับต้นๆ ได้รับการแก้ไขหรือถูกเลื่อนออกไปอย่างชัดเจน"
+      ]
+    },
+    {
+      "id": "mvp-go-live-checklist",
+      "title": "สรุป checklist go-live สำหรับ MVP",
+      "status": "todo",
+      "priority": "critical",
+      "phase": "phase-3",
+      "epic": "release",
+      "estimatePoints": 2,
+      "owner": "unassigned",
+      "dependsOn": ["mvp-uat-thai-sme"],
+      "scope": [
+        "ตรวจสอบ production config",
+        "ตรวจสอบ monitoring และ alert",
+        "หมายเหตุสำรองข้อมูลและตอบสนองต่อเหตุการณ์"
+      ],
+      "acceptanceCriteria": [
+        "checklist launch ได้รับการอนุมัติ",
+        "MVP พร้อมสำหรับการเปิดตัวแบบควบคุม"
       ]
     }
   ]

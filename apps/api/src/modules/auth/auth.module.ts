@@ -7,12 +7,14 @@ import { AuthRepository } from "./auth.repository";
 import { AccessJwtStrategy } from "./strategies/access-jwt.strategy";
 import { EmailModule } from "../email/email.module";
 import { AccessJwtGuard } from "../../common/guards/access-jwt.guard";
+import { RedisModule } from "../redis/redis.module";
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: "jwt" }),
     JwtModule.register({}),
     EmailModule,
+    RedisModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, AuthRepository, AccessJwtStrategy, AccessJwtGuard],

@@ -148,4 +148,146 @@ export class BillingService {
       success: true,
     };
   }
+
+  async getCurrentSubscription(workspaceId: string, userId: string) {
+    const workspace = await this.billingRepository.findWorkspaceForUser(
+      workspaceId,
+      userId,
+    );
+
+    if (!workspace) {
+      throw new ForbiddenException("WORKSPACE_ACCESS_DENIED");
+    }
+
+    const subscription =
+      await this.billingRepository.getCurrentSubscriptionWithPlan(workspaceId);
+
+    if (!subscription) {
+      // Return a minimal free plan response if no subscription found
+      const freePlan = await this.billingRepository.findPlanByCode(
+        PlanCode.FREE,
+      );
+      return {
+        planCode: PlanCode.FREE,
+        planName: freePlan?.name || "Free",
+        status: "ACTIVE",
+        billingInterval: "MONTHLY",
+        currentPeriodStart: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+        latestPaymentStatus: null,
+      };
+    }
+
+    // Get latest payment to show failure status
+    const latestPayment = await this.billingRepository.getLatestPayment(
+      subscription.id,
+    );
+
+    return {
+      planCode: subscription.plan.code,
+      planName: subscription.plan.name,
+      status: subscription.status,
+      billingInterval: subscription.billingInterval,
+      currentPeriodStart:
+        subscription.currentPeriodStart?.toISOString() ?? null,
+      currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() ?? null,
+      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+      latestPaymentStatus: latestPayment?.status ?? null,
+    };
+  }
+
+  async reactivateSubscription(workspaceId: string, userId: string) {
+    const workspace = await this.billingRepository.findWorkspaceForUser(
+      workspaceId,
+      userId,
+    );
+
+    if (!workspace) {
+      throw new ForbiddenException("WORKSPACE_ACCESS_DENIED");
+    }
+
+    const current =
+      await this.billingRepository.findCurrentSubscription(workspaceId);
+
+    if (!current?.stripeSubscriptionId) {
+      throw new BadRequestException("NO_ACTIVE_PAID_SUBSCRIPTION");
+    }
+
+    if (!current.cancelAtPeriodEnd) {
+      throw new BadRequestException("SUBSCRIPTION_NOT_MARKED_FOR_CANCELLATION");
+    }
+
+    // Remove the cancel_at_period_end flag to reactivate the subscription
+    await this.stripeService.client.subscriptions.update(
+      current.stripeSubscriptionId,
+      {
+        cancel_at_period_end: false,
+      },
+    );
+
+    // Update DB to reflect the change
+    await this.billingRepository.updateSubscriptionById(current.id, {
+      cancelAtPeriodEnd: false,
+    });
+
+    return {
+      success: true,
+      message: "Subscription reactivated successfully",
+    };
+  }
+
+  async getPlanUsage(workspaceId: string, userId: string) {
+    const workspace = await this.billingRepository.findWorkspaceForUser(
+      workspaceId,
+      userId,
+    );
+
+    if (!workspace) {
+      throw new ForbiddenException("WORKSPACE_ACCESS_DENIED");
+    }
+
+    const subscription =
+      await this.billingRepository.getCurrentSubscriptionWithPlan(workspaceId);
+
+    const plan =
+      subscription?.plan ||
+      (await this.billingRepository.findPlanByCode(PlanCode.FREE))!;
+
+    // Count available resources for this workspace
+    const siteCount =
+      await this.billingRepository.countWorkspaceSites(workspaceId);
+
+    // For pages, we need to count across all sites in workspace
+    const pageStats =
+      await this.billingRepository.countWorkspacePages(workspaceId);
+
+    return {
+      planCode: plan.code,
+      planName: plan.name,
+      limits: {
+        maxSites: plan.maxSites,
+        maxPagesPerSite: plan.maxPagesPerSite,
+        maxSectionsPerPage: plan.maxSectionsPerPage,
+        maxProducts: plan.maxProducts,
+        maxPosts: plan.maxPosts,
+        allowCustomDomain: plan.allowCustomDomain,
+        allowForms: plan.allowForms,
+        allowAnalytics: plan.allowAnalytics,
+        allowCustomCode: plan.allowCustomCode,
+        allowEcommerce: plan.allowEcommerce,
+        allowBlog: plan.allowBlog,
+        allowNews: plan.allowNews,
+      },
+      usage: {
+        sites: siteCount,
+        pages: pageStats.total,
+        averagePagesPerSite:
+          pageStats.total > 0
+            ? Math.ceil(pageStats.total / Math.max(siteCount, 1))
+            : 0,
+        maxPagesReachedSites: pageStats.siteIds || [],
+      },
+    };
+  }
 }

@@ -120,6 +120,39 @@ export default function PageCrudDashboard({
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredPages = useMemo(() => {
+    if (!normalizedQuery) {
+      return pages;
+    }
+
+    return pages.filter((page) => {
+      const haystack =
+        `${page.title} ${page.slug} ${page.path ?? ""}`.toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [normalizedQuery, pages]);
+
+  function toFriendlyError(message: string) {
+    switch (message) {
+      case "PAGE_PATH_ALREADY_EXISTS":
+        return "Path นี้ถูกใช้งานแล้ว กรุณาเปลี่ยน path ใหม่";
+      case "HOME_PAGE_DELETE_NOT_ALLOWED":
+        return "ไม่สามารถลบหน้า Home ได้ ให้ตั้งหน้าอื่นเป็น Home ก่อน";
+      case "HOME_PAGE_REQUIRED":
+        return "ต้องมีหน้า Home อย่างน้อย 1 หน้า";
+      case "PAGE_LIMIT_REACHED":
+        return "จำนวนหน้าเต็มตามแพ็กเกจแล้ว กรุณาอัปเกรดหรือเลือกลบหน้าที่ไม่ใช้";
+      case "SITE_LIMIT_REACHED":
+        return "จำนวนเว็บไซต์เต็มตามแพ็กเกจแล้ว กรุณาอัปเกรดแพ็กเกจ";
+      case "SECTION_LIMIT_REACHED":
+        return "จำนวน section เต็มตามแพ็กเกจแล้ว กรุณาอัปเกรดแพ็กเกจ";
+      default:
+        return message;
+    }
+  }
 
   useEffect(() => {
     const savedApiBaseUrl = window.localStorage.getItem(
@@ -210,7 +243,7 @@ export default function PageCrudDashboard({
       if (!response.ok) {
         throw new Error(
           typeof payload === "object" && payload && "message" in payload
-            ? String(payload.message)
+            ? toFriendlyError(String(payload.message))
             : `Request failed with status ${response.status}`,
         );
       }
@@ -249,7 +282,7 @@ export default function PageCrudDashboard({
       if (!response.ok) {
         throw new Error(
           typeof payload === "object" && payload && "message" in payload
-            ? String(payload.message)
+            ? toFriendlyError(String(payload.message))
             : `Request failed with status ${response.status}`,
         );
       }
@@ -335,7 +368,7 @@ export default function PageCrudDashboard({
       if (!response.ok) {
         throw new Error(
           typeof payload === "object" && payload && "message" in payload
-            ? String(payload.message)
+            ? toFriendlyError(String(payload.message))
             : `Request failed with status ${response.status}`,
         );
       }
@@ -387,7 +420,7 @@ export default function PageCrudDashboard({
       if (!response.ok) {
         throw new Error(
           typeof payload === "object" && payload && "message" in payload
-            ? String(payload.message)
+            ? toFriendlyError(String(payload.message))
             : `Request failed with status ${response.status}`,
         );
       }
@@ -427,10 +460,22 @@ export default function PageCrudDashboard({
             type="button"
             onClick={loadPages}
             disabled={isLoading}
-            className="rounded-lg bg-black px-3 py-2 text-sm font-medium text-white disabled:opacity-60 dark:bg-white dark:text-black"
+            className="w-full rounded-lg bg-black px-3 py-2 text-sm font-medium text-white disabled:opacity-60 sm:w-auto dark:bg-white dark:text-black"
           >
             {isLoading ? "Loading..." : "Refresh"}
           </button>
+        </div>
+
+        <div className="mb-4 grid gap-2 md:grid-cols-[1fr_auto]">
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            className="rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10 dark:bg-transparent"
+            placeholder="Search by title, slug, or path"
+          />
+          <div className="rounded-lg border border-black/10 px-3 py-2 text-sm text-black/60 dark:border-white/10 dark:text-white/70">
+            Showing {filteredPages.length}/{pages.length}
+          </div>
         </div>
 
         {showConnectionFields && (
@@ -494,13 +539,14 @@ export default function PageCrudDashboard({
         )}
 
         <div className="mt-5 space-y-3">
-          {pages.length === 0 ? (
+          {filteredPages.length === 0 ? (
             <div className="rounded-xl border border-dashed border-black/15 p-4 text-sm text-black/60 dark:border-white/15 dark:text-white/70">
-              No pages loaded yet. Click <strong>Refresh</strong> after entering
-              a site.
+              {pages.length === 0
+                ? "No pages yet. Create your first page using the form on the right."
+                : "No pages match your search. Try another keyword."}
             </div>
           ) : (
-            pages.map((page) => (
+            filteredPages.map((page) => (
               <article
                 key={page.id}
                 className="rounded-xl border border-black/10 p-4 dark:border-white/10"
@@ -533,18 +579,18 @@ export default function PageCrudDashboard({
                     </p>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex w-full gap-2 sm:w-auto">
                     <button
                       type="button"
                       onClick={() => loadPageDetail(page.id)}
-                      className="rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/10"
+                      className="flex-1 rounded-lg border border-black/10 px-3 py-2 text-sm sm:flex-none dark:border-white/10"
                     >
                       Edit
                     </button>
                     <button
                       type="button"
                       onClick={() => handleDelete(page)}
-                      className="rounded-lg border border-red-200 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:text-red-200"
+                      className="flex-1 rounded-lg border border-red-200 px-3 py-2 text-sm text-red-700 sm:flex-none dark:border-red-900/60 dark:text-red-200"
                     >
                       Delete
                     </button>
@@ -554,6 +600,21 @@ export default function PageCrudDashboard({
             ))
           )}
         </div>
+
+        {errorMessage?.includes("แพ็กเกจ") && (
+          <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300">
+            <p className="font-medium">Need more limits?</p>
+            <p className="mt-1">
+              อัปเกรดแพ็กเกจเพื่อสร้างเว็บไซต์/หน้าหรือ section เพิ่มได้ทันที
+            </p>
+            <a
+              href="/dashboard/subscription"
+              className="mt-2 inline-flex font-medium text-amber-900 underline dark:text-amber-200"
+            >
+              Go to Subscription
+            </a>
+          </div>
+        )}
       </section>
 
       <section className="rounded-2xl border border-black/10 bg-white p-5 shadow-sm dark:border-white/10 dark:bg-black/20">

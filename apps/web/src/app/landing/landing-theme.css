@@ -1,0 +1,96 @@
+.landing-theme {
+  --landing-ignite-orange: #FF8C00;
+  --landing-solar-flare: #FFD700;
+  --landing-deep-space: #1A1C23;
+  --landing-surface-gray: #2D2F39;
+  --landing-cloud-white: #F9FAFB;
+  --landing-slate-gray: #9CA3AF;
+  --landing-card-border: #3F4251;
+  --landing-hot-orange: #FF4500;
+  --landing-bg: var(--landing-deep-space);
+  --landing-bg-soft: #232632;
+  --landing-surface: var(--landing-surface-gray);
+  --landing-surface-soft: #353846;
+  --landing-border: var(--landing-card-border);
+  --landing-text: var(--landing-cloud-white);
+  --landing-muted: var(--landing-slate-gray);
+  --landing-brand: var(--landing-ignite-orange);
+  --landing-brand-hover: #E67E00;
+  --landing-brand-soft: #3A3121;
+  font-family: "Kanit", "Noto Sans Thai", sans-serif;
+  line-height: 1.7;
+  background: radial-gradient(1200px 420px at 68% -10%, rgba(255, 140, 0, 0.22), transparent 60%),
+    var(--landing-bg);
+  color: var(--landing-text);
+}
+
+.landing-brand {
+  color: var(--landing-brand);
+}
+
+.landing-muted {
+  color: var(--landing-muted);
+}
+
+.landing-border {
+  border-color: var(--landing-border);
+}
+
+.landing-panel {
+  background: var(--landing-surface);
+  border-color: var(--landing-border);
+}
+
+.landing-panel-soft {
+  background: var(--landing-surface-soft);
+}
+
+.landing-light-section {
+  background: var(--landing-bg-soft);
+  color: var(--landing-text);
+}
+
+.landing-light-muted {
+  color: var(--landing-muted);
+}
+
+.landing-brand-soft-bg {
+  background: var(--landing-brand-soft);
+  color: var(--landing-solar-flare);
+}
+
+.landing-btn-primary {
+  background: linear-gradient(to right, var(--landing-ignite-orange), var(--landing-hot-orange));
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.landing-btn-primary:hover {
+  filter: brightness(1.03);
+  box-shadow: 0 0 15px rgba(255, 140, 0, 0.4);
+  transform: translateY(-1px);
+}
+
+.landing-btn-outline {
+  border-color: var(--landing-border);
+  color: var(--landing-text);
+}
+
+.landing-btn-outline:hover {
+  border-color: var(--landing-brand);
+}
+
+.landing-pill {
+  border-color: var(--landing-brand);
+  color: var(--landing-text);
+}
+
+.landing-pill:hover {
+  background: rgba(255, 140, 0, 0.12);
+}
+
+.landing-glow {
+  background: rgba(255, 140, 0, 0.44);
+}

@@ -1,35 +1,36 @@
 // app/page.tsx
 import Link from "next/link";
+import "./landing-theme.css";
 
 export default function Home() {
   return (
-    <main className="bg-[#0B0B0F] text-white min-h-screen font-sans selection:bg-orange-500 selection:text-white">
+    <main className="landing-theme min-h-screen font-sans selection:bg-[var(--landing-brand)] selection:text-white">
       {/* 1. HERO SECTION */}
       <section className="relative pt-24 pb-20 px-6 max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-12 overflow-hidden">
         <div className="absolute right-6 top-6 z-20 flex gap-3">
           <Link
             href="/login"
-            className="rounded-xl border border-gray-700 px-4 py-2 text-sm font-semibold text-gray-200 transition-colors hover:border-white hover:text-white"
+            className="landing-btn-outline rounded-xl border px-4 py-2 text-sm font-semibold transition-colors"
           >
             เข้าสู่ระบบ
           </Link>
           <Link
             href="/register"
-            className="rounded-xl bg-[#FF5A1F] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#e04a15]"
+            className="landing-btn-primary rounded-xl px-4 py-2 text-sm font-semibold"
           >
             สมัครใช้งาน
           </Link>
         </div>
         {/* Background Glow */}
-        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-orange-500/20 blur-[120px] rounded-full -z-10 pointer-events-none"></div>
+        <div className="landing-glow absolute top-0 left-0 h-[500px] w-[500px] rounded-full blur-[120px] -z-10 pointer-events-none"></div>
 
         {/* Text Content */}
         <div className="flex-1 text-center md:text-left z-10">
           <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-4">
             สร้างเว็บไซต์ <br />
-            <span className="text-[#FF5A1F]">ปิดการขายใน 5 นาที!</span>
+            <span className="landing-brand">ปิดการขายใน 5 นาที!</span>
           </h1>
-          <p className="text-gray-400 text-lg mb-8 max-w-lg mx-auto md:mx-0">
+          <p className="landing-muted text-lg mb-8 max-w-lg mx-auto md:mx-0">
             แพลตฟอร์มทำเว็บสำเร็จรูปสำหรับร้านค้าและ SME (FinnWeb is a
             subscription-based SaaS platform that helps you build landing pages
             and websites without coding.)
@@ -38,20 +39,20 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4">
             <Link
               href="/register?plan=BASIC"
-              className="w-full rounded-xl bg-gradient-to-r from-[#FF5A1F] to-[#ff7b4b] px-8 py-4 text-center text-lg font-bold shadow-[0_0_20px_rgba(255,90,31,0.4)] transition-all hover:from-[#e04a15] hover:to-[#ff5a1f] sm:w-auto"
+              className="landing-btn-primary w-full rounded-xl px-8 py-4 text-center text-lg font-bold shadow-[0_0_20px_color-mix(in_oklch,var(--landing-brand)_36%,transparent)] transition-all sm:w-auto"
             >
               เริ่มต้นเพียง 250 บาท/เดือน
             </Link>
             <div className="flex w-full gap-4 sm:w-auto">
               <Link
                 href="/register"
-                className="flex-1 rounded-xl border border-gray-600 px-6 py-4 text-center font-semibold transition-colors hover:border-white sm:flex-none"
+                className="landing-btn-outline flex-1 rounded-xl border px-6 py-4 text-center font-semibold transition-colors sm:flex-none"
               >
                 เริ่มใช้งานฟรี
               </Link>
               <Link
                 href="/dashboard"
-                className="flex-1 rounded-xl border border-gray-600 px-6 py-4 text-center font-semibold transition-colors hover:border-white sm:flex-none"
+                className="landing-btn-outline flex-1 rounded-xl border px-6 py-4 text-center font-semibold transition-colors sm:flex-none"
               >
                 ดูตัวอย่างเว็บไซต์
               </Link>
@@ -61,10 +62,10 @@ export default function Home() {
 
         {/* Hero Image Placeholder */}
         <div className="flex-1 w-full relative z-10">
-          <div className="aspect-video bg-gradient-to-br from-gray-800 to-[#141419] rounded-2xl border border-gray-700 shadow-2xl flex items-center justify-center relative overflow-hidden">
+          <div className="landing-panel aspect-video rounded-2xl border shadow-2xl flex items-center justify-center relative overflow-hidden">
             {/* Replace with your actual dashboard/laptop image */}
             <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2426&auto=format&fit=crop')] bg-cover bg-center opacity-40 mix-blend-overlay"></div>
-            <p className="text-gray-400 font-semibold z-10">
+            <p className="landing-muted font-semibold z-10">
               Hero Image / Dashboard Mockup
             </p>
           </div>
@@ -74,17 +75,17 @@ export default function Home() {
       {/* 2. FEATURES SECTION (Light Mode) */}
       <section
         id="features"
-        className="bg-white text-[#0B0B0F] py-24 px-6 relative"
+        className="landing-light-section py-24 px-6 relative"
       >
         <div className="max-w-5xl mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">
-            ทำเว็บสวย ขายดี <span className="text-[#FF5A1F]">ในไม่กี่คลิก</span>
+            ทำเว็บสวย ขายดี <span className="landing-brand">ในไม่กี่คลิก</span>
           </h2>
 
           <div className="grid md:grid-cols-3 gap-12 text-center">
             {/* Feature 1 */}
             <div className="flex flex-col items-center">
-              <div className="w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center mb-6 text-[#FF5A1F]">
+              <div className="landing-brand-soft-bg w-20 h-20 rounded-full flex items-center justify-center mb-6">
                 <svg
                   className="w-10 h-10"
                   fill="none"
@@ -101,14 +102,14 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-3">สร้างง่ายใน 5 นาที</h3>
-              <p className="text-gray-600">
+              <p className="landing-light-muted">
                 เทมเพลตพร้อมใช้ ปรับแต่งได้ตามใจคุณ
               </p>
             </div>
 
             {/* Feature 2 */}
             <div className="flex flex-col items-center">
-              <div className="w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center mb-6 text-[#FF5A1F]">
+              <div className="landing-brand-soft-bg w-20 h-20 rounded-full flex items-center justify-center mb-6">
                 <svg
                   className="w-10 h-10"
                   fill="none"
@@ -127,14 +128,14 @@ export default function Home() {
               <h3 className="text-xl font-bold mb-3">
                 พร้อมเชื่อมต่อการชำระเงิน
               </h3>
-              <p className="text-gray-600">
+              <p className="landing-light-muted">
                 รองรับการรูดบัตร ตัดบัตรเครดิตทุกธนาคาร
               </p>
             </div>
 
             {/* Feature 3 */}
             <div className="flex flex-col items-center">
-              <div className="w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center mb-6 text-[#FF5A1F]">
+              <div className="landing-brand-soft-bg w-20 h-20 rounded-full flex items-center justify-center mb-6">
                 <svg
                   className="w-10 h-10"
                   fill="none"
@@ -151,7 +152,7 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-bold mb-3">รองรับทุกอุปกรณ์</h3>
-              <p className="text-gray-600">
+              <p className="landing-light-muted">
                 แสดงผลสวยงามทุกหน้าจอ มือถือ แท็บเล็ต
               </p>
             </div>
@@ -171,47 +172,47 @@ export default function Home() {
 
         <div className="max-w-6xl mx-auto relative z-10">
           <h2 className="text-3xl md:text-4xl font-bold mb-2">
-            ฟีเจอร์เด็ด <span className="text-[#FF5A1F]">เพื่อการขาย</span>
+            ฟีเจอร์เด็ด <span className="landing-brand">เพื่อการขาย</span>
           </h2>
-          <p className="text-gray-400 mb-16">
+          <p className="landing-muted mb-16">
             เลือกแพ็กเกจที่ใช่ สำหรับธุรกิจคุณ
           </p>
 
           <div className="grid md:grid-cols-3 gap-8 items-end max-w-5xl mx-auto">
             {/* Basic Plan */}
-            <div className="bg-[#141419] rounded-2xl border border-gray-800 text-left overflow-hidden">
-              <div className="p-8 pb-6 border-b border-gray-800">
+            <div className="landing-panel rounded-2xl border text-left overflow-hidden">
+              <div className="p-8 pb-6 border-b landing-border">
                 <h3 className="text-2xl font-bold mb-2">⚡ Basic</h3>
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-bold">250</span>
-                  <span className="text-gray-400">บาท/เดือน</span>
+                  <span className="landing-muted">บาท/เดือน</span>
                 </div>
               </div>
-              <div className="p-8 bg-[#1A1A24] space-y-4">
+              <div className="landing-panel-soft p-8 space-y-4">
                 <p className="flex items-center gap-3">
-                  <span className="text-[#FF5A1F]">✔</span> 1 เว็บไซต์
+                  <span className="landing-brand">✔</span> 1 เว็บไซต์
                 </p>
                 <p className="flex items-center gap-3">
-                  <span className="text-[#FF5A1F]">✔</span> รองรับทุกอุปกรณ์
+                  <span className="landing-brand">✔</span> รองรับทุกอุปกรณ์
                 </p>
                 <p className="flex items-center gap-3">
-                  <span className="text-[#FF5A1F]">✔</span>{" "}
+                  <span className="landing-brand">✔</span>{" "}
                   เชื่อมต่อเครื่องมือการตลาด
                 </p>
                 <Link
                   href="/register?plan=BASIC"
-                  className="mt-6 block w-full rounded-xl border border-[#FF5A1F] py-3 text-center font-bold text-white transition-colors hover:bg-[#FF5A1F]"
+                  className="landing-pill mt-6 block w-full rounded-xl border py-3 text-center font-bold transition-colors"
                 >
                   เลือก Basic
                 </Link>
               </div>
             </div>
 
-            {/* Pro Plan (Highlighted) */}
-            <div className="bg-[#141419] rounded-2xl border-2 border-[#FF5A1F] text-left relative transform md:-translate-y-4 shadow-[0_0_30px_rgba(255,90,31,0.2)] overflow-hidden">
-              <div className="bg-gradient-to-r from-[#FF5A1F] to-[#ff7b4b] p-8 pb-6 text-center">
+            {/* Business Plan (Highlighted) */}
+            <div className="landing-panel rounded-2xl border-2 landing-border text-left relative transform md:-translate-y-4 shadow-[0_0_30px_color-mix(in_oklch,var(--landing-brand)_20%,transparent)] overflow-hidden">
+              <div className="landing-btn-primary p-8 pb-6 text-center">
                 <h3 className="text-2xl font-bold mb-2 text-white">
-                  Pro{" "}
+                  Business{" "}
                   <span className="text-sm font-normal bg-white/20 px-2 py-1 rounded ml-2">
                     แนะนำ
                   </span>
@@ -221,51 +222,51 @@ export default function Home() {
                   <span className="text-white/80">บาท/เดือน</span>
                 </div>
               </div>
-              <div className="p-8 bg-[#1A1A24] space-y-4">
+              <div className="landing-panel-soft p-8 space-y-4">
                 <p className="flex items-center gap-3">
-                  <span className="text-[#FF5A1F]">✔</span> 3 เว็บไซต์
+                  <span className="landing-brand">✔</span> 3 เว็บไซต์
                 </p>
                 <p className="flex items-center gap-3">
-                  <span className="text-[#FF5A1F]">✔</span> รองรับทุกอุปกรณ์
+                  <span className="landing-brand">✔</span> รองรับทุกอุปกรณ์
                 </p>
                 <p className="flex items-center gap-3">
-                  <span className="text-[#FF5A1F]">✔</span>{" "}
+                  <span className="landing-brand">✔</span>{" "}
                   เชื่อมต่อเครื่องมือการตลาดครบชุด
                 </p>
                 <Link
                   href="/register?plan=BUSINESS"
-                  className="mt-6 block w-full rounded-xl bg-[#FF5A1F] py-3 text-center font-bold text-white transition-colors hover:bg-[#e04a15]"
+                  className="landing-btn-primary mt-6 block w-full rounded-xl py-3 text-center font-bold"
                 >
                   เริ่มใช้งานทันที
                 </Link>
               </div>
             </div>
 
-            {/* Ultimate Plan */}
-            <div className="bg-[#141419] rounded-2xl border border-gray-800 text-left overflow-hidden">
-              <div className="p-8 pb-6 border-b border-gray-800">
-                <h3 className="text-2xl font-bold mb-2">Ultimate</h3>
+            {/* Pro Plan */}
+            <div className="landing-panel rounded-2xl border text-left overflow-hidden">
+              <div className="p-8 pb-6 border-b landing-border">
+                <h3 className="text-2xl font-bold mb-2">Pro</h3>
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-bold">990</span>
-                  <span className="text-gray-400">บาท/เดือน</span>
+                  <span className="landing-muted">บาท/เดือน</span>
                 </div>
               </div>
-              <div className="p-8 bg-[#1A1A24] space-y-4">
+              <div className="landing-panel-soft p-8 space-y-4">
                 <p className="flex items-center gap-3">
-                  <span className="text-[#FF5A1F]">✔</span> ไม่จำกัดเว็บไซต์
+                  <span className="landing-brand">✔</span> ไม่จำกัดเว็บไซต์
                 </p>
                 <p className="flex items-center gap-3">
-                  <span className="text-[#FF5A1F]">✔</span> รองรับทุกอุปกรณ์
+                  <span className="landing-brand">✔</span> รองรับทุกอุปกรณ์
                 </p>
                 <p className="flex items-center gap-3">
-                  <span className="text-[#FF5A1F]">✔</span> ผู้ดูแลระบบส่วนตัว
+                  <span className="landing-brand">✔</span> ผู้ดูแลระบบส่วนตัว
                   (VIP Support)
                 </p>
                 <Link
                   href="/register?plan=PRO"
-                  className="mt-6 block w-full rounded-xl border border-[#FF5A1F] py-3 text-center font-bold text-white transition-colors hover:bg-[#FF5A1F]"
+                  className="landing-pill mt-6 block w-full rounded-xl border py-3 text-center font-bold transition-colors"
                 >
-                  เลือก Ultimate
+                  เลือก Pro
                 </Link>
               </div>
             </div>
@@ -344,26 +345,26 @@ export default function Home() {
       </section>
 
       {/* 5. BOTTOM CTA SECTION */}
-      <section className="py-24 px-6 text-center relative overflow-hidden bg-gradient-to-b from-[#0B0B0F] to-[#1a100c]">
+      <section className="py-24 px-6 text-center relative overflow-hidden bg-gradient-to-b from-[var(--landing-bg)] to-[color-mix(in_oklch,var(--landing-bg)_80%,var(--landing-brand)_20%)]">
         {/* Glow Effects */}
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[1000px] h-[300px] bg-orange-500/20 blur-[150px] rounded-[100%] pointer-events-none"></div>
 
         <div className="relative z-10 max-w-3xl mx-auto">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            พร้อมสร้าง <span className="text-[#FF5A1F]">เว็บไซต์ขายดี</span>{" "}
+            พร้อมสร้าง <span className="landing-brand">เว็บไซต์ขายดี</span>{" "}
             หรือยัง?
           </h2>
-          <p className="text-gray-400 text-lg mb-10">
+          <p className="landing-muted text-lg mb-10">
             เริ่มต้นทดลองใช้ฟรี ไม่มีค่าใช้จ่ายแอบแฝง
           </p>
           <Link
             href="/register"
-            className="inline-block rounded-xl bg-[#FF5A1F] px-12 py-5 text-xl font-bold text-white shadow-[0_0_20px_rgba(255,90,31,0.5)] transition-colors hover:bg-[#e04a15]"
+            className="landing-btn-primary inline-block rounded-xl px-12 py-5 text-xl font-bold shadow-[0_0_20px_color-mix(in_oklch,var(--landing-brand)_50%,transparent)]"
           >
             เริ่มใช้งานฟรี
           </Link>
 
-          <div className="mt-12 flex justify-center items-center gap-6 text-gray-400 text-sm">
+          <div className="landing-muted mt-12 flex justify-center items-center gap-6 text-sm">
             <span className="flex items-center gap-2">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-6h2v6zm-1-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm5 7h-2v-3c0-.55-.45-1-1-1s-1 .45-1 1v3h-2v-6h2v1.1c.36-.67 1.2-1.1 2-1.1 1.66 0 3 1.34 3 3v4z" />
@@ -381,7 +382,7 @@ export default function Home() {
       </section>
 
       {/* 6. FOOTER */}
-      <footer className="border-t border-gray-800 bg-[#0B0B0F] py-8 px-6 text-center text-sm text-gray-500 relative z-10">
+      <footer className="landing-border border-t bg-[var(--landing-bg)] py-8 px-6 text-center text-sm landing-muted relative z-10">
         <div className="flex flex-wrap justify-center gap-6 mb-4">
           <Link href="/landing" className="hover:text-white transition-colors">
             หน้าแรก
