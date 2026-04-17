@@ -9,7 +9,11 @@ import { EmailModule } from "../email/email.module";
 import { AccessJwtGuard } from "../../common/guards/access-jwt.guard";
 
 @Module({
-  imports: [PassportModule.register({ defaultStrategy: "jwt" }), JwtModule.register({}), EmailModule],
+  imports: [
+    PassportModule.register({ defaultStrategy: "jwt" }),
+    JwtModule.register({}),
+    EmailModule,
+  ],
   controllers: [AuthController],
   providers: [AuthService, AuthRepository, AccessJwtStrategy, AccessJwtGuard],
   exports: [AuthService],
