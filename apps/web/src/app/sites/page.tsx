@@ -15,9 +15,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  buildApiUrl,
   DEFAULT_API_BASE_URL,
-  readApiResponse,
+  fetchApiWithTokenRefresh,
 } from "@/lib/api-client";
 import {
   persistAuthState,
@@ -72,14 +71,32 @@ export default function SitesPage() {
       setErrorMessage(null);
 
       try {
-        const response = await fetch(buildApiUrl(apiBaseUrl, "/sites"), {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
+        const {
+          response,
+          payload,
+          authState: nextAuthState,
+        } = await fetchApiWithTokenRefresh({
+          apiBaseUrl,
+          path: "/sites",
+          init: {
+            cache: "no-store",
           },
-          cache: "no-store",
         });
 
-        const payload = await readApiResponse(response);
+        if (
+          nextAuthState.accessToken !== authState.accessToken ||
+          nextAuthState.refreshToken !== authState.refreshToken
+        ) {
+          setAuthState((current) => ({
+            ...current,
+            accessToken: nextAuthState.accessToken,
+            refreshToken: nextAuthState.refreshToken,
+          }));
+        }
+
+        if (response.status === 401 && !nextAuthState.refreshToken) {
+          setAuthState({});
+        }
 
         if (!response.ok) {
           throw new Error(
@@ -125,7 +142,14 @@ export default function SitesPage() {
         setIsLoading(false);
       }
     },
-    [accessToken, apiBaseUrl, selectedSiteId, workspaceId],
+    [
+      accessToken,
+      apiBaseUrl,
+      authState.accessToken,
+      authState.refreshToken,
+      selectedSiteId,
+      workspaceId,
+    ],
   );
 
   useEffect(() => {
@@ -169,20 +193,36 @@ export default function SitesPage() {
     setErrorMessage(null);
 
     try {
-      const response = await fetch(buildApiUrl(apiBaseUrl, "/sites"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
+      const {
+        response,
+        payload,
+        authState: nextAuthState,
+      } = await fetchApiWithTokenRefresh({
+        apiBaseUrl,
+        path: "/sites",
+        init: {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: newSiteName.trim(),
+            slug: newSiteSlug.trim() || undefined,
+            workspaceId: workspaceId || undefined,
+          }),
         },
-        body: JSON.stringify({
-          name: newSiteName.trim(),
-          slug: newSiteSlug.trim() || undefined,
-          workspaceId: workspaceId || undefined,
-        }),
       });
 
-      const payload = await readApiResponse(response);
+      if (
+        nextAuthState.accessToken !== authState.accessToken ||
+        nextAuthState.refreshToken !== authState.refreshToken
+      ) {
+        setAuthState((current) => ({
+          ...current,
+          accessToken: nextAuthState.accessToken,
+          refreshToken: nextAuthState.refreshToken,
+        }));
+      }
 
       if (!response.ok) {
         throw new Error(

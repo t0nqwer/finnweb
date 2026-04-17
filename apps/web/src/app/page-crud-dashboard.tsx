@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { fetchApiWithTokenRefresh } from "@/lib/api-client";
 
 const DEFAULT_API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api";
@@ -97,25 +98,8 @@ function toFormState(page?: PageRecord): FormState {
   };
 }
 
-function getHeaders(token: string): HeadersInit {
-  return {
-    "Content-Type": "application/json",
-    ...(token.trim() ? { Authorization: `Bearer ${token.trim()}` } : {}),
-  };
-}
-
 function normalizeApiBaseUrl(value: string): string {
   return value.trim().replace(/\/$/, "");
-}
-
-async function readResponse(response: Response) {
-  const contentType = response.headers.get("content-type") ?? "";
-
-  if (contentType.includes("application/json")) {
-    return response.json();
-  }
-
-  return response.text();
 }
 
 export default function PageCrudDashboard({
@@ -191,6 +175,20 @@ export default function PageCrudDashboard({
     return Boolean(normalizeApiBaseUrl(apiBaseUrl) && siteId.trim());
   }, [apiBaseUrl, siteId]);
 
+  async function fetchWithRefresh(path: string, init?: RequestInit) {
+    const { response, payload, authState } = await fetchApiWithTokenRefresh({
+      apiBaseUrl,
+      path,
+      init,
+    });
+
+    if (authState.accessToken && authState.accessToken !== token) {
+      setToken(authState.accessToken);
+    }
+
+    return { response, payload };
+  }
+
   async function loadPages() {
     if (!canQueryApi) {
       setErrorMessage("Enter an API base URL and site ID first.");
@@ -202,15 +200,12 @@ export default function PageCrudDashboard({
     setStatusMessage(null);
 
     try {
-      const response = await fetch(
-        `${normalizeApiBaseUrl(apiBaseUrl)}/sites/${siteId.trim()}/pages`,
+      const { response, payload } = await fetchWithRefresh(
+        `/sites/${siteId.trim()}/pages`,
         {
-          headers: getHeaders(token),
           cache: "no-store",
         },
       );
-
-      const payload = await readResponse(response);
 
       if (!response.ok) {
         throw new Error(
@@ -244,15 +239,12 @@ export default function PageCrudDashboard({
     setStatusMessage(null);
 
     try {
-      const response = await fetch(
-        `${normalizeApiBaseUrl(apiBaseUrl)}/sites/${siteId.trim()}/pages/${pageId}`,
+      const { response, payload } = await fetchWithRefresh(
+        `/sites/${siteId.trim()}/pages/${pageId}`,
         {
-          headers: getHeaders(token),
           cache: "no-store",
         },
       );
-
-      const payload = await readResponse(response);
 
       if (!response.ok) {
         throw new Error(
@@ -327,18 +319,18 @@ export default function PageCrudDashboard({
     setStatusMessage(null);
 
     try {
-      const response = await fetch(
+      const { response, payload } = await fetchWithRefresh(
         editingPageId
-          ? `${normalizeApiBaseUrl(apiBaseUrl)}/sites/${siteId.trim()}/pages/${editingPageId}`
-          : `${normalizeApiBaseUrl(apiBaseUrl)}/sites/${siteId.trim()}/pages`,
+          ? `/sites/${siteId.trim()}/pages/${editingPageId}`
+          : `/sites/${siteId.trim()}/pages`,
         {
           method: editingPageId ? "PATCH" : "POST",
-          headers: getHeaders(token),
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify(buildPayload()),
         },
       );
-
-      const payload = await readResponse(response);
 
       if (!response.ok) {
         throw new Error(
@@ -385,15 +377,12 @@ export default function PageCrudDashboard({
     setStatusMessage(null);
 
     try {
-      const response = await fetch(
-        `${normalizeApiBaseUrl(apiBaseUrl)}/sites/${siteId.trim()}/pages/${page.id}`,
+      const { response, payload } = await fetchWithRefresh(
+        `/sites/${siteId.trim()}/pages/${page.id}`,
         {
           method: "DELETE",
-          headers: getHeaders(token),
         },
       );
-
-      const payload = await readResponse(response);
 
       if (!response.ok) {
         throw new Error(

@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  Inject,
   Ip,
   Post,
   Req,
@@ -30,7 +32,7 @@ import { FastifyRequest } from "fastify/types/request";
 @ApiTags("Auth")
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
   @ApiOperation({ summary: "Register new user" })
   @ApiBody({ type: RegisterDto })
@@ -183,6 +185,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 401, description: "Invalid current password" })
   @UseGuards(AccessJwtGuard)
+  @HttpCode(200)
   @Post("change-password")
   changePassword(
     @CurrentUser("sub") userId: string,
@@ -204,6 +207,7 @@ export class AuthController {
     },
   })
   @Public()
+  @HttpCode(200)
   @Post("forgot-password")
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.authService.forgotPassword(dto);
@@ -226,6 +230,7 @@ export class AuthController {
     description: "Invalid or expired reset token",
   })
   @Public()
+  @HttpCode(200)
   @Post("reset-password")
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
@@ -244,6 +249,7 @@ export class AuthController {
     },
   })
   @UseGuards(AccessJwtGuard)
+  @HttpCode(200)
   @Post("send-verification-email")
   sendVerificationEmail(@CurrentUser("sub") userId: string) {
     return this.authService.sendVerificationEmail(userId);
@@ -266,6 +272,7 @@ export class AuthController {
     description: "Invalid or expired verification token",
   })
   @Public()
+  @HttpCode(200)
   @Post("verify-email")
   verifyEmail(@Body() dto: VerifyEmailDto) {
     return this.authService.verifyEmail(dto);

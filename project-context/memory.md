@@ -1,0 +1,2 @@
+- Working pricing baseline in this codebase is: Free / Basic / Business / Pro.
+- Treat pricing tiers above as the default for implementation and documentation unless a new decision overrides it.

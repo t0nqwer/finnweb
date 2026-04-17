@@ -1,0 +1,62 @@
+{
+  "updatedAt": "2026-04-17",
+  "tasks": [
+    {
+      "id": "pricing-consistency-audit",
+      "title": "Verify pricing consistency across app and billing",
+      "status": "in_progress",
+      "priority": "high",
+      "scope": [
+        "Subscription UI pricing labels and ordering",
+        "Prisma plan seed values",
+        "Stripe price mapping and webhook handling"
+      ],
+      "acceptanceCriteria": [
+        "All user-visible pricing uses Free / Basic / Business / Pro",
+        "Seeded plans and Stripe mapping match UI tiers",
+        "No mismatched plan names in API responses or docs"
+      ]
+    },
+    {
+      "id": "auth-production-hardening",
+      "title": "Harden auth for production readiness",
+      "status": "in_progress",
+      "priority": "high",
+      "scope": [
+        "Frontend access-token refresh flow with retry",
+        "Replace auth email URL console logs with real mail provider",
+        "Add auth integration tests for register/login/refresh/logout/reset"
+      ],
+      "progressNotes": [
+        "Completed frontend refresh flow with automatic retry through shared web API client.",
+        "Added integration test coverage for 401 -> /auth/refresh -> retried request success in apps/web/src/lib/api-client.test.ts.",
+        "Wired API auth verification/reset email sending to Resend via EmailService and removed auth URL console log placeholders.",
+        "Added passing API integration tests for register/login/refresh/logout/reset in apps/api/src/modules/auth/auth.integration.test.ts.",
+        "Hardened backend auth by making DI explicit for auth controller/service/repository under the current test runtime and ensuring refresh token rotation includes a unique jti.",
+        "Added verify-email route coverage to the API auth integration suite, including send-verification-email -> verify-email -> emailVerified assertion.",
+        "Fixed the billing webhook Stripe typing so package-wide API typecheck is green again.",
+        "Added a GitHub Actions workflow that provisions Postgres, pushes the Prisma schema, seeds plans, runs the focused API auth integration suite, and runs API typecheck.",
+        "Pending first green GitHub Actions run before marking this task complete."
+      ],
+      "acceptanceCriteria": [
+        "Expired access token can recover through refresh without forcing re-login",
+        "Verify-email and reset-password send through configured mail provider",
+        "Auth critical-path tests pass in CI/local"
+      ]
+    },
+    {
+      "id": "pricing-tier-positioning",
+      "title": "Confirm Business tier launch positioning",
+      "status": "todo",
+      "priority": "medium",
+      "scope": [
+        "Decide whether Business is a permanent public tier",
+        "Confirm pricing copy for Thai market launch"
+      ],
+      "acceptanceCriteria": [
+        "Decision recorded in project-context/decisions.md",
+        "Marketing and product copy reflect final tier strategy"
+      ]
+    }
+  ]
+}

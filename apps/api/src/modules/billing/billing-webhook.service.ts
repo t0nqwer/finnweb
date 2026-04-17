@@ -13,6 +13,14 @@ import {
 import { JobsService } from "../../jobs/jobs.service";
 import { BillingRepository } from "./billing.repository";
 
+type SupportedStripeEvent = {
+  id: string;
+  type: BillingStripeEventPayload["eventType"];
+  data: {
+    object: unknown;
+  };
+};
+
 @Injectable()
 export class BillingWebhookService {
   private readonly logger = new Logger(BillingWebhookService.name);
@@ -44,13 +52,23 @@ export class BillingWebhookService {
   }
 
   async processQueuedEvent(payload: BillingStripeEventPayload) {
-    await this.processEvent({
+    const event: SupportedStripeEvent = {
       id: payload.eventId,
       type: payload.eventType,
       data: {
         object: payload.object,
       },
-    } as Stripe.Event);
+    };
+
+    await this.processEvent(event);
+  }
+
+  private toSerializableObject(object: unknown): Record<string, unknown> {
+    if (typeof object !== "object" || object === null) {
+      throw new Error("INVALID_STRIPE_EVENT_OBJECT");
+    }
+
+    return object as Record<string, unknown>;
   }
 
   private toQueuePayload(
@@ -63,12 +81,12 @@ export class BillingWebhookService {
     return {
       eventId: event.id,
       eventType: event.type,
-      object: event.data.object as Record<string, unknown>,
+      object: this.toSerializableObject(event.data.object),
       queuedAt: new Date().toISOString(),
     };
   }
 
-  private async processEvent(event: Stripe.Event) {
+  private async processEvent(event: Stripe.Event | SupportedStripeEvent) {
     switch (event.type) {
       case "checkout.session.completed":
         await this.handleCheckoutSessionCompleted(

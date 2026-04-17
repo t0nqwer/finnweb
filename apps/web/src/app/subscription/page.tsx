@@ -13,7 +13,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { DEFAULT_API_BASE_URL, readApiResponse } from "@/lib/api-client";
+import {
+  DEFAULT_API_BASE_URL,
+  fetchApiWithTokenRefresh,
+} from "@/lib/api-client";
 import { normalizeApiBaseUrl, readStoredAuthState } from "@/lib/auth-storage";
 
 type PlanCode = "BASIC" | "BUSINESS" | "PRO";
@@ -122,14 +125,19 @@ function SubscriptionPageContent() {
       }
 
       try {
-        const response = await fetch(`${normalizedApiBaseUrl}/sites`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
+        const { response, payload, authState } = await fetchApiWithTokenRefresh(
+          {
+            apiBaseUrl: normalizedApiBaseUrl,
+            path: "/sites",
+            init: {
+              cache: "no-store",
+            },
           },
-          cache: "no-store",
-        });
+        );
 
-        const payload = await readApiResponse(response);
+        if (authState.accessToken && authState.accessToken !== accessToken) {
+          setAccessToken(authState.accessToken);
+        }
 
         if (!response.ok) {
           throw new Error(
@@ -186,13 +194,13 @@ function SubscriptionPageContent() {
     setStatusMessage(null);
 
     try {
-      const response = await fetch(
-        `${normalizedApiBaseUrl}/billing/checkout-session`,
-        {
+      const { response, payload, authState } = await fetchApiWithTokenRefresh({
+        apiBaseUrl: normalizedApiBaseUrl,
+        path: "/billing/checkout-session",
+        init: {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             workspaceId,
@@ -200,9 +208,11 @@ function SubscriptionPageContent() {
             billingInterval,
           }),
         },
-      );
+      });
 
-      const payload = await readApiResponse(response);
+      if (authState.accessToken && authState.accessToken !== accessToken) {
+        setAccessToken(authState.accessToken);
+      }
 
       if (!response.ok) {
         throw new Error(

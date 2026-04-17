@@ -1,7 +1,9 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
@@ -17,14 +19,21 @@ import {
 } from "./utils/auth-token.util";
 import { JwtPayload } from "../../common/interfaces/jwt-payload.interface";
 import { jwtConfig } from "./utils/jwtConfig";
+import { EmailService } from "../email/email.service";
 
 import * as crypto from "crypto";
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
+    @Inject(AuthRepository)
     private readonly authRepository: AuthRepository,
+    @Inject(JwtService)
     private readonly jwtService: JwtService,
+    @Inject(EmailService)
+    private readonly emailService: EmailService,
   ) {}
 
   private toSafeUser(user: any): SafeUser {
@@ -61,6 +70,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       sessionId,
+      jti: crypto.randomUUID(),
       type: "refresh",
     };
 
@@ -382,9 +392,11 @@ export class AuthService {
     });
 
     const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${rawToken}`;
-
-    // TODO: send email
-    console.log("VERIFY URL:", verifyUrl);
+    await this.emailService.sendVerificationEmail({
+      to: user.email,
+      verifyUrl,
+      userName: user.name,
+    });
 
     return {
       success: true,
@@ -442,9 +454,16 @@ export class AuthService {
     });
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${rawToken}`;
-
-    // TODO: เปลี่ยนเป็น mail service จริง
-    console.log("PASSWORD_RESET_URL:", resetUrl);
+    try {
+      await this.emailService.sendPasswordResetEmail({
+        to: user.email,
+        resetUrl,
+        userName: user.name,
+      });
+    } catch (error) {
+      // Keep the same response shape to avoid account enumeration.
+      this.logger.error("Password reset email send failed", error);
+    }
 
     return {
       success: true,

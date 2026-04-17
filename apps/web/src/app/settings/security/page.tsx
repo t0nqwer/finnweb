@@ -14,9 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { readStoredAuthState, type StoredAuthState } from "@/lib/auth-storage";
 import {
-  buildApiUrl,
   DEFAULT_API_BASE_URL,
-  readApiResponse,
+  fetchApiWithTokenRefresh,
 } from "@/lib/api-client";
 
 export default function SecuritySettingsPage() {
@@ -51,22 +50,20 @@ export default function SecuritySettingsPage() {
     setErrorMessage(null);
 
     try {
-      const response = await fetch(
-        buildApiUrl(apiBaseUrl, "/auth/change-password"),
-        {
+      const { response, payload } = await fetchApiWithTokenRefresh({
+        apiBaseUrl,
+        path: "/auth/change-password",
+        init: {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${authState.accessToken}`,
           },
           body: JSON.stringify({
             currentPassword,
             newPassword,
           }),
         },
-      );
-
-      const payload = await readApiResponse(response);
+      });
 
       if (!response.ok) {
         throw new Error(

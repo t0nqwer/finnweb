@@ -10,6 +10,10 @@ export default () => ({
     jwtSecret: process.env.JWT_SECRET || "changeme",
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
   },
+  email: {
+    resendApiKey: process.env.RESEND_API_KEY,
+    from: process.env.EMAIL_FROM || "FinnWeb <no-reply@finnweb.site>",
+  },
   queue: {
     redisUrl: process.env.REDIS_URL,
     prefix: process.env.QUEUE_PREFIX || "finnweb",

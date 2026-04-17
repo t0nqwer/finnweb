@@ -7,6 +7,8 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/main.js",
     "lint": "echo 'add eslint later'",
+    "test:auth": "pnpm exec tsx --test src/modules/auth/auth.integration.test.ts",
+    "test": "pnpm exec tsx --test src/**/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "rm -rf dist node_modules"
   },
@@ -38,11 +40,13 @@
     "passport-jwt": "^4.0.1",
     "pg": "^8.20.0",
     "reflect-metadata": "^0.2.2",
+    "resend": "^6.12.0",
     "rxjs": "^7.8.2",
     "stripe": "^21.0.1",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "@nestjs/testing": "^11.1.19",
     "@types/bcrypt": "^6.0.0",
     "@types/ms": "^2.1.0",
     "@types/node": "^24.3.0",

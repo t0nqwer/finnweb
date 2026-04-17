@@ -13,9 +13,8 @@ import {
 } from "@/components/ui/card";
 import { readStoredAuthState, type StoredAuthState } from "@/lib/auth-storage";
 import {
-  buildApiUrl,
   DEFAULT_API_BASE_URL,
-  readApiResponse,
+  fetchApiWithTokenRefresh,
 } from "@/lib/api-client";
 
 export default function ProfileSettingsPage() {
@@ -40,17 +39,13 @@ export default function ProfileSettingsPage() {
     setErrorMessage(null);
 
     try {
-      const response = await fetch(
-        buildApiUrl(apiBaseUrl, "/auth/send-verification-email"),
-        {
+      const { response, payload } = await fetchApiWithTokenRefresh({
+        apiBaseUrl,
+        path: "/auth/send-verification-email",
+        init: {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${authState.accessToken}`,
-          },
         },
-      );
-
-      const payload = await readApiResponse(response);
+      });
 
       if (!response.ok) {
         throw new Error(

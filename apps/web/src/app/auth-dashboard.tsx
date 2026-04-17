@@ -16,14 +16,16 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import PageCrudDashboard from "./page-crud-dashboard";
 import {
+  DEFAULT_API_BASE_URL,
+  fetchApiWithTokenRefresh,
+  readApiResponse,
+} from "../lib/api-client";
+import {
   STORAGE_KEYS,
   clearAuthState,
   normalizeApiBaseUrl,
   persistAuthState,
 } from "../lib/auth-storage";
-
-const DEFAULT_API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api";
 
 type SiteRecord = {
   id: string;
@@ -46,16 +48,6 @@ type LoginResponse = AuthResponse & {
     slug: string;
   } | null;
 };
-
-async function readResponse(response: Response) {
-  const contentType = response.headers.get("content-type") ?? "";
-
-  if (contentType.includes("application/json")) {
-    return response.json();
-  }
-
-  return response.text();
-}
 
 export default function AuthDashboard() {
   const [apiBaseUrl, setApiBaseUrl] = useState(DEFAULT_API_BASE_URL);
@@ -153,22 +145,39 @@ export default function AuthDashboard() {
     }
   }, [selectedSiteId]);
 
-  async function loadSites(tokenOverride = accessToken) {
-    if (!tokenOverride || !normalizedApiBaseUrl) {
+  async function loadSites() {
+    if (!accessToken || !normalizedApiBaseUrl) {
       return;
     }
 
     setIsLoadingSites(true);
 
     try {
-      const response = await fetch(`${normalizedApiBaseUrl}/sites`, {
-        headers: {
-          Authorization: `Bearer ${tokenOverride}`,
+      const {
+        response,
+        payload,
+        authState: refreshedAuthState,
+      } = await fetchApiWithTokenRefresh({
+        apiBaseUrl: normalizedApiBaseUrl,
+        path: "/sites",
+        init: {
+          cache: "no-store",
         },
-        cache: "no-store",
       });
 
-      const payload = await readResponse(response);
+      if (
+        refreshedAuthState.accessToken &&
+        refreshedAuthState.accessToken !== accessToken
+      ) {
+        setAccessToken(refreshedAuthState.accessToken);
+      }
+
+      if (
+        refreshedAuthState.refreshToken &&
+        refreshedAuthState.refreshToken !== refreshToken
+      ) {
+        setRefreshToken(refreshedAuthState.refreshToken);
+      }
 
       if (!response.ok) {
         throw new Error(
@@ -200,20 +209,37 @@ export default function AuthDashboard() {
     }
   }
 
-  async function hydrateSession(tokenOverride = accessToken) {
-    if (!tokenOverride || !normalizedApiBaseUrl) {
+  async function hydrateSession() {
+    if (!accessToken || !normalizedApiBaseUrl) {
       return;
     }
 
     try {
-      const response = await fetch(`${normalizedApiBaseUrl}/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${tokenOverride}`,
+      const {
+        response,
+        payload,
+        authState: refreshedAuthState,
+      } = await fetchApiWithTokenRefresh({
+        apiBaseUrl: normalizedApiBaseUrl,
+        path: "/auth/me",
+        init: {
+          cache: "no-store",
         },
-        cache: "no-store",
       });
 
-      const payload = await readResponse(response);
+      if (
+        refreshedAuthState.accessToken &&
+        refreshedAuthState.accessToken !== accessToken
+      ) {
+        setAccessToken(refreshedAuthState.accessToken);
+      }
+
+      if (
+        refreshedAuthState.refreshToken &&
+        refreshedAuthState.refreshToken !== refreshToken
+      ) {
+        setRefreshToken(refreshedAuthState.refreshToken);
+      }
 
       if (!response.ok) {
         throw new Error(
@@ -224,7 +250,7 @@ export default function AuthDashboard() {
       }
 
       setUser(payload as SafeUser);
-      await loadSites(tokenOverride);
+      await loadSites();
       setStatusMessage("Signed in successfully.");
     } catch (error) {
       clearAuthState();
@@ -244,7 +270,7 @@ export default function AuthDashboard() {
       return;
     }
 
-    void hydrateSession(accessToken);
+    void hydrateSession();
   }, [accessToken, isBooting]);
 
   async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
@@ -271,7 +297,7 @@ export default function AuthDashboard() {
         }),
       });
 
-      const payload = await readResponse(response);
+      const payload = await readApiResponse(response);
 
       if (!response.ok) {
         throw new Error(
@@ -300,7 +326,7 @@ export default function AuthDashboard() {
         setSelectedSiteId(auth.site.id);
       }
 
-      await loadSites(auth.accessToken);
+      await loadSites();
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Unable to sign in.",
