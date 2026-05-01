@@ -207,6 +207,13 @@ User registers
   - Custom domain
   - Advanced features
 
+### Canonical Plan Matrix (2026-04-18)
+
+- **FREE (฿0):** ทดลองเล่น/นามบัตร, 1 เว็บไซต์, 1 หน้า/เว็บไซต์, 10 sections/หน้า, LINE OA 5 ครั้ง/เดือน, Help Center
+- **BASIC (฿250/เดือน):** เริ่มต้นมีหน้าร้าน, 1 เว็บไซต์, 3 หน้า/เว็บไซต์, 20 sections/หน้า, Ecommerce 3 สินค้า (Basic Cart), Custom Domain, LINE OA 50 ครั้ง/เดือน, ทดลองฟรี 7 วัน
+- **BUSINESS (฿490/เดือน):** สายขาย/ยิง Ads (แนะนำ), 3 เว็บไซต์, 10 หน้า/เว็บไซต์, 50 sections/หน้า, 50 สินค้า + สต็อก, 50 โพสต์, Tracking/Pixel + Analytics dashboard, LINE OA ไม่จำกัด, ทดลองฟรี 7 วัน
+- **PRO (฿990/เดือน):** เอเจนซี่/บริษัทใหญ่, 10 เว็บไซต์, 50 หน้า/เว็บไซต์, 100 sections/หน้า, 1,000 สินค้า + สต็อก, 1,000 โพสต์, Full integration + Custom Code/API, Advanced reports, LINE OA ไม่จำกัด, Exclusive Advisor
+
 ---
 
 ## ⚡ System Priorities

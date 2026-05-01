@@ -1,9 +1,17 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import PageCrudDashboard from "@/app/page-crud-dashboard";
+import { useRouter } from "next/navigation";
+import {
+  Edit3Icon,
+  ExternalLinkIcon,
+  GlobeIcon,
+  PlusIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { AppPageShell } from "@/components/app-page-shell";
+import { SiteEditorSimulator } from "@/components/site-editor-simulator";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,8 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DEFAULT_API_BASE_URL,
   fetchApiWithTokenRefresh,
@@ -23,6 +30,7 @@ import {
   readStoredAuthState,
   type StoredAuthState,
 } from "@/lib/auth-storage";
+import { resolveSectionApiErrorMessage } from "@/lib/section-error-messages";
 
 type SiteRecord = {
   id: string;
@@ -36,16 +44,24 @@ type SiteRecord = {
   };
 };
 
+function getSiteStatusLabel(status?: string) {
+  if (!status) {
+    return "แบบร่าง";
+  }
+
+  return status.toUpperCase() === "PUBLISHED" ? "เผยแพร่แล้ว" : "แบบร่าง";
+}
+
 export default function SitesPage() {
+  const router = useRouter();
   const [authState, setAuthState] = useState<StoredAuthState>({});
   const [sites, setSites] = useState<SiteRecord[]>([]);
   const [selectedSiteId, setSelectedSiteId] = useState("");
-  const [newSiteName, setNewSiteName] = useState("");
-  const [newSiteSlug, setNewSiteSlug] = useState("");
+  const [editingSite, setEditingSite] = useState<SiteRecord | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [deletingSiteId, setDeletingSiteId] = useState<string | null>(null);
 
   useEffect(() => {
     const stored = readStoredAuthState();
@@ -100,9 +116,10 @@ export default function SitesPage() {
 
         if (!response.ok) {
           throw new Error(
-            typeof payload === "object" && payload && "message" in payload
-              ? String(payload.message)
-              : `Request failed with status ${response.status}`,
+            resolveSectionApiErrorMessage(
+              payload,
+              `Request failed with status ${response.status}`,
+            ),
           );
         }
 
@@ -133,10 +150,22 @@ export default function SitesPage() {
             siteId: nextSelectedSite.id,
             workspaceId: nextSelectedSite.workspace?.id ?? current.workspaceId,
           }));
+        } else {
+          setSelectedSiteId("");
+          persistAuthState({
+            apiBaseUrl,
+            siteId: "",
+            workspaceId: workspaceId || undefined,
+          });
+          setAuthState((current) => ({
+            ...current,
+            apiBaseUrl,
+            siteId: "",
+          }));
         }
       } catch (error) {
         setErrorMessage(
-          error instanceof Error ? error.message : "Unable to load sites.",
+          error instanceof Error ? error.message : "โหลดเว็บไซต์ไม่สำเร็จ",
         );
       } finally {
         setIsLoading(false);
@@ -158,7 +187,7 @@ export default function SitesPage() {
 
   function handleSelectSite(site: SiteRecord) {
     setSelectedSiteId(site.id);
-    setStatusMessage(`Selected ${site.name}.`);
+    setStatusMessage(`กำลังใช้งานเว็บไซต์ ${site.name}`);
     setErrorMessage(null);
 
     persistAuthState({
@@ -175,278 +204,276 @@ export default function SitesPage() {
     }));
   }
 
-  async function handleCreateSite(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  async function handleDeleteSite(site: SiteRecord) {
     if (!accessToken) {
-      setErrorMessage("Sign in first to create a site.");
+      setErrorMessage("กรุณาเข้าสู่ระบบก่อนลบเว็บไซต์");
       return;
     }
 
-    if (!newSiteName.trim()) {
-      setErrorMessage("Site name is required.");
+    const confirmed = window.confirm(
+      `คุณแน่ใจหรือไม่ว่าต้องการลบเว็บไซต์ \"${site.name}\"?\nการลบนี้ไม่สามารถย้อนกลับได้`,
+    );
+
+    if (!confirmed) {
       return;
     }
 
-    setIsCreating(true);
-    setStatusMessage(null);
+    setDeletingSiteId(site.id);
     setErrorMessage(null);
+    setStatusMessage(null);
 
     try {
-      const {
-        response,
-        payload,
-        authState: nextAuthState,
-      } = await fetchApiWithTokenRefresh({
+      const { response, payload } = await fetchApiWithTokenRefresh({
         apiBaseUrl,
-        path: "/sites",
+        path: `/sites/${site.id}/delete`,
         init: {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: newSiteName.trim(),
-            slug: newSiteSlug.trim() || undefined,
-            workspaceId: workspaceId || undefined,
-          }),
         },
       });
 
-      if (
-        nextAuthState.accessToken !== authState.accessToken ||
-        nextAuthState.refreshToken !== authState.refreshToken
-      ) {
-        setAuthState((current) => ({
-          ...current,
-          accessToken: nextAuthState.accessToken,
-          refreshToken: nextAuthState.refreshToken,
-        }));
-      }
-
       if (!response.ok) {
         throw new Error(
-          typeof payload === "object" && payload && "message" in payload
-            ? String(payload.message)
-            : `Request failed with status ${response.status}`,
+          resolveSectionApiErrorMessage(payload, "ลบเว็บไซต์ไม่สำเร็จ"),
         );
       }
 
-      const createdSite =
-        typeof payload === "object" && payload && "data" in payload
-          ? (payload.data as SiteRecord)
-          : null;
+      if (editingSite?.id === site.id) {
+        setEditingSite(null);
+      }
 
-      setStatusMessage(
-        createdSite
-          ? `Created ${createdSite.name}.`
-          : "Site created successfully.",
-      );
-      setNewSiteName("");
-      setNewSiteSlug("");
-      await loadSites(createdSite?.id);
+      setStatusMessage(`ลบเว็บไซต์ ${site.name} เรียบร้อยแล้ว`);
+      await loadSites(site.id === selectedSiteId ? undefined : selectedSiteId);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "Unable to create site.",
+        error instanceof Error ? error.message : "ลบเว็บไซต์ไม่สำเร็จ",
       );
     } finally {
-      setIsCreating(false);
+      setDeletingSiteId(null);
     }
   }
 
   const selectedSite = sites.find((site) => site.id === selectedSiteId);
 
+  if (editingSite) {
+    return (
+      <SiteEditorSimulator
+        site={editingSite}
+        onClose={() => setEditingSite(null)}
+      />
+    );
+  }
+
   return (
     <AppPageShell
-      title="Sites & pages"
-      description="Choose a site, create a new one, and manage pages without leaving the workspace."
+      title="เว็บไซต์ของฉัน"
+      description="หน้านี้ไว้เลือกและจัดการเว็บไซต์ที่มีอยู่แล้ว"
       actions={
-        <Link
-          href="/billing"
-          className="inline-flex items-center rounded-md border border-slate-200 px-4 py-2 text-sm dark:border-slate-800"
+        <Button
+          className="bg-linear-to-r from-primary to-[#ff4500] text-primary-foreground"
+          onClick={() => router.push("/sites/create")}
         >
-          Review plan limits
-        </Link>
+          <PlusIcon data-icon="inline-start" />
+          Create Site
+        </Button>
       }
     >
-      <div className="grid gap-4 px-4 lg:grid-cols-[0.9fr_1.1fr] lg:px-6">
-        <Card>
+      <div className="mx-auto flex w-full max-w-350 flex-col gap-6 px-4 lg:px-6">
+        <Card className="border-border/70 bg-card/85">
           <CardHeader>
-            <CardTitle>Workspace site manager</CardTitle>
+            <CardTitle>ต้องการเว็บไซต์ใหม่ใช่ไหม?</CardTitle>
             <CardDescription>
-              Load your sites from the API, pick the active site, and keep the
-              page manager in sync with your session.
+              ไม่มีฟอร์มในหน้านี้แล้ว กดปุ่ม Create Site เพื่อไปหน้าสร้างเว็บไซต์โดยตรง
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {!accessToken ? (
-              <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                Sign in first to load your workspace sites.
-                <div className="mt-3">
-                  <Link
-                    href="/login"
-                    className="font-medium text-orange-600 hover:underline"
-                  >
-                    Go to login
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="activeSite">Active site</Label>
-                  <select
-                    id="activeSite"
-                    value={selectedSiteId}
-                    onChange={(event) => {
-                      const site = sites.find(
-                        (item) => item.id === event.target.value,
-                      );
-
-                      if (site) {
-                        handleSelectSite(site);
-                      }
-                    }}
-                    className="flex h-10 w-full rounded-md border border-slate-200 bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 dark:border-slate-800"
-                  >
-                    <option value="">Select a site</option>
-                    {sites.map((site) => (
-                      <option key={site.id} value={site.id}>
-                        {site.name} ({site.slug})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
-                  <div className="rounded-lg border p-3">
-                    <p className="font-medium text-foreground">Workspace</p>
-                    <p>
-                      {selectedSite?.workspace?.name ??
-                        workspaceId ??
-                        "Not linked yet"}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border p-3">
-                    <p className="font-medium text-foreground">Sites loaded</p>
-                    <p>{isLoading ? "Loading..." : sites.length}</p>
-                  </div>
-                </div>
-
-                {sites.length === 0 && !isLoading && (
-                  <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                    ยังไม่มีเว็บไซต์ใน workspace นี้
-                    เริ่มต้นโดยสร้างเว็บไซต์แรกด้านล่าง
-                  </div>
-                )}
-
-                <form className="space-y-3" onSubmit={handleCreateSite}>
-                  <div>
-                    <p className="text-sm font-medium">Create a new site</p>
-                    <p className="text-sm text-muted-foreground">
-                      This uses the live `POST /sites` endpoint from the API.
-                    </p>
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="siteName">Site name</Label>
-                      <Input
-                        id="siteName"
-                        value={newSiteName}
-                        onChange={(event) => setNewSiteName(event.target.value)}
-                        placeholder="My first landing page"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="siteSlug">Slug</Label>
-                      <Input
-                        id="siteSlug"
-                        value={newSiteSlug}
-                        onChange={(event) => setNewSiteSlug(event.target.value)}
-                        placeholder="my-first-landing-page"
-                      />
-                    </div>
-                  </div>
-                  <Button
-                    type="submit"
-                    disabled={isCreating}
-                    className="w-full sm:w-auto"
-                  >
-                    {isCreating ? "Creating site..." : "Create site"}
-                  </Button>
-                </form>
-              </>
-            )}
-
-            {(statusMessage || errorMessage) && (
-              <div
-                className={`rounded-md border px-3 py-2 text-sm ${
-                  errorMessage
-                    ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
-                    : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
-                }`}
-              >
-                {errorMessage ?? statusMessage}
-              </div>
-            )}
+          <CardContent>
+            <Button
+              className="bg-linear-to-r from-primary to-[#ff4500] text-primary-foreground"
+              onClick={() => router.push("/sites/create")}
+            >
+              <PlusIcon data-icon="inline-start" />
+              Create Site
+            </Button>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Current site</CardTitle>
+        {errorMessage ? (
+          <Card className="border-destructive/50">
+            <CardContent className="py-4 text-sm text-destructive">
+              {errorMessage}
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {statusMessage ? (
+          <Card className="border-emerald-900/60 bg-emerald-950/40">
+            <CardContent className="py-4 text-sm text-emerald-200">
+              {statusMessage}
+            </CardContent>
+          </Card>
+        ) : null}
+
+        <Card className="border-border/70 bg-card/85">
+          <CardHeader className="border-b border-border/60">
+            <CardTitle>เว็บไซต์ที่ใช้งานอยู่ตอนนี้</CardTitle>
             <CardDescription>
-              Your page manager below will follow the selected site context.
+              เว็บไซต์นี้จะถูกเลือกเป็นเว็บหลักของคุณในระบบ
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+          <CardContent className="space-y-3 pt-4 text-sm">
             {selectedSite ? (
               <>
-                <div className="rounded-lg border p-3">
-                  <p className="font-medium">{selectedSite.name}</p>
+                <div className="rounded-lg border border-border/70 bg-black/10 p-3">
+                  <p className="font-semibold">{selectedSite.name}</p>
                   <p className="text-muted-foreground">
-                    Slug: {selectedSite.slug}
+                    {selectedSite.slug}.finnweb.co
                   </p>
                 </div>
-                <div className="rounded-lg border p-3 text-muted-foreground">
-                  <p>Site ID: {selectedSite.id}</p>
-                  <p>
-                    Workspace:{" "}
-                    {selectedSite.workspace?.name ?? "Current workspace"}
-                  </p>
-                </div>
+                <Button
+                  variant="outline"
+                  className="w-full border-border/70 bg-black/10"
+                  onClick={() => setEditingSite(selectedSite)}
+                >
+                  <Edit3Icon data-icon="inline-start" />
+                  แก้ไขเว็บไซต์นี้
+                </Button>
               </>
             ) : (
-              <div className="rounded-lg border border-dashed p-4 text-muted-foreground">
-                Pick a site to start managing pages.
+              <div className="rounded-lg border border-dashed border-border/70 bg-black/10 p-4 text-muted-foreground">
+                ยังไม่ได้เลือกเว็บไซต์
               </div>
             )}
           </CardContent>
         </Card>
-      </div>
 
-      <div className="px-4 lg:px-6">
-        {accessToken && selectedSiteId ? (
-          <PageCrudDashboard
-            apiBaseUrl={apiBaseUrl}
-            token={accessToken}
-            siteId={selectedSiteId}
-            showConnectionFields={false}
-          />
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>Page manager</CardTitle>
-              <CardDescription>
-                Sign in and select a site to load page CRUD tools here.
-              </CardDescription>
-              <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-                Tip: เลือก active site ด้านบนก่อน จากนั้นเครื่องมือจัดการหน้า
-                (create/edit/delete/publish) จะโหลดอัตโนมัติ
-              </div>
-            </CardHeader>
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {isLoading
+            ? Array.from({ length: 3 }).map((_, index) => (
+                <Card
+                  key={`site-skeleton-${index}`}
+                  className="border-border/70 bg-card/85"
+                >
+                  <CardContent className="space-y-3 p-4">
+                    <Skeleton className="h-36 w-full rounded-xl" />
+                    <Skeleton className="h-5 w-2/3" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-10 w-full" />
+                  </CardContent>
+                </Card>
+              ))
+            : sites.map((site) => {
+                const isActive = selectedSiteId === site.id;
+                const statusLabel = getSiteStatusLabel(site.status);
+                const published = statusLabel === "เผยแพร่แล้ว";
+
+                return (
+                  <Card
+                    key={site.id}
+                    className={`group overflow-hidden border transition-all duration-300 ${
+                      isActive
+                        ? "border-primary/60 bg-card/90 shadow-[0_20px_45px_-32px_rgba(255,140,0,0.9)]"
+                        : "border-border/70 bg-card/85 hover:border-primary/35"
+                    }`}
+                  >
+                    <div className="relative h-38 overflow-hidden border-b border-border/60 bg-linear-to-br from-[#1f2330] to-[#2d2f39]">
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,140,0,0.2),transparent_55%)]" />
+                      <div className="absolute inset-x-0 bottom-0 flex translate-y-full items-center justify-center gap-2 bg-black/45 p-3 opacity-0 backdrop-blur-sm transition duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                        <Button
+                          size="sm"
+                          className="bg-white text-[#111827] hover:bg-primary hover:text-primary-foreground"
+                          onClick={() => setEditingSite(site)}
+                        >
+                          <Edit3Icon data-icon="inline-start" />
+                          แก้ไข
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() =>
+                            window.open(
+                              `https://${site.slug}.finnweb.co`,
+                              "_blank",
+                              "noopener,noreferrer",
+                            )
+                          }
+                        >
+                          <ExternalLinkIcon data-icon="inline-start" />
+                          เปิดเว็บ
+                        </Button>
+                      </div>
+                      <Badge
+                        className={`absolute left-3 top-3 ${
+                          published
+                            ? "bg-emerald-600 text-white"
+                            : "bg-slate-600 text-white"
+                        }`}
+                      >
+                        {statusLabel}
+                      </Badge>
+                    </div>
+
+                    <CardContent className="space-y-4 p-4">
+                      <div>
+                        <p className="truncate text-lg font-semibold">
+                          {site.name}
+                        </p>
+                        <p className="mt-1 flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                          <GlobeIcon className="size-3.5" />
+                          {site.slug}.finnweb.co
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant={isActive ? "default" : "outline"}
+                          className={
+                            isActive
+                              ? "flex-1 bg-primary text-primary-foreground"
+                              : "flex-1 border-border/70 bg-black/10"
+                          }
+                          onClick={() => handleSelectSite(site)}
+                        >
+                          {isActive ? "กำลังใช้งาน" : "ใช้เว็บไซต์นี้"}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-9 border border-border/70 bg-black/10"
+                          onClick={() => setEditingSite(site)}
+                          aria-label={`Edit ${site.name}`}
+                        >
+                          <Edit3Icon />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-9 border border-red-900/60 bg-red-950/20 text-red-300 hover:bg-red-900/40 hover:text-red-100"
+                          onClick={() => void handleDeleteSite(site)}
+                          disabled={deletingSiteId === site.id}
+                          aria-label={`Delete ${site.name}`}
+                        >
+                          <Trash2Icon />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+        </div>
+
+        {!isLoading && sites.length === 0 ? (
+          <Card className="border-border/70 bg-card/85">
+            <CardContent className="flex flex-col items-start gap-3 p-5 text-sm text-muted-foreground">
+              <p>ยังไม่มีเว็บไซต์ กดปุ่ม Create Site เพื่อเริ่มได้เลย</p>
+              <Button
+                className="bg-linear-to-r from-primary to-[#ff4500] text-primary-foreground"
+                onClick={() => router.push("/sites/create")}
+              >
+                <PlusIcon data-icon="inline-start" />
+                Create Site
+              </Button>
+            </CardContent>
           </Card>
-        )}
+        ) : null}
       </div>
     </AppPageShell>
   );

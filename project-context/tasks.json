@@ -1,6 +1,261 @@
 {
-  "updatedAt": "2026-04-17",
+  "updatedAt": "2026-05-01",
   "tasks": [
+    {
+      "id": "db-html-template-render-refactor",
+      "title": "Refactor to DB-driven HTML/CSS section template rendering",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "site-builder",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "section-template-library-v11"
+      ],
+      "scope": [
+        "เพิ่ม html/css/render mode ลง section template versions",
+        "ทำ renderer ใช้ DB template payload สำหรับ SAFE_HTML",
+        "รองรับ scale ของ template library โดยไม่พึ่ง hardcoded layout branches เป็นหลัก"
+      ],
+      "progressNotes": [
+        "2026-04-23: Refactor section-template version storage ให้รองรับ renderMode/htmlTemplate/cssTemplate",
+        "2026-04-23: Seed navbar layouts เป็น SAFE_HTML templates และ renderer ดึงจาก DB activeVersion แทน hardcode-first",
+        "2026-04-23: คง fallback structured renderer เดิมเพื่อ backward compatibility",
+        "2026-04-23: Reopened to fix SAFE_HTML navbar CSS not applying in editor preview; move styling to stable global CSS + CSS variables path",
+        "2026-04-23: Implemented runtime style registry in SiteEditorSimulator to dedupe SAFE_HTML CSS and inject only templates used on current page; removed navbar SAFE_HTML global CSS dependency",
+        "2026-05-01: Rework per new builder brief - enforce structured JSON renderer path (disable raw HTML rendering in editor preview)",
+        "2026-05-01: Extracted section registry + editor schema out of simulator into features/builder modules",
+        "2026-05-01: Added publish API POST /sites/:siteId/publish and switched public page rendering to latest publish snapshot",
+        "2026-05-01: Added desktop 3-pane builder UX by introducing dedicated right edit panel while keeping existing controls for compatibility"
+      ],
+      "acceptanceCriteria": [
+        "template version เก็บ html/css ได้",
+        "preview render จาก template data ใน DB ได้",
+        "fallback legacy structured renderer ยังทำงาน"
+      ]
+    },
+    {
+      "id": "navbar-10-layout-responsive",
+      "title": "Create 10 responsive navbar section layouts",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "site-builder",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": [
+        "section-template-library-v11"
+      ],
+      "scope": [
+        "เพิ่ม official navbar section templates ให้ครบ 10 layout",
+        "อัปเดต preview renderer ให้รองรับแต่ละ layout และ responsive",
+        "ให้เลือกใช้งานได้ผ่าน section template picker"
+      ],
+      "progressNotes": [
+        "2026-04-23: Kickoff 10 responsive navbar layouts implementation",
+        "2026-04-23: เพิ่ม navbar section templates ครบ 10 layouts ใน seed และกำหนด sortOrder 1-10",
+        "2026-04-23: อัปเดต SiteEditorSimulator renderer ให้รองรับ 10 navbar layouts และ responsive mobile/desktop ทุกแบบ",
+        "2026-04-23: รัน web/api typecheck และ prisma seed ผ่าน"
+      ],
+      "acceptanceCriteria": [
+        "มี navbar layouts ให้เลือก 10 แบบ",
+        "แต่ละแบบ responsive บน mobile/desktop",
+        "เปลี่ยน template แล้ว preview แสดง layout ที่เลือก"
+      ]
+    },
+    {
+      "id": "section-template-library-v11",
+      "title": "Implement Section Template Library V1.1 with data-preserving template switch",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "site-builder",
+      "estimatePoints": 13,
+      "owner": "unassigned",
+      "dependsOn": [
+        "website-template-system-v1"
+      ],
+      "scope": [
+        "เพิ่มโมเดล SectionTemplate/SectionTemplateVersion และเชื่อมกับ Section",
+        "เพิ่ม API section templates + switch section template พร้อม canonical slot mapping",
+        "เชื่อม Site Editor ให้ add/switch section ผ่าน template picker และ preserve data"
+      ],
+      "progressNotes": [
+        "2026-04-23: Kickoff implementation และตั้งสถานะเป็น in-progress",
+        "2026-04-23: เพิ่ม SectionTemplate/SectionTemplateVersion ใน schema และ seed official section templates ครอบคลุมทุก section type",
+        "2026-04-23: เพิ่ม API /section-templates (list/detail) และ endpoint PATCH /sites/:siteId/pages/:pageId/sections/:sectionId/template สำหรับ same-type switch พร้อม canonical slot mapping",
+        "2026-04-23: เชื่อม SiteEditorSimulator ให้ Add Section ผ่าน template picker และ Change Template ใน settings โดย preserve data เดิม"
+      ],
+      "acceptanceCriteria": [
+        "เพิ่ม section ผ่าน sectionTemplateId ได้และ render ตาม template",
+        "เปลี่ยน template แบบ same-type แล้วข้อมูล common ไม่หาย",
+        "editor มี template picker และ change template flow"
+      ]
+    },
+    {
+      "id": "navbar-config-implementation",
+      "title": "Implement NAVBAR config schema + editor + preview link resolver",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "site-builder",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "theme-font-color-per-section-mode"
+      ],
+      "scope": [
+        "ขยาย validation NAVBAR props รองรับ logo mode + menu linkType + cta linkType",
+        "เพิ่ม UI ตั้งค่า NAVBAR ใน editor (menu/cta/logo)",
+        "เพิ่ม renderer และ href resolver รองรับ section/page/external"
+      ],
+      "progressNotes": [
+        "2026-04-23: Kickoff NAVBAR implementation",
+        "2026-04-23: ขยาย backend NAVBAR validation ให้รองรับ logo object mode(theme|custom), menuItems linkType(section|page|external), cta linkType/openInNewTab พร้อม backward compatibility จาก href เดิม",
+        "2026-04-23: เพิ่ม NAVBAR editor controls ใน SiteEditorSimulator (brand/logo mode/themeKey/logo url/menu list/cta link) และ preview resolver สำหรับ href ตาม linkType",
+        "2026-04-23: ปรับ linkType=page ใน NAVBAR editor ให้เลือกจากรายการหน้าเว็บไซต์จริง (dropdown) ทั้ง menu และ CTA พร้อม sync pageId/pagePath"
+      ],
+      "acceptanceCriteria": [
+        "NAVBAR แก้ logo/menu/cta และ link type ได้",
+        "preview สร้างลิงก์ถูกต้องสำหรับ section/page/external",
+        "ข้อมูล NAVBAR เดิมแบบ label+href ยังใช้งานได้"
+      ]
+    },
+    {
+      "id": "theme-font-color-per-section-mode",
+      "title": "เพิ่มระบบ Theme/Font/Color และโหมด section theme|custom",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "site-builder",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": [
+        "template-preview-real-render"
+      ],
+      "scope": [
+        "เพิ่ม Website Theme preset และ default font/color ใน editor",
+        "เพิ่มตัวเลือก styleMode ระดับ section (theme หรือ custom)",
+        "รองรับ custom font/accent/text color ต่อ section และ render ใน preview"
+      ],
+      "progressNotes": [
+        "2026-04-23: Kickoff theme system + section style mode implementation",
+        "2026-04-23: ปรับ SiteEditorSimulator ให้มี Theme preset, default font/text/accent และ controls ระดับ section สำหรับ styleMode=theme|custom พร้อม customFontFamily/customAccentColor/customTextColor และ render ตามโหมด",
+        "2026-04-23: เพิ่มปุ่มบันทึก Theme ให้ทุก section ที่อยู่โหมด theme (ไม่ทับ section ที่เป็น custom) เพื่อ persist ค่าสี/ฟอนต์ลง props",
+        "2026-04-23: เพิ่ม Dynamic Google Fonts โดยพิมพ์ชื่อฟอนต์แล้วโหลดผ่าน Google Fonts CSS2 runtime ใน preview",
+        "2026-04-23: แก้ logic styleMode=theme ให้ใช้ค่า global theme จริง (ไม่โดน section accent เก่าทับ) และรองรับ logo URL ใน NAVBAR preview"
+      ],
+      "acceptanceCriteria": [
+        "ผู้ใช้ปรับ theme/font/color ระดับเว็บได้",
+        "แต่ละ section เลือกใช้ค่า theme หรือกำหนด custom เองได้",
+        "preview สะท้อนค่าที่เลือกทันที"
+      ]
+    },
+    {
+      "id": "template-preview-real-render",
+      "title": "ปรับ CMS preview ให้แสดงเว็บจริงแทน placeholder section",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "site-builder",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": [
+        "website-template-system-v1"
+      ],
+      "scope": [
+        "ปรับ renderer section หลักให้มีดีไซน์จริง",
+        "รองรับธีมสีจาก template/site",
+        "คงการแก้ข้อมูลแบบ section props ได้"
+      ],
+      "progressNotes": [
+        "2026-04-23: Kickoff ปรับ preview renderer จาก placeholder เป็น real visual blocks",
+        "2026-04-23: ปรับ SiteEditorSimulator preview renderer ให้ section หลักแสดงผลแบบหน้าเว็บจริง (NAVBAR/HEADER/HERO/CONTENT/PRODUCT_GRID/COMPARISON/BOOKING/FOOTER/SIDEBAR/NEWS_LIST) และปรับ canvas จาก guided placeholder เป็น live website canvas"
+      ],
+      "acceptanceCriteria": [
+        "หน้า Preview ใน CMS มีหน้าตาใกล้เคียง template จริง",
+        "NAVBAR/HERO/CONTENT/PRODUCT/BOOKING/FOOTER ไม่เป็นข้อความ placeholder"
+      ]
+    },
+    {
+      "id": "cms-delete-site-cors-fix",
+      "title": "แก้ CORS ตอนลบเว็บไซต์ใน CMS",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "site-builder",
+      "estimatePoints": 1,
+      "owner": "unassigned",
+      "dependsOn": [
+        "cms-site-delete-button"
+      ],
+      "scope": [
+        "รองรับ API ลบเว็บไซต์ผ่าน POST fallback",
+        "ปรับหน้า /sites ให้ใช้ endpoint ที่ไม่ติด CORS ในบาง environment"
+      ],
+      "progressNotes": [
+        "2026-04-23: Kickoff fix CORS สำหรับปุ่มลบเว็บไซต์",
+        "2026-04-23: เพิ่ม fallback endpoint POST /sites/:siteId/delete และปรับหน้า /sites ให้ใช้ POST เพื่อลดปัญหา CORS จาก DELETE preflight ในบาง environment",
+        "2026-04-23: ขยาย CORS methods ใน API main.ts ให้รองรับ PATCH/PUT/DELETE/OPTIONS และ allowedHeaders เพื่อแก้ preflight ของ section PATCH ใน CMS"
+      ],
+      "acceptanceCriteria": [
+        "กดลบเว็บไซต์จากหน้า CMS ได้โดยไม่เจอ CORS error"
+      ]
+    },
+    {
+      "id": "cms-site-delete-button",
+      "title": "เพิ่มปุ่มลบเว็บไซต์ใน CMS",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "site-builder",
+      "estimatePoints": 2,
+      "owner": "unassigned",
+      "dependsOn": [],
+      "scope": [
+        "เพิ่ม API ลบเว็บไซต์ (DELETE /sites/:siteId)",
+        "เพิ่มปุ่มลบพร้อมยืนยันในหน้า /sites",
+        "รีเฟรชรายการและอัปเดต selected site หลังลบ"
+      ],
+      "progressNotes": [
+        "2026-04-23: Kickoff implementation ปุ่มลบเว็บไซต์ใน CMS",
+        "2026-04-23: เพิ่ม API DELETE /sites/:siteId (สิทธิ์ OWNER/ADMIN), เพิ่มปุ่มลบพร้อม confirm ในหน้า /sites และรีเฟรชรายการ/selected site หลังลบสำเร็จ"
+      ],
+      "acceptanceCriteria": [
+        "ผู้ใช้ลบเว็บไซต์จากหน้า CMS ได้จริง",
+        "หลังลบแล้วรายการเว็บและเว็บที่เลือกถูกอัปเดตถูกต้อง"
+      ]
+    },
+    {
+      "id": "website-template-system-v1",
+      "title": "พัฒนาระบบ Website Template V1 (Template Picker + Custom Template Builder)",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "site-builder",
+      "estimatePoints": 13,
+      "owner": "unassigned",
+      "dependsOn": [],
+      "scope": [
+        "เพิ่ม API templates (list/detail/create/update/apply)",
+        "รองรับสร้างเว็บด้วย templateId ใน POST /sites",
+        "เพิ่ม official template library 5 ชุดพร้อมหลายหน้า/หลาย section",
+        "เพิ่ม section type ใหม่และ validation props ตาม requirement",
+        "เชื่อม Template Picker และ Save as Template ใน frontend"
+      ],
+      "progressNotes": [
+        "2026-04-23: Kickoff implementation และเปลี่ยนสถานะเป็น in-progress",
+        "2026-04-23: เพิ่มโมดูล API templates ครบ (list/detail/create/update/apply), เพิ่มการสร้างเว็บด้วย templateId ใน POST /sites, ขยาย section types/validation ใหม่, seed official template library 5 ชุด และเชื่อมหน้า /sites/create ให้โหลด template จาก API + สร้างเว็บจาก templateId",
+        "2026-04-23: เพิ่ม Save current site as template ใน site editor และเพิ่ม integration tests สำหรับ templates พร้อม regression tests ของ sites"
+      ],
+      "acceptanceCriteria": [
+        "ผู้ใช้เลือกเทมเพลตและสร้างเว็บไซต์หลายหน้าได้ใน flow เดียว",
+        "ผู้ใช้สร้าง custom template ของตนเองและเห็นใน my templates ได้",
+        "official templates แสดงผลได้และ apply ได้ตามสิทธิ์",
+        "section type ใหม่ผ่าน validation และแก้ไขหลังสร้างได้"
+      ]
+    },
     {
       "id": "pricing-consistency-audit",
       "title": "ตรวจสอบความสอดคล้องของราคาในแอปและระบบชำระเงิน",
@@ -24,6 +279,244 @@
         "ราคาที่แสดงต่อผู้ใช้ใช้ชื่อ Free / Basic / Business / Pro ทั้งหมด",
         "แผนที่ seed และการจับคู่ Stripe ตรงกับ tier ใน UI",
         "ไม่มีชื่อแผนที่ไม่ตรงกันใน API response หรือเอกสาร"
+      ]
+    },
+    {
+      "id": "pricing-feature-matrix-canonicalization",
+      "title": "ยกระดับ pricing feature matrix ให้เป็น canonical และ sync ทั้งระบบ",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-0",
+      "epic": "pricing",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "pricing-consistency-audit"
+      ],
+      "scope": [
+        "บันทึก matrix ทางการในเอกสาร project-context",
+        "sync seed และหน้า pricing/subscription/checkout ให้ตรง matrix ใหม่",
+        "ลด drift ของข้อมูลแพ็กเกจระหว่างเอกสารและ UI"
+      ],
+      "progressNotes": [
+        "Kickoff 2026-04-18: เริ่ม implementation ตาม matrix ใหม่ที่ product owner ยืนยันเป็นค่าทางการ",
+        "เพิ่มเอกสาร canonical matrix ที่ project-context/pricing-feature-matrix.md",
+        "อัปเดต decisions/memory/finn_web_summary ให้สะท้อน baseline ใหม่",
+        "ปรับ apps/api/prisma/seed.ts ให้สอดคล้อง matrix ใหม่ (BASIC ecommerce 3 products, PRO ไม่มี trial)",
+        "ปรับ copy/feature lists หน้า /subscription, /subscription/checkout และ /pricing ให้ตรง matrix",
+        "ผ่านการตรวจสอบ typecheck/web+api และ get_errors ไม่มี error ในไฟล์ที่แก้"
+      ],
+      "acceptanceCriteria": [
+        "มี canonical matrix ใน workspace และอ้างอิงได้ชัดเจน",
+        "หน้า pricing/subscription/checkout แสดงฟีเจอร์ตรงกับ matrix ล่าสุด",
+        "ค่า seed plan ไม่ขัดกับ baseline ใหม่"
+      ]
+    },
+    {
+      "id": "pricing-rollout-existing-workspaces",
+      "title": "ทำ data rollout แพ็กเกจใหม่ให้ workspace ที่มีอยู่แล้ว",
+      "status": "in-progress",
+      "priority": "high",
+      "phase": "phase-1",
+      "epic": "pricing",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "pricing-feature-matrix-canonicalization"
+      ],
+      "scope": [
+        "สร้าง migration/backfill สำหรับข้อมูล plan เดิม",
+        "ทำให้ฐานข้อมูลที่ deploy ไปแล้วได้ค่า plan ใหม่ครบ",
+        "เพิ่มขั้นตอน rollout-safe และ rollback notes"
+      ],
+      "acceptanceCriteria": [
+        "workspace เก่าเห็นค่า plan ตรงกับ matrix 2026-04-18",
+        "ไม่มี plan ค่าค้างจาก baseline เดิมหลัง rollout"
+      ],
+      "progressNotes": [
+        "2026-04-18: Kickoff rollout โดยเริ่ม sync schema และรัน seed สำหรับข้อมูล plan capability ใหม่",
+        "2026-04-18: รัน prisma db push + prisma db seed กับฐานข้อมูล dev สำเร็จ และข้อมูล plan matrix ล่าสุดถูกอัปเดตแล้ว"
+      ]
+    },
+    {
+      "id": "plan-schema-feature-expansion",
+      "title": "ขยาย schema plan เพื่อรองรับ feature matrix ใหม่",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-1",
+      "epic": "pricing",
+      "estimatePoints": 8,
+      "owner": "unassigned",
+      "dependsOn": [
+        "pricing-feature-matrix-canonicalization"
+      ],
+      "scope": [
+        "เพิ่มฟิลด์โครงสร้างสำหรับ line quota, support tier, tracking level, analytics level",
+        "ปรับ Prisma schema + seed + DTO/API response",
+        "จัดทำ migration ที่รองรับข้อมูลเก่า"
+      ],
+      "acceptanceCriteria": [
+        "ข้อมูล matrix ที่เป็น package capability ถูกเก็บใน schema ได้ครบ",
+        "frontend อ่านค่า package capability จาก API ได้โดยไม่พึ่งข้อความ hardcode"
+      ],
+      "progressNotes": [
+        "2026-04-18: Kickoff task เพื่อขยาย plan schema และส่ง capability ใหม่ผ่าน API response",
+        "2026-04-18: เพิ่ม enum/facts ใหม่ใน Prisma Plan ได้แก่ SupportTier, TrackingLevel, AnalyticsLevel และ lineOaMonthlyQuota",
+        "2026-04-18: อัปเดต seed plan ทั้ง Free/Basic/Business/Pro ให้มี capability values ตาม matrix ล่าสุด",
+        "2026-04-18: ขยาย API response ของ /billing/subscription และ /billing/plan-usage ให้ส่ง support tier / tracking level / analytics level / line quota",
+        "2026-04-18: อัปเดต frontend dashboard-home-content ให้ consume capability จาก API โดยตรง และยืนยันผ่าน typecheck ทั้ง api/web",
+        "2026-04-18: รีแฟกเตอร์ terminology ทั้งโปรเจคจาก LINE Notify เป็น LINE OA รวมถึง schema field (`lineOaMonthlyQuota`, `lineOaAccessToken`) และ copy ฝั่ง UI/docs"
+      ]
+    },
+    {
+      "id": "line-oa-plan-quota-enforcement",
+      "title": "บังคับ quota LINE OA ตามแพ็กเกจ",
+      "status": "in-progress",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "billing",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "plan-schema-feature-expansion"
+      ],
+      "scope": [
+        "นับการส่งแจ้งเตือนราย workspace รายเดือน",
+        "บล็อกเมื่อเกิน quota พร้อม error code มาตรฐาน",
+        "แสดง usage และ quota ใน dashboard/subscription"
+      ],
+      "acceptanceCriteria": [
+        "FREE/BASIC ถูกจำกัด 5/50 ครั้งต่อเดือนตาม matrix",
+        "BUSINESS/PRO ส่งแจ้งเตือนได้ไม่จำกัดโดยไม่ถูกบล็อกผิดพลาด"
+      ],
+      "progressNotes": [
+        "2026-04-18: Kickoff implementation เริ่มเพิ่ม monthly usage tracking และบล็อกการส่งเมื่อเกิน quota ของแพ็กเกจ",
+        "2026-04-18: เพิ่ม usage counter รายเดือนใน /billing/plan-usage (lineOaMonthlyUsed/lineOaMonthlyRemaining/lineOaQuotaReached) โดยคำนวณจาก FormSubmission ของฟอร์มที่ตั้งค่า lineOaAccessToken",
+        "2026-04-18: จัดทำ rollout-safe note ที่ไม่ต้อง migration เพิ่ม (project-context/line-oa-quota-rollout.md) พร้อม SQL สำหรับตรวจสอบข้อมูลเดือนปัจจุบัน",
+        "2026-04-18: พบว่า runtime path สำหรับการส่ง LINE OA ยังไม่มี single sender module ใน API ปัจจุบัน จึงคงสถานะงานเป็น in-progress เพื่อเชื่อม hard-block เมื่อ sender path ถูกสรุป"
+      ]
+    },
+    {
+      "id": "tracking-pixel-plan-gating",
+      "title": "บังคับสิทธิ์ Tracking และ Pixel ตามแพ็กเกจ",
+      "status": "todo",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "billing",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "plan-schema-feature-expansion",
+        "plan-gating-enforcement"
+      ],
+      "scope": [
+        "กำหนด capability: BASIC ไม่มี, BUSINESS full integration, PRO full+custom code",
+        "เพิ่ม guard/error code ที่อ่านง่ายเมื่อสิทธิ์ไม่ถึง",
+        "ผูก UI setting pages ให้ disable พร้อม CTA อัปเกรด"
+      ],
+      "acceptanceCriteria": [
+        "ผู้ใช้แต่ละแพ็กเกจเห็นและใช้งาน tracking/pixel ตามสิทธิ์จริง",
+        "การพยายามใช้ฟีเจอร์เกินสิทธิ์ได้รับข้อความชัดเจนพร้อมทางอัปเกรด"
+      ]
+    },
+    {
+      "id": "analytics-tier-delivery",
+      "title": "ส่งมอบ Analytics ตามระดับแพ็กเกจ",
+      "status": "in-progress",
+      "priority": "medium",
+      "phase": "phase-2",
+      "epic": "dashboard",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "plan-schema-feature-expansion",
+        "dashboard-subscription-view"
+      ],
+      "scope": [
+        "แยกชุดรายงานสำหรับ BUSINESS และ PRO",
+        "เพิ่ม gating ของ endpoint analytics ตามแพ็กเกจ",
+        "แสดงสถานะ feature lock และ upgrade hints ใน UI"
+      ],
+      "progressNotes": [
+        "Kickoff 2026-04-18: เริ่ม implementation โครงสร้าง dashboard ใหม่ตาม FinnWeb brand พร้อมดึงข้อมูลจริงจาก API เท่าที่มี"
+      ],
+      "acceptanceCriteria": [
+        "BUSINESS ได้ dashboard analytics ตาม matrix",
+        "PRO ได้ advanced reports ที่ไม่เปิดให้แพ็กเกจต่ำกว่า"
+      ]
+    },
+    {
+      "id": "support-tier-operationalization",
+      "title": "ทำ support tier ให้ใช้งานได้จริงตามแพ็กเกจ",
+      "status": "todo",
+      "priority": "medium",
+      "phase": "phase-2",
+      "epic": "dashboard",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": [
+        "plan-schema-feature-expansion"
+      ],
+      "scope": [
+        "กำหนดเส้นทางช่วยเหลือตาม tier (Help Center/Standard/Priority/Exclusive)",
+        "แสดง support tier ในหน้าจัดการ subscription",
+        "เพิ่ม CTA ไปช่องทางช่วยเหลือที่ถูกต้องต่อแพ็กเกจ"
+      ],
+      "acceptanceCriteria": [
+        "ผู้ใช้เห็นสิทธิ์ support ของตัวเองชัดเจน",
+        "เส้นทางติดต่อช่วยเหลือสอดคล้องกับ tier ทุกแพ็กเกจ"
+      ]
+    },
+    {
+      "id": "frontend-plan-source-of-truth",
+      "title": "รวมแหล่งข้อมูลแพ็กเกจฝั่ง frontend ให้เป็นแหล่งเดียว",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "pricing",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "plan-schema-feature-expansion"
+      ],
+      "scope": [
+        "ลด hardcode ซ้ำในหน้า pricing/subscription/checkout",
+        "ดึง plan metadata จาก API หรือ shared config กลาง",
+        "กำหนดโครงสร้างข้อมูลเดียวสำหรับข้อความแพ็กเกจ"
+      ],
+      "acceptanceCriteria": [
+        "หน้า pricing/subscription/checkout ใช้ plan source เดียวกัน",
+        "แก้แพ็กเกจครั้งเดียวแล้วสะท้อนครบทุกหน้า"
+      ],
+      "progressNotes": [
+        "2026-04-18: Kickoff task โดยเริ่มรวม metadata แพ็กเกจไปยัง shared config กลางและแทนที่ hardcode ซ้ำในหน้า pricing/subscription/checkout",
+        "2026-04-18: สร้าง apps/web/src/lib/plan-catalog.ts เป็นแหล่งข้อมูลแพ็กเกจกลาง และ refactor หน้า pricing/subscription/checkout ให้ดึงจากแหล่งเดียว",
+        "2026-04-18: ตรวจสอบผ่าน pnpm --filter @finnweb/web exec tsc --noEmit และ eslint เฉพาะไฟล์ที่แก้แล้ว"
+      ]
+    },
+    {
+      "id": "pricing-matrix-regression-suite",
+      "title": "เพิ่ม regression tests สำหรับ pricing matrix",
+      "status": "todo",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "quality",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "frontend-plan-source-of-truth",
+        "line-oa-plan-quota-enforcement",
+        "tracking-pixel-plan-gating",
+        "analytics-tier-delivery"
+      ],
+      "scope": [
+        "ทดสอบความสอดคล้องระหว่าง matrix เอกสารกับ API response",
+        "ทดสอบ plan gating ตาม capability สำคัญ",
+        "ป้องกันชื่อ/ราคา/feature drift ใน CI"
+      ],
+      "acceptanceCriteria": [
+        "CI ล้มทันทีเมื่อราคา/ฟีเจอร์ของแพ็กเกจไม่ตรง matrix",
+        "มี coverage สำหรับกรณี block/upgrade path ของฟีเจอร์หลัก"
       ]
     },
     {
@@ -67,7 +560,9 @@
       "epic": "pricing",
       "estimatePoints": 2,
       "owner": "unassigned",
-      "dependsOn": ["pricing-consistency-audit"],
+      "dependsOn": [
+        "pricing-consistency-audit"
+      ],
       "scope": [
         "ตัดสินใจว่า Business เป็น tier สาธารณะถาวรหรือไม่",
         "ยืนยัน copy ราคาสำหรับตลาดไทย"
@@ -91,7 +586,9 @@
       "epic": "auth",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": ["auth-production-hardening"],
+      "dependsOn": [
+        "auth-production-hardening"
+      ],
       "scope": [
         "จำกัด rate ของ endpoint login และ password reset",
         "ทำให้ error response ใช้งานง่ายและรองรับภาษาไทย"
@@ -110,6 +607,37 @@
       ]
     },
     {
+      "id": "auth-ui-login-register-remake",
+      "title": "รีดีไซน์หน้า Login และ Sign Up",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "auth",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "auth-production-hardening"
+      ],
+      "scope": [
+        "แยกหน้า login และ register ให้ชัดเจนพร้อม UX ที่เร็วขึ้น",
+        "รักษา flow auth เดิม (register/login -> persist token -> redirect)",
+        "ปรับ visual ให้สอดคล้อง brand FinnWeb และรองรับ mobile"
+      ],
+      "progressNotes": [
+        "Kickoff 2026-04-18: เริ่มรีแฟกเตอร์ auth pages ให้เป็นคนละหน้าพร้อม shared auth form logic",
+        "สร้าง shared AuthFormCard เพื่อลดโค้ดซ้ำและคง behavior register/login เดิม",
+        "ปรับ /login ให้เป็นหน้าจริง (ไม่ redirect ไป /register) พร้อมคอนเทนต์แยกตาม use case",
+        "ยืนยัน TypeScript ของ apps/web ผ่านหลังปรับหน้า auth",
+        "2026-04-18: เปิดงานต่อเพื่อปรับสไตล์ auth ให้ใกล้เคียง glass premium reference",
+        "เสร็จสิ้น glass-style auth ใหม่ (พื้นหลัง dynamic + icon input + password reveal + CTA gradient + social block) พร้อม compile ผ่าน"
+      ],
+      "acceptanceCriteria": [
+        "หน้า login และ register ใช้งานได้แยกกันโดยไม่ redirect ข้ามหน้า",
+        "flow register/login ยังทำงานครบพร้อม redirect ตาม next/plan",
+        "TypeScript ของ apps/web ผ่าน (tsc --noEmit)"
+      ]
+    },
+    {
       "id": "billing-checkout-success-path",
       "title": "ตรวจสอบเส้นทาง checkout จนถึง subscription ที่ active",
       "status": "done",
@@ -118,7 +646,9 @@
       "epic": "billing",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": ["pricing-consistency-audit"],
+      "dependsOn": [
+        "pricing-consistency-audit"
+      ],
       "scope": [
         "การสร้าง checkout session",
         "การประมวลผล webhook สำหรับ subscription upsert",
@@ -146,7 +676,9 @@
       "epic": "billing",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": ["billing-checkout-success-path"],
+      "dependsOn": [
+        "billing-checkout-success-path"
+      ],
       "scope": [
         "จัดการ invoice.payment_failed",
         "UX + API สำหรับยกเลิกเมื่อสิ้นสุดรอบบิล",
@@ -167,7 +699,9 @@
       "epic": "billing",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": ["billing-checkout-success-path"],
+      "dependsOn": [
+        "billing-checkout-success-path"
+      ],
       "scope": [
         "บังคับใช้ maxSites และ maxPagesPerSite",
         "error ที่สม่ำเสมอสำหรับการกระทำที่เกินขีดจำกัด",
@@ -214,7 +748,9 @@
       "epic": "builder",
       "estimatePoints": 8,
       "owner": "unassigned",
-      "dependsOn": ["auth-production-hardening"],
+      "dependsOn": [
+        "auth-production-hardening"
+      ],
       "scope": [
         "Section Hero, Text, Image, CTA, Form",
         "การตรวจสอบและบันทึก Section JSON",
@@ -234,7 +770,9 @@
       "epic": "builder",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": ["builder-sections-core"],
+      "dependsOn": [
+        "builder-sections-core"
+      ],
       "scope": [
         "สร้าง/แก้ไข/ลบ page",
         "แจ้งเตือนความไม่ซ้ำกันของ slug/path",
@@ -258,13 +796,16 @@
     {
       "id": "frontend-recreate-create-landing-page",
       "title": "รีบิลด์ flow สร้างหน้า Landing จากฝั่ง Frontend",
-      "status": "todo",
+      "status": "in-progress",
       "priority": "high",
       "phase": "phase-2",
       "epic": "builder",
       "estimatePoints": 8,
       "owner": "unassigned",
-      "dependsOn": ["builder-page-editing-flow", "publish-public-render"],
+      "dependsOn": [
+        "builder-page-editing-flow",
+        "publish-public-render"
+      ],
       "scope": [
         "ออกแบบ flow ใหม่สำหรับ create landing page ให้ผู้ใช้เริ่มได้ในไม่กี่คลิก",
         "เชื่อมต่อกับ API page CRUD และ section ที่มีอยู่โดยไม่ใช้หน้า debug",
@@ -277,7 +818,53 @@
         "UX บนมือถือใช้งานได้โดยไม่มี horizontal scroll และปุ่มหลักกดง่าย"
       ],
       "progressNotes": [
-        "Task added on 2026-04-17 to track frontend rebuild of landing page creation flow"
+        "Task added on 2026-04-17 to track frontend rebuild of landing page creation flow",
+        "2026-04-18: ปรับเนื้อหา landing page ใหม่ตาม messaging ล่าสุดครบโครงสร้าง (Header/Hero/Features/Service Supplement/Pricing/FAQ/Footer) โดยเน้นความง่าย, ฟีเจอร์การตลาด (Pixel/SEO/Analytics), บริการเสริม setup 500 บาท และโปรทดลองใช้ฟรี 7 วัน",
+        "2026-04-18: เพิ่ม Use Cases section แยกชัดเจน (แม่ค้าออนไลน์/คลินิกและงานบริการ/สายยิงโฆษณา) และย้าย Service Supplement ไป section ถัดไป",
+        "2026-04-18: เก็บรอบ polish หน้า landing ต่อเนื่องโดยเพิ่มไอคอนใน Use Cases, เพิ่ม CTA ใต้ Use Cases, เพิ่มเมนูนำทางบริการเสริม และขยาย spacing ระหว่าง sections",
+        "2026-04-18: อัปเกรด section editor ฝั่ง frontend ให้รองรับ live editing ของ props ราย type พร้อม auto-save ลง API, drag-and-drop แบบ dnd-kit (keyboard accessible), และ preview responsive แยกมุมมองมือถือ/เดสก์ท็อป",
+        "2026-04-18: บันทึกจุดทำต่อสำหรับ frontend และส่งงานต่อไป backend เพื่อเสริม validation ของ section props ตาม type ให้รองรับ editor ใหม่",
+        "2026-04-19: เริ่ม implementation ตาม flow ใหม่แบบ specific (Phase 1-2) ในหน้า /sites โดยเพิ่ม Discovery & Purpose (เลือกประเภทธุรกิจ + เป้าหมาย), template filtering ตาม intent, preview toggle Mobile/Desktop และ One-Click Start พร้อม skeleton loading ระหว่างคัดลอกโครงสร้าง; ตรวจผ่าน eslint และ web typecheck",
+        "2026-04-19: เพิ่ม UX tips ใน editor ตาม flow ใหม่: Guided Tour (3 จุดหลัก แก้ไขข้อความ/เพิ่ม Section/เผยแพร่) และ Empty State Guidance แบบปุ่ม + เพิ่ม Section แรกตรงกลางหน้า preview; ตรวจผ่าน eslint และ web typecheck",
+        "2026-04-19: ทำ Phase 3 Wizard Setup ในหน้า /sites โดยเพิ่มฟิลด์ชื่อแบรนด์/เบอร์โทร/LINE OA ID/โลโก้ และใช้ข้อมูลนี้พรีฟิล section props ตอน clone template (HERO/FORM/CTA/IMAGE) ก่อนเข้า editor; ตรวจผ่าน eslint และ web typecheck",
+        "2026-04-19: เริ่ม Phase 4 ใน Site Editor โดยเพิ่มแท็บ Global (accent color/section radius/content width/hero tone) และ Ad Ready setup (Facebook Pixel/Google Tag/TikTok Pixel/campaign/UTM toggle) พร้อมผูก global style เข้ากับ live preview และแสดง readiness counter; ตรวจผ่าน eslint และ web typecheck",
+        "2026-04-19: บันทึก next target ตามคำขอ: ทำ Phase 5 Launch flow (publish checklist + launch readiness) และแยกหน้า create site experience แบบ step-by-step ที่ /sites/create",
+        "2026-04-19: สร้างหน้าใหม่ /sites/create ตาม reference flow (เลือกหมวดธุรกิจ > เลือกเทมเพลต > brand setup) พร้อมเชื่อม API สร้าง site/page/sections จริงและเข้า editor อัตโนมัติหลังสร้างเสร็จ; เชื่อมปุ่มใน /sites ให้ไปหน้าใหม่แล้ว"
+      ]
+    },
+    {
+      "id": "builder-section-props-backend-validation",
+      "title": "เสริม backend validation ของ section props ตาม type",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "builder",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "builder-sections-core",
+        "frontend-recreate-create-landing-page"
+      ],
+      "scope": [
+        "validate ข้อมูล props สำหรับ HERO/CTA/IMAGE/FORM/RICH_TEXT และ type ที่เกี่ยวข้อง",
+        "บังคับชนิดข้อมูลให้ปลอดภัย (string/url) โดยไม่ทำให้ข้อมูลเดิมใช้งานไม่ได้",
+        "ส่ง error code SECTION_PROPS_INVALID อย่างสม่ำเสมอเมื่อ payload ผิดรูปแบบ"
+      ],
+      "acceptanceCriteria": [
+        "payload props ที่ผิดชนิดถูกปฏิเสธด้วย SECTION_PROPS_INVALID",
+        "payload ที่ถูกต้องจาก editor ใหม่บันทึกได้ทั้ง create และ update section",
+        "ไม่เกิด breaking change กับ section type อื่นที่ยังไม่ได้กำหนด schema ละเอียด"
+      ],
+      "progressNotes": [
+        "2026-04-18: Kickoff จากคำสั่งย้ายงานไป backend หลังปิดงาน frontend editor รอบล่าสุด",
+        "2026-04-18: เพิ่ม validation ราย field พร้อม error code เฉพาะ (เช่น SECTION_PROPS_INVALID_TITLE, SECTION_PROPS_INVALID_IMAGE_URL)",
+        "2026-04-18: เพิ่ม schema validation สำหรับ section type ใน default branch (ตรวจ nested depth/size/ชนิดข้อมูล)",
+        "2026-04-18: เพิ่ม integration tests ใหม่ใน apps/api/src/modules/sites/sites.integration.test.ts ครอบคลุมกรณี invalid props ทั้ง create/update",
+        "2026-04-18: แก้ DI ของ Sites module ให้เสถียรใน integration runtime และยืนยันชุดทดสอบ SECTION_PROPS_INVALID ผ่านครบ 3 กรณี",
+        "2026-04-18: รับงานต่อเพื่อเพิ่ม integration test matrix สำหรับ SUBTITLE/BUTTON_TEXT/BODY/DESCRIPTION และย้าย error code ↔ Thai copy ไปใช้ตารางกลางร่วมกันทั้ง editor + create-site flow",
+        "2026-04-18: เพิ่ม test matrix ครบ 4 เคสใหม่ (SUBTITLE/BUTTON_TEXT/BODY/DESCRIPTION) และยืนยัน integration suite ผ่าน 7 เคส",
+        "2026-04-18: สร้างตาราง mapping กลางที่ apps/web/src/lib/section-error-messages.ts และ reuse ใน editor + create-site flow พร้อมผ่าน lint/typecheck",
+        "2026-04-18: ขยาย integration tests เพิ่ม ALT_TEXT และ default schema limit (ITEMS_SIZE) พร้อมปรับ mapping กลางให้รองรับข้อความไทยสำหรับกลุ่ม _DEPTH/_SIZE/_LENGTH"
       ]
     },
     {
@@ -289,7 +876,9 @@
       "epic": "publishing",
       "estimatePoints": 8,
       "owner": "unassigned",
-      "dependsOn": ["builder-page-editing-flow"],
+      "dependsOn": [
+        "builder-page-editing-flow"
+      ],
       "progressNotes": [
         "Switched focus from plan-gating frontend work to backend publishing route implementation.",
         "Kickoff: implement public route resolution by domain + page path/slug with published-only guard.",
@@ -319,7 +908,9 @@
       "epic": "publishing",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": ["publish-public-render"],
+      "dependsOn": [
+        "publish-public-render"
+      ],
       "scope": [
         "Title, description, keywords, OG image",
         "ใช้ค่าเริ่มต้นของ site เมื่อ metadata ของ page ว่างเปล่า"
@@ -332,13 +923,15 @@
     {
       "id": "forms-schema-and-submission",
       "title": "สร้างระบบรับฟอร์มและบันทึก submission",
-      "status": "todo",
+      "status": "done",
       "priority": "medium",
       "phase": "phase-2",
       "epic": "forms",
       "estimatePoints": 8,
       "owner": "unassigned",
-      "dependsOn": ["builder-sections-core"],
+      "dependsOn": [
+        "builder-sections-core"
+      ],
       "scope": [
         "ฟิลด์ฟอร์ม: ชื่อ, อีเมล, โทรศัพท์, ข้อความ",
         "endpoint รับ submission และการตรวจสอบ",
@@ -347,6 +940,14 @@
       "acceptanceCriteria": [
         "ผู้เยี่ยมชมสามารถส่งฟอร์ม lead ได้สำเร็จ",
         "ข้อมูล lead สืบค้นได้ใน dashboard"
+      ],
+      "progressNotes": [
+        "2026-04-18: Kickoff implementation เพิ่ม public endpoint รับฟอร์มและบันทึก FormSubmission พร้อม context ของ site/page",
+        "2026-04-18: เพิ่ม DTO ใหม่ submit-public-lead.dto.ts สำหรับฟิลด์ name/email/phone/message พร้อม pageId/sectionId",
+        "2026-04-18: เพิ่ม endpoint POST /api/public/sites/:siteId/forms/submit ใน PublicSitesController",
+        "2026-04-18: เพิ่ม SitesService.submitPublicLead() โดย validate site/page, upsert Form อัตโนมัติ, และ create FormSubmission พร้อม metadata (ip/user-agent/referrer/utm)",
+        "2026-04-18: เพิ่ม integration tests ครอบคลุม success flow, invalid payload, และกรณี page ไม่เผยแพร่",
+        "2026-04-18: ตรวจสอบ TypeScript ของ @finnweb/api ผ่าน (tsc --noEmit)"
       ]
     },
     {
@@ -358,7 +959,9 @@
       "epic": "forms",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": ["forms-schema-and-submission"],
+      "dependsOn": [
+        "forms-schema-and-submission"
+      ],
       "scope": [
         "template อีเมล transactional",
         "พฤติกรรม retry ที่ปลอดภัยจากความล้มเหลว"
@@ -377,7 +980,9 @@
       "epic": "forms",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": ["forms-schema-and-submission"],
+      "dependsOn": [
+        "forms-schema-and-submission"
+      ],
       "scope": [
         "การผสานรวม LINE notification",
         "การตั้งค่า LINE ระดับ workspace"
@@ -396,7 +1001,10 @@
       "epic": "dashboard",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": ["builder-page-editing-flow", "plan-gating-enforcement"],
+      "dependsOn": [
+        "builder-page-editing-flow",
+        "plan-gating-enforcement"
+      ],
       "scope": [
         "ความสม่ำเสมอของ site switcher และรายการ page",
         "ข้อความ empty state และขีดจำกัดที่ชัดเจน",
@@ -425,7 +1033,9 @@
       "epic": "dashboard",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": ["forms-schema-and-submission"],
+      "dependsOn": [
+        "forms-schema-and-submission"
+      ],
       "scope": [
         "แสดง lead ล่าสุดของแต่ละ site",
         "ตัวกรองพื้นฐานตามวันที่และ page"
@@ -458,7 +1068,10 @@
         "billing-checkout-success-path",
         "billing-failure-and-cancel-path"
       ],
-      "scope": ["แสดงแผนปัจจุบันและวันต่ออายุ", "การดำเนินการอัปเกรดและยกเลิก"],
+      "scope": [
+        "แสดงแผนปัจจุบันและวันต่ออายุ",
+        "การดำเนินการอัปเกรดและยกเลิก"
+      ],
       "progressNotes": [
         "เพิ่มหน้า dashboard subscription ใหม่ที่ /dashboard/subscription",
         "ดึงข้อมูลแผนปัจจุบันผ่าน GET /billing/subscription และแสดง plan/status/billing interval/renewal date",
@@ -474,15 +1087,91 @@
       ]
     },
     {
+      "id": "subscription-page-glass-redesign",
+      "title": "ปรับโฉมหน้า Subscription ให้เป็น premium glass",
+      "status": "done",
+      "priority": "medium",
+      "phase": "phase-3",
+      "epic": "dashboard",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": [
+        "dashboard-subscription-view"
+      ],
+      "scope": [
+        "ปรับ UI หน้า /subscription ให้ใกล้เคียง premium glass reference",
+        "คงแพ็กเกจมาตรฐาน Free / Basic / Business / Pro",
+        "คง flow เดิมสำหรับ checkout และ workspace selection"
+      ],
+      "progressNotes": [
+        "Kickoff 2026-04-18: เริ่มรีดีไซน์หน้า subscription โดยยึด canonical plan ของ FinnWeb",
+        "รีดีไซน์ /subscription เป็น glass-style พร้อมพื้นหลัง dynamic และ pricing cards แบบใหม่",
+        "คงแพ็กเกจ Free / Basic / Business / Pro และคง Business เป็นแผนแนะนำ",
+        "คง flow เดิม: เลือก workspace, สร้าง checkout session และ redirect ไป Stripe",
+        "TypeScript ของ apps/web ผ่านหลังปรับหน้า subscription"
+      ],
+      "acceptanceCriteria": [
+        "หน้า /subscription แสดงดีไซน์ใหม่พร้อม responsive",
+        "Business tier ยังคงตำแหน่งแนะนำ",
+        "TypeScript apps/web ผ่าน (tsc --noEmit)"
+      ]
+    },
+    {
+      "id": "subscription-custom-checkout-ui-api",
+      "title": "เริ่มทำ custom checkout UI และ API handler",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "billing",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "subscription-page-glass-redesign"
+      ],
+      "scope": [
+        "เพิ่ม custom checkout UI flow ในหน้า /subscription",
+        "เพิ่ม web API handler สำหรับสร้าง checkout session",
+        "คง Stripe billing flow เดิมและรองรับ error ที่อ่านง่าย"
+      ],
+      "progressNotes": [
+        "Kickoff 2026-04-18: เริ่มต่อยอดจาก subscription glass UI ไปสู่ custom checkout flow",
+        "เพิ่ม web API handler ใหม่ที่ /api/checkout/session สำหรับสร้าง checkout session ผ่าน backend billing API",
+        "หน้า /subscription เพิ่ม custom checkout panel แสดงขั้นตอนยืนยันก่อน redirect ไป Stripe",
+        "เชื่อม flow การเลือกแผนเข้ากับ custom checkout panel และปรับ error handling ให้ชัดเจนขึ้น",
+        "TypeScript ของ apps/web ผ่านหลังเพิ่ม custom checkout UI/API",
+        "เริ่มต่อยอดสู่ embedded checkout เพื่อให้ผู้ใช้กรอกบัตรและเลือกช่องทางจ่ายเงินบนหน้าเดียวกัน",
+        "เพิ่ม backend endpoint /billing/checkout-session/embedded เพื่อคืน client secret สำหรับ on-page payment form",
+        "ปรับ web API route รองรับ checkoutMode=embedded และส่ง clientSecret กลับให้ frontend",
+        "TypeScript ผ่านทั้ง apps/web และ apps/api หลังเพิ่ม embedded checkout",
+        "แก้เส้นทาง error handling ของ Stripe checkout ให้ส่งข้อความสาเหตุจริงกลับมาแทน Something went wrong",
+        "อัปเดต Stripe ui_mode จาก embedded เป็น embedded_page ตาม API เวอร์ชันล่าสุด",
+        "ทดลองและย้ายไปใช้ Stripe Payment Element ผ่าน CheckoutElementsProvider + useCheckout.confirm",
+        "ปรับ backend ให้ใช้ ui_mode=custom สำหรับ Payment Element flow",
+        "อัปเดตตาม Stripe API ล่าสุดอีกครั้ง: เปลี่ยน ui_mode เป็น elements",
+        "ปรับ Appearance API ของ Payment Element ให้เข้ากับ FinnWeb theme (Kanit + Deep Space + Ignite Orange)",
+        "Kickoff 2026-04-18: แยก payment form/card input ไปหน้าเฉพาะแทนการกรอกในหน้า /subscription",
+        "แยกหน้าใหม่ /subscription/checkout สำหรับฟอร์มชำระเงิน (Stripe Payment Element) และให้หน้า /subscription เป็นขั้นตอนเลือกแพ็กเกจอย่างเดียว",
+        "TypeScript ผ่านทั้ง apps/web และ apps/api หลังแยก checkout เป็นคนละหน้า",
+        "ปรับ checkout ตาม requirement ล่าสุด: ปิด PromptPay/QR (card only), แสดงทดลองใช้ฟรี 7 วัน, และปรับข้อความราคาเป็นรวม VAT แล้ว"
+      ],
+      "acceptanceCriteria": [
+        "ผู้ใช้เห็น custom checkout block พร้อมแบบฟอร์มชำระเงินบนหน้าเดียว",
+        "checkout session call ผ่าน API handler กลางของ web",
+        "TypeScript apps/web และ apps/api ผ่าน (tsc --noEmit)"
+      ]
+    },
+    {
       "id": "templates-mvp-pack",
       "title": "เตรียม template เริ่มต้นสำหรับ MVP",
-      "status": "todo",
+      "status": "done",
       "priority": "high",
       "phase": "phase-3",
       "epic": "templates",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": ["builder-sections-core"],
+      "dependsOn": [
+        "builder-sections-core"
+      ],
       "scope": [
         "Template seeds: สินค้า, บริการ, คลินิก, ร้านอาหาร",
         "นำ template ไปใช้กับ site ใหม่ด้วยคลิกเดียว"
@@ -493,7 +1182,9 @@
       ],
       "progressNotes": [
         "ปรับ priority ขึ้นเพื่อรองรับเป้าหมายทดลอง flow การสร้างเว็บไซต์จาก frontend ก่อน",
-        "ลดความสำคัญงาน lead/forms ชั่วคราวเพื่อเร่งเส้นทาง create-site จากฝั่งผู้ใช้"
+        "ลดความสำคัญงาน lead/forms ชั่วคราวเพื่อเร่งเส้นทาง create-site จากฝั่งผู้ใช้",
+        "2026-04-18: เพิ่ม template เริ่มต้น 4 แบบ (สินค้า/บริการ/คลินิก/ร้านอาหาร) ในหน้า create site",
+        "2026-04-18: หลังสร้าง site ระบบสร้างหน้า LANDING เริ่มต้นและเติม section ตาม template อัตโนมัติแบบ one-click"
       ]
     },
     {
@@ -530,7 +1221,9 @@
       "epic": "quality",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": ["publish-public-render"],
+      "dependsOn": [
+        "publish-public-render"
+      ],
       "scope": [
         "ประสิทธิภาพการโหลดครั้งแรกของ public page",
         "ความตอบสนองของ route ใน dashboard",
@@ -544,7 +1237,7 @@
     {
       "id": "integration-test-suite-mvp",
       "title": "สร้าง integration test suite สำหรับ MVP",
-      "status": "todo",
+      "status": "in-progress",
       "priority": "high",
       "phase": "phase-3",
       "epic": "quality",
@@ -565,6 +1258,12 @@
       "acceptanceCriteria": [
         "flow MVP สำคัญมี automated regression coverage",
         "test suite รันใน CI ได้ผลลัพธ์ที่เสถียร"
+      ],
+      "progressNotes": [
+        "Kickoff 2026-04-19: เลือกเป็นงานถัดไปเพราะ dependency พร้อมครบและเป็น blocker ของ release pipeline",
+        "2026-04-19: เพิ่ม billing webhook integration tests ใหม่ที่ apps/api/src/modules/billing/billing-webhook.integration.test.ts ครอบคลุม customer.subscription.updated, invoice.paid, invoice.payment_failed, customer.subscription.deleted",
+        "2026-04-19: ยืนยันผลทดสอบผ่าน 4/4 เคส และผ่าน API typecheck (pnpm --filter @finnweb/api exec tsc --noEmit)",
+        "2026-04-19: เพิ่ม billing checkout integration tests ใหม่ที่ apps/api/src/modules/billing/billing-checkout.integration.test.ts ครอบคลุม createCheckoutSession (trial + redirect), createEmbeddedCheckoutSession (card-only + client secret), reject FREE plan, และ reject missing client secret; ยืนยันผ่าน 4/4 เคสและ API typecheck"
       ]
     },
     {
@@ -576,7 +1275,9 @@
       "epic": "release",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": ["integration-test-suite-mvp"],
+      "dependsOn": [
+        "integration-test-suite-mvp"
+      ],
       "scope": [
         "deploy flow ของ API, web และ worker",
         "checklist environment variable",
@@ -596,7 +1297,10 @@
       "epic": "release",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": ["mobile-first-ux-pass", "staging-release-pipeline"],
+      "dependsOn": [
+        "mobile-first-ux-pass",
+        "staging-release-pipeline"
+      ],
       "scope": [
         "ทดสอบแบบ task-based สำหรับผู้ใช้ที่ไม่ใช่นักเทคนิค",
         "ความชัดเจนของ copy และข้อความ error",
@@ -616,7 +1320,9 @@
       "epic": "release",
       "estimatePoints": 2,
       "owner": "unassigned",
-      "dependsOn": ["mvp-uat-thai-sme"],
+      "dependsOn": [
+        "mvp-uat-thai-sme"
+      ],
       "scope": [
         "ตรวจสอบ production config",
         "ตรวจสอบ monitoring และ alert",

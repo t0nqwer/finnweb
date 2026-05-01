@@ -32,6 +32,7 @@ model User {
   ownedWorkspaces         Workspace[]              @relation("WorkspaceOwner")
   workspaceMembers        WorkspaceMember[]
   templates               Template[]
+  sectionTemplates        SectionTemplate[]
   contentPosts            ContentPost[]            @relation("ContentAuthor")
   contentRevisions        ContentRevision[]        @relation("ContentEditedBy")
   authAccounts            AuthAccount[]
@@ -177,6 +178,26 @@ enum PlanCode {
   PRO
 }
 
+enum SupportTier {
+  HELP_CENTER
+  STANDARD
+  PRIORITY
+  EXCLUSIVE_ADVISOR
+}
+
+enum TrackingLevel {
+  NONE
+  FULL_INTEGRATION
+  FULL_WITH_CUSTOM_CODE
+}
+
+enum AnalyticsLevel {
+  NONE
+  DASHBOARD
+  DETAILED
+  ADVANCED_REPORTS
+}
+
 enum BillingInterval {
   MONTHLY
   YEARLY
@@ -223,6 +244,11 @@ model Plan {
   allowBlog         Boolean @default(false)
   allowNews         Boolean @default(false)
   allowTemplates    Boolean @default(false)
+
+  lineOaMonthlyQuota Int?
+  supportTier        SupportTier    @default(HELP_CENTER)
+  trackingLevel      TrackingLevel  @default(NONE)
+  analyticsLevel     AnalyticsLevel @default(NONE)
 
   trialDays Int      @default(0)
   isActive  Boolean  @default(true)
@@ -333,6 +359,7 @@ model Site {
 
   isTemplateSource Boolean   @default(false)
   publishedAt      DateTime?
+  publishedVersion Int?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -341,6 +368,7 @@ model Site {
   pages       Page[]
   domains     Domain[]
   publishLogs PublishLog[]
+  previewTokens PreviewToken[]
   forms       Form[]
   assets      Asset[]
 
@@ -368,6 +396,7 @@ model Site {
   @@unique([workspaceId, slug])
   @@index([workspaceId])
   @@index([status])
+  @@index([publishedVersion])
   @@index([createdAt])
 }
 
@@ -386,6 +415,9 @@ enum PageType {
 }
 
 enum SectionType {
+  NAVBAR
+  SIDEBAR
+  HEADER
   HERO
   FEATURE
   ABOUT
@@ -399,6 +431,10 @@ enum SectionType {
   IMAGE
   VIDEO
   FORM
+  BOOKING
+  COMPARISON
+  CONTENT
+  FOOTER
   PRODUCT_GRID
   BLOG_LIST
   NEWS_LIST
@@ -440,20 +476,26 @@ model Page {
 model Section {
   id     String @id @default(cuid())
   pageId String
+  sectionTemplateId String?
 
   type      SectionType
   name      String?
   sortOrder Int         @default(0)
   isVisible Boolean     @default(true)
 
-  props     Json
+  props            Json
+  customData       Json?
+  templateVersion  Int?
+  templateMeta     Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  page            Page             @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  sectionTemplate SectionTemplate? @relation(fields: [sectionTemplateId], references: [id], onDelete: SetNull)
 
   @@index([pageId, sortOrder])
   @@index([pageId, type])
+  @@index([sectionTemplateId])
 }
 
 // endregion
@@ -518,6 +560,19 @@ model PublishLog {
   @@index([siteId, createdAt])
 }
 
+model PreviewToken {
+  id        String   @id @default(cuid())
+  siteId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdById String?
+  createdAt DateTime @default(now())
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId, expiresAt])
+}
+
 // endregion
 
 // region Forms & Submissions
@@ -554,9 +609,9 @@ model Form {
   successMessage   String?
   redirectUrl      String?
 
-  notifyEmail     String?
-  webhookUrl      String?
-  lineNotifyToken String?
+  notifyEmail       String?
+  webhookUrl        String?
+  lineOaAccessToken String?
 
   settings  Json?
   createdAt DateTime @default(now())
@@ -1344,7 +1399,8 @@ enum TemplateVisibility {
 }
 
 model Template {
-  id   String @id @default(cuid())
+  id   String  @id @default(cuid())
+  code String? @unique
   name String
   slug String @unique
 
@@ -1366,6 +1422,7 @@ model Template {
   ratingCount  Int    @default(0)
 
   tags Json?
+  sortOrder Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1373,11 +1430,58 @@ model Template {
   category  TemplateCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   createdBy User?             @relation(fields: [createdById], references: [id], onDelete: SetNull)
 
+  pages    TemplatePage[]
   versions TemplateVersion[]
   installs TemplateInstall[]
 
-  @@index([status, visibility])
+  @@index([status, visibility, sortOrder])
   @@index([categoryId])
+}
+
+model TemplatePage {
+  id         String @id @default(cuid())
+  templateId String
+
+  title    String
+  slug     String
+  pageType PageType @default(LANDING)
+  path     String?
+
+  isHomePage  Boolean @default(false)
+  isPublished Boolean @default(false)
+  sortOrder   Int     @default(0)
+
+  seoTitle       String?
+  seoDescription String?
+  seoKeywords    String?
+  ogImageUrl     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  sections TemplateSection[]
+
+  @@unique([templateId, slug])
+  @@index([templateId, sortOrder])
+}
+
+model TemplateSection {
+  id             String @id @default(cuid())
+  templatePageId String
+
+  type      SectionType
+  name      String?
+  sortOrder Int     @default(0)
+  isVisible Boolean @default(true)
+  props     Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  templatePage TemplatePage @relation(fields: [templatePageId], references: [id], onDelete: Cascade)
+
+  @@index([templatePageId, sortOrder])
 }
 
 model TemplateCategory {
@@ -1432,6 +1536,62 @@ model TemplateInstall {
 
   @@index([siteId])
   @@index([templateId])
+}
+
+// endregion
+// region Section Template Library
+
+model SectionTemplate {
+  id         String @id @default(cuid())
+  code       String @unique
+  name       String
+  sectionType SectionType
+
+  thumbnailUrl String?
+  ownerId      String?
+
+  isOfficial  Boolean @default(false)
+  isPublished Boolean @default(false)
+  sortOrder   Int     @default(0)
+
+  schemaJson  Json?
+  layoutJson  Json?
+  styleTokens Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner    User?                    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  versions SectionTemplateVersion[]
+  sections Section[]
+
+  @@index([sectionType, isOfficial, isPublished, sortOrder])
+  @@index([ownerId])
+}
+
+model SectionTemplateVersion {
+  id                String @id @default(cuid())
+  sectionTemplateId String
+
+  version  Int
+  name     String?
+  renderMode SectionTemplateRenderMode @default(STRUCTURED)
+  htmlTemplate String?
+  cssTemplate  String?
+  snapshot Json
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  sectionTemplate SectionTemplate @relation(fields: [sectionTemplateId], references: [id], onDelete: Cascade)
+
+  @@unique([sectionTemplateId, version])
+  @@index([sectionTemplateId, isActive])
+}
+
+enum SectionTemplateRenderMode {
+  STRUCTURED
+  SAFE_HTML
 }
 
 // endregion

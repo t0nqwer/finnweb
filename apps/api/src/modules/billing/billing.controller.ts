@@ -34,6 +34,14 @@ export class BillingController {
     return this.billingService.createCheckoutSession(dto, userId);
   }
 
+  @Post("checkout-session/embedded")
+  async createEmbeddedCheckoutSession(
+    @Body() dto: CreateCheckoutSessionDto,
+    @CurrentUser("sub") userId: string,
+  ) {
+    return this.billingService.createEmbeddedCheckoutSession(dto, userId);
+  }
+
   @Post("cancel")
   async cancelSubscription(
     @Body() dto: CancelSubscriptionDto,

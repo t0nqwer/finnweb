@@ -261,6 +261,10 @@ export class BillingRepository {
             allowEcommerce: true,
             allowBlog: true,
             allowNews: true,
+            lineOaMonthlyQuota: true,
+            supportTier: true,
+            trackingLevel: true,
+            analyticsLevel: true,
           },
         },
       },
@@ -317,5 +321,32 @@ export class BillingRepository {
       total: totalPages,
       siteIds: siteIdsOverLimit,
     };
+  }
+
+  async countMonthlyLineOaNotifications(workspaceId: string, at = new Date()) {
+    const monthStart = new Date(at.getFullYear(), at.getMonth(), 1);
+    const monthEnd = new Date(at.getFullYear(), at.getMonth() + 1, 1);
+
+    return this.prisma.formSubmission.count({
+      where: {
+        createdAt: {
+          gte: monthStart,
+          lt: monthEnd,
+        },
+        form: {
+          site: {
+            workspaceId,
+          },
+          lineOaAccessToken: {
+            not: null,
+          },
+        },
+        NOT: {
+          form: {
+            lineOaAccessToken: "",
+          },
+        },
+      },
+    });
   }
 }

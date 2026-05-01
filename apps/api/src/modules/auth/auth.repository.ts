@@ -217,6 +217,12 @@ export class AuthRepository {
     });
   }
 
+  deleteUserById(userId: string) {
+    return this.prisma.user.delete({
+      where: { id: userId },
+    });
+  }
+
   createPasswordResetToken(data: {
     userId: string;
     tokenHash: string;

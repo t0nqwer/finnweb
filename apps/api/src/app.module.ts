@@ -8,6 +8,8 @@ import { AuthModule } from "./modules/auth/auth.module";
 import { BillingModule } from "./modules/billing/billing.module";
 import { JobsModule } from "./jobs/jobs.module";
 import { RedisModule } from "./modules/redis/redis.module";
+import { TemplatesModule } from "./modules/templates/templates.module";
+import { SectionTemplatesModule } from "./modules/section-templates/section-templates.module";
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { RedisModule } from "./modules/redis/redis.module";
     JobsModule,
     HealthModule,
     SitesModule,
+    TemplatesModule,
+    SectionTemplatesModule,
     AuthModule,
     BillingModule,
   ],

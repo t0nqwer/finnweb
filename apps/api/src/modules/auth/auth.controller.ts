@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Inject,
@@ -312,5 +313,27 @@ export class AuthController {
   @Get("me")
   me(@CurrentUser("sub") userId: string) {
     return this.authService.me(userId);
+  }
+
+  @ApiBearerAuth("bearer")
+  @ApiOperation({
+    summary: "Delete current user account and logout all sessions",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "User account deleted successfully",
+    schema: {
+      example: {
+        success: true,
+        message: "User account deleted successfully",
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: "Unauthorized" })
+  @UseGuards(AccessJwtGuard)
+  @HttpCode(200)
+  @Delete("me")
+  deleteMe(@CurrentUser("sub") userId: string) {
+    return this.authService.deleteAccount(userId);
   }
 }

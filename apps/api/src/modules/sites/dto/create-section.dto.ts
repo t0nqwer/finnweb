@@ -1,16 +1,19 @@
 import {
   IsIn,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
   Min,
-  ValidateNested,
   IsObject,
+  ValidateIf,
 } from "class-validator";
-import { Type } from "class-transformer";
 
 export const SECTION_TYPES = [
+  "NAVBAR",
+  "SIDEBAR",
+  "HEADER",
   "HERO",
   "FEATURE",
   "ABOUT",
@@ -24,6 +27,10 @@ export const SECTION_TYPES = [
   "IMAGE",
   "VIDEO",
   "FORM",
+  "BOOKING",
+  "COMPARISON",
+  "CONTENT",
+  "FOOTER",
   "PRODUCT_GRID",
   "BLOG_LIST",
   "NEWS_LIST",
@@ -33,8 +40,14 @@ export const SECTION_TYPES = [
 export type SectionTypeValue = (typeof SECTION_TYPES)[number];
 
 export class CreateSectionDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  sectionTemplateId?: string;
+
+  @ValidateIf((value: CreateSectionDto) => !value.sectionTemplateId)
   @IsIn(SECTION_TYPES)
-  type!: SectionTypeValue;
+  type?: SectionTypeValue;
 
   @IsOptional()
   @IsString()

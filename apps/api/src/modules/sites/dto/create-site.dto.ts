@@ -20,4 +20,8 @@ export class CreateSiteDto {
   @IsString()
   @Matches(/^[a-z0-9-]+$/)
   slug?: string;
+
+  @IsOptional()
+  @IsString()
+  templateId?: string;
 }

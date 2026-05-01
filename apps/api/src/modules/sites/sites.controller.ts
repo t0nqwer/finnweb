@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Inject,
   Param,
   Patch,
   Post,
@@ -19,11 +20,17 @@ import { UpdateSectionDto } from "./dto/update-section.dto";
 import { ReorderSectionsDto } from "./dto/reorder-sections.dto";
 import { GetSiteLeadsQueryDto } from "./dto/get-site-leads-query.dto";
 import { SitesService } from "./sites.service";
+import { SwitchSectionTemplateDto } from "./dto/switch-section-template.dto";
+import { PreviewTokenPolicyDto } from "./dto/preview-token.dto";
 
 @UseGuards(AccessJwtGuard)
 @Controller("sites")
 export class SitesController {
-  constructor(private readonly sitesService: SitesService) {}
+  private readonly sitesService: SitesService;
+
+  constructor(@Inject(SitesService) sitesService: SitesService) {
+    this.sitesService = sitesService;
+  }
 
   @Post()
   async create(@CurrentUser("sub") userId: string, @Body() dto: CreateSiteDto) {
@@ -38,6 +45,110 @@ export class SitesController {
   @Get()
   async findAll(@CurrentUser("sub") userId: string) {
     const data = await this.sitesService.findAll(userId);
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
+  @Post(":siteId/delete")
+  async removeSiteViaPost(
+    @CurrentUser("sub") userId: string,
+    @Param("siteId") siteId: string,
+  ) {
+    const data = await this.sitesService.removeSite(userId, siteId);
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
+  @Delete(":siteId")
+  async removeSite(
+    @CurrentUser("sub") userId: string,
+    @Param("siteId") siteId: string,
+  ) {
+    const data = await this.sitesService.removeSite(userId, siteId);
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
+  @Post(":siteId/publish")
+  async publishSite(
+    @CurrentUser("sub") userId: string,
+    @Param("siteId") siteId: string,
+  ) {
+    const data = await this.sitesService.publishSite(userId, siteId);
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
+  @Post(":siteId/preview-token")
+  async createPreviewToken(
+    @CurrentUser("sub") userId: string,
+    @Param("siteId") siteId: string,
+    @Body() dto: PreviewTokenPolicyDto,
+  ) {
+    const data = await this.sitesService.createPreviewToken(userId, siteId, dto);
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
+  @Get(":siteId/preview-tokens")
+  async findPreviewTokens(
+    @CurrentUser("sub") userId: string,
+    @Param("siteId") siteId: string,
+  ) {
+    const data = await this.sitesService.findPreviewTokens(userId, siteId);
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
+  @Delete(":siteId/preview-tokens/:previewTokenId")
+  async revokePreviewToken(
+    @CurrentUser("sub") userId: string,
+    @Param("siteId") siteId: string,
+    @Param("previewTokenId") previewTokenId: string,
+  ) {
+    const data = await this.sitesService.revokePreviewToken(
+      userId,
+      siteId,
+      previewTokenId,
+    );
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
+  @Post(":siteId/preview-tokens/:previewTokenId/refresh")
+  async refreshPreviewToken(
+    @CurrentUser("sub") userId: string,
+    @Param("siteId") siteId: string,
+    @Param("previewTokenId") previewTokenId: string,
+    @Body() dto: PreviewTokenPolicyDto,
+  ) {
+    const data = await this.sitesService.refreshPreviewToken(
+      userId,
+      siteId,
+      previewTokenId,
+      dto,
+    );
 
     return {
       success: true,
@@ -205,6 +316,28 @@ export class SitesController {
     @Body() dto: UpdateSectionDto,
   ) {
     const data = await this.sitesService.updateSection(
+      userId,
+      siteId,
+      pageId,
+      sectionId,
+      dto,
+    );
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
+  @Patch(":siteId/pages/:pageId/sections/:sectionId/template")
+  async switchSectionTemplate(
+    @CurrentUser("sub") userId: string,
+    @Param("siteId") siteId: string,
+    @Param("pageId") pageId: string,
+    @Param("sectionId") sectionId: string,
+    @Body() dto: SwitchSectionTemplateDto,
+  ) {
+    const data = await this.sitesService.switchSectionTemplate(
       userId,
       siteId,
       pageId,

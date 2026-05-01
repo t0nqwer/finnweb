@@ -13,7 +13,7 @@ A SaaS landing page + website builder for small businesses.
 
 - Landing page builder
 - Custom domain
-- Form + LINE notify
+- Form + LINE OA
 - SEO tools
 
 ## Pricing Strategy

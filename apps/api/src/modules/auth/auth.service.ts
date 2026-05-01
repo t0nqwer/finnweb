@@ -124,7 +124,7 @@ export class AuthService {
       name: dto.name,
       workspaceName,
       workspaceSlug,
-      createInitialSite: true,
+      createInitialSite: false,
     });
 
     const expiresAt = this.getRefreshExpiryDate();
@@ -329,6 +329,23 @@ export class AuthService {
     return {
       success: true,
       message: "Logged out from all sessions",
+    };
+  }
+
+  async deleteAccount(userId: string) {
+    const user = await this.authRepository.findUserById(userId);
+
+    if (!user) {
+      throw new UnauthorizedException("USER_NOT_FOUND");
+    }
+
+    // Revoke every active session before account deletion to force logout across devices.
+    await this.authRepository.revokeAllSessions(userId);
+    await this.authRepository.deleteUserById(userId);
+
+    return {
+      success: true,
+      message: "User account deleted successfully",
     };
   }
 

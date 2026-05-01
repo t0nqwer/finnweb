@@ -1,0 +1,39 @@
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from "class-validator";
+
+export class SubmitPublicLeadDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(120)
+  name!: string;
+
+  @IsString()
+  @IsEmail()
+  @MaxLength(255)
+  email!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  @Matches(/^[0-9+()\-\s]{7,20}$/)
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  message?: string;
+
+  @IsOptional()
+  @IsString()
+  pageId?: string;
+
+  @IsOptional()
+  @IsString()
+  sectionId?: string;
+}

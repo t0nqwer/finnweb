@@ -61,7 +61,7 @@ FinnWeb is a high-speed SaaS website and landing page builder designed for the T
 - Frontend: Next.js (App Router), TailwindCSS.
 - Backend: NestJS (Fastify), PostgreSQL, Prisma.
 - Storage: S3-compatible (DigitalOcean Spaces).
-- Integration: LINE Notify (Priority for Thai leads).
+- Integration: LINE OA (Priority for Thai leads).
 
 ## Core User Flow
 

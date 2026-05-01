@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { AppPageShell } from "@/components/app-page-shell";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,18 +13,24 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { readStoredAuthState, type StoredAuthState } from "@/lib/auth-storage";
+import {
+  clearAuthState,
+  readStoredAuthState,
+  type StoredAuthState,
+} from "@/lib/auth-storage";
 import {
   DEFAULT_API_BASE_URL,
   fetchApiWithTokenRefresh,
 } from "@/lib/api-client";
 
 export default function SecuritySettingsPage() {
+  const router = useRouter();
   const [authState] = useState<StoredAuthState>(() => readStoredAuthState());
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -87,6 +94,53 @@ export default function SecuritySettingsPage() {
       );
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!authState.accessToken) {
+      setErrorMessage("Sign in first to delete your account.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Delete your account permanently? This will remove your workspaces and sign out all sessions.",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    setStatusMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const { response, payload } = await fetchApiWithTokenRefresh({
+        apiBaseUrl,
+        path: "/auth/me",
+        init: {
+          method: "DELETE",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          typeof payload === "object" && payload && "message" in payload
+            ? String(payload.message)
+            : `Request failed with status ${response.status}`,
+        );
+      }
+
+      clearAuthState();
+      router.push("/login");
+      router.refresh();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to delete account.",
+      );
+    } finally {
+      setIsDeletingAccount(false);
     }
   }
 
@@ -173,6 +227,15 @@ export default function SecuritySettingsPage() {
             <p>• Password changes require an active access token.</p>
             <p>• Guest users should sign in again through `/login`.</p>
             <p>• Email verification is available from profile settings.</p>
+            <div className="pt-4">
+              <Button
+                variant="destructive"
+                onClick={() => void handleDeleteAccount()}
+                disabled={isDeletingAccount}
+              >
+                {isDeletingAccount ? "Deleting account..." : "Delete account"}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

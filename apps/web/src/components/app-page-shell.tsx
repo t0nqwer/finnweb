@@ -22,7 +22,7 @@ export function AppPageShell({
       style={
         {
           "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
+          "--header-height": "calc(var(--spacing) * 16)",
         } as React.CSSProperties
       }
     >
@@ -30,7 +30,7 @@ export function AppPageShell({
       <SidebarInset>
         <SiteHeader title={title} description={description} actions={actions} />
         <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-4 py-4 md:py-6">
+          <div className="@container/main flex flex-1 flex-col gap-6 py-4 md:py-6">
             {children}
           </div>
         </div>

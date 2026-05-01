@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
 } from "@nestjs/common";
+import Stripe from "stripe";
 import { BillingInterval, PlanCode } from "../../generated/prisma/client";
 import { BillingRepository } from "./billing.repository";
 import { StripeService } from "./stripe.service";
@@ -31,6 +32,21 @@ export class BillingService {
     }
 
     return null;
+  }
+
+  private getStripeErrorMessage(error: unknown, fallback: string) {
+    if (error instanceof Error && error.message.trim()) {
+      return error.message;
+    }
+
+    if (typeof error === "object" && error !== null && "message" in error) {
+      const message = (error as { message?: unknown }).message;
+      if (typeof message === "string" && message.trim()) {
+        return message;
+      }
+    }
+
+    return fallback;
   }
 
   async createCheckoutSession(dto: CreateCheckoutSessionDto, userId: string) {
@@ -65,11 +81,18 @@ export class BillingService {
     let stripeCustomerId = currentSubscription?.stripeCustomerId ?? null;
 
     if (!stripeCustomerId) {
-      const customer = await this.stripeService.client.customers.create({
-        metadata: {
-          workspaceId: workspace.id,
-        },
-      });
+      let customer;
+      try {
+        customer = await this.stripeService.client.customers.create({
+          metadata: {
+            workspaceId: workspace.id,
+          },
+        });
+      } catch (error) {
+        throw new BadRequestException(
+          this.getStripeErrorMessage(error, "STRIPE_CUSTOMER_CREATE_FAILED"),
+        );
+      }
 
       stripeCustomerId = customer.id;
     }
@@ -85,8 +108,116 @@ export class BillingService {
 
     const appUrl = process.env.APP_URL ?? "http://localhost:3000";
 
-    const session = await this.stripeService.client.checkout.sessions.create({
+    let session;
+    try {
+      session = await this.stripeService.client.checkout.sessions.create({
+        mode: "subscription",
+        customer: stripeCustomerId,
+        line_items: [
+          {
+            price: stripePriceId,
+            quantity: 1,
+          },
+        ],
+        success_url: `${appUrl}/dashboard/billing/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${appUrl}/dashboard/billing`,
+        metadata: {
+          workspaceId: workspace.id,
+          planCode: dto.planCode,
+          billingInterval: dto.billingInterval,
+        },
+        subscription_data: {
+          metadata: {
+            workspaceId: workspace.id,
+            planCode: dto.planCode,
+            billingInterval: dto.billingInterval,
+          },
+          ...(shouldApplyTrial
+            ? {
+                trial_period_days: plan.trialDays,
+              }
+            : {}),
+        },
+      });
+    } catch (error) {
+      throw new BadRequestException(
+        this.getStripeErrorMessage(error, "STRIPE_CHECKOUT_SESSION_FAILED"),
+      );
+    }
+
+    return {
+      url: session.url,
+    };
+  }
+
+  async createEmbeddedCheckoutSession(
+    dto: CreateCheckoutSessionDto,
+    userId: string,
+  ) {
+    if (dto.planCode === PlanCode.FREE) {
+      throw new BadRequestException("FREE_PLAN_CANNOT_USE_CHECKOUT");
+    }
+
+    const workspace = await this.billingRepository.findWorkspaceForUser(
+      dto.workspaceId,
+      userId,
+    );
+
+    if (!workspace) {
+      throw new ForbiddenException("WORKSPACE_ACCESS_DENIED");
+    }
+
+    const plan = await this.billingRepository.findPlanByCode(dto.planCode);
+
+    if (!plan || !plan.isActive) {
+      throw new BadRequestException("PLAN_NOT_FOUND");
+    }
+
+    const currentSubscription =
+      await this.billingRepository.findCurrentSubscription(dto.workspaceId);
+
+    const hasPaidHistory = await this.billingRepository.hasPaidHistory(
+      dto.workspaceId,
+    );
+
+    const shouldApplyTrial = !hasPaidHistory && plan.trialDays > 0;
+
+    let stripeCustomerId = currentSubscription?.stripeCustomerId ?? null;
+
+    if (!stripeCustomerId) {
+      let customer;
+      try {
+        customer = await this.stripeService.client.customers.create({
+          metadata: {
+            workspaceId: workspace.id,
+          },
+        });
+      } catch (error) {
+        throw new BadRequestException(
+          this.getStripeErrorMessage(error, "STRIPE_CUSTOMER_CREATE_FAILED"),
+        );
+      }
+
+      stripeCustomerId = customer.id;
+    }
+
+    const stripePriceId = this.getStripePriceIdFromPlan(
+      plan,
+      dto.billingInterval,
+    );
+
+    if (!stripePriceId) {
+      throw new BadRequestException("STRIPE_PRICE_NOT_CONFIGURED");
+    }
+
+    const appUrl = process.env.APP_URL ?? "http://localhost:3000";
+
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
+      ui_mode:
+        "elements" as unknown as Stripe.Checkout.SessionCreateParams.UiMode,
+      return_url: `${appUrl}/dashboard/billing?session_id={CHECKOUT_SESSION_ID}`,
+      payment_method_types: ["card"],
       customer: stripeCustomerId,
       line_items: [
         {
@@ -94,8 +225,6 @@ export class BillingService {
           quantity: 1,
         },
       ],
-      success_url: `${appUrl}/dashboard/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/dashboard/billing`,
       metadata: {
         workspaceId: workspace.id,
         planCode: dto.planCode,
@@ -113,10 +242,25 @@ export class BillingService {
             }
           : {}),
       },
-    });
+    };
+
+    let session;
+    try {
+      session =
+        await this.stripeService.client.checkout.sessions.create(sessionParams);
+    } catch (error) {
+      throw new BadRequestException(
+        this.getStripeErrorMessage(error, "STRIPE_CHECKOUT_SESSION_FAILED"),
+      );
+    }
+
+    if (!session.client_secret) {
+      throw new BadRequestException("CHECKOUT_CLIENT_SECRET_NOT_RETURNED");
+    }
 
     return {
-      url: session.url,
+      clientSecret: session.client_secret,
+      sessionId: session.id,
     };
   }
 
@@ -176,6 +320,13 @@ export class BillingService {
         currentPeriodEnd: null,
         cancelAtPeriodEnd: false,
         latestPaymentStatus: null,
+        capabilities: {
+          lineOaMonthlyQuota: freePlan?.lineOaMonthlyQuota ?? 5,
+          lineOaUnlimited: (freePlan?.lineOaMonthlyQuota ?? null) === null,
+          supportTier: freePlan?.supportTier ?? "HELP_CENTER",
+          trackingLevel: freePlan?.trackingLevel ?? "NONE",
+          analyticsLevel: freePlan?.analyticsLevel ?? "NONE",
+        },
       };
     }
 
@@ -194,6 +345,13 @@ export class BillingService {
       currentPeriodEnd: subscription.currentPeriodEnd?.toISOString() ?? null,
       cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
       latestPaymentStatus: latestPayment?.status ?? null,
+      capabilities: {
+        lineOaMonthlyQuota: subscription.plan.lineOaMonthlyQuota,
+        lineOaUnlimited: subscription.plan.lineOaMonthlyQuota === null,
+        supportTier: subscription.plan.supportTier,
+        trackingLevel: subscription.plan.trackingLevel,
+        analyticsLevel: subscription.plan.analyticsLevel,
+      },
     };
   }
 
@@ -262,6 +420,17 @@ export class BillingService {
     const pageStats =
       await this.billingRepository.countWorkspacePages(workspaceId);
 
+    const lineOaMonthlyUsed =
+      await this.billingRepository.countMonthlyLineOaNotifications(workspaceId);
+
+    const lineOaMonthlyQuota = plan.lineOaMonthlyQuota;
+    const lineOaUnlimited = lineOaMonthlyQuota === null;
+    const lineOaRemaining = lineOaUnlimited
+      ? null
+      : Math.max(lineOaMonthlyQuota - lineOaMonthlyUsed, 0);
+    const lineOaQuotaReached =
+      !lineOaUnlimited && lineOaMonthlyUsed >= lineOaMonthlyQuota;
+
     return {
       planCode: plan.code,
       planName: plan.name,
@@ -278,6 +447,11 @@ export class BillingService {
         allowEcommerce: plan.allowEcommerce,
         allowBlog: plan.allowBlog,
         allowNews: plan.allowNews,
+        lineOaMonthlyQuota,
+        lineOaUnlimited,
+        supportTier: plan.supportTier,
+        trackingLevel: plan.trackingLevel,
+        analyticsLevel: plan.analyticsLevel,
       },
       usage: {
         sites: siteCount,
@@ -287,6 +461,9 @@ export class BillingService {
             ? Math.ceil(pageStats.total / Math.max(siteCount, 1))
             : 0,
         maxPagesReachedSites: pageStats.siteIds || [],
+        lineOaMonthlyUsed,
+        lineOaMonthlyRemaining: lineOaRemaining,
+        lineOaQuotaReached,
       },
     };
   }

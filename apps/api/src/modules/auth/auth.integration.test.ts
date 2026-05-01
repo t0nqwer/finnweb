@@ -139,6 +139,18 @@ describe("Auth API integration", () => {
     assert.equal(typeof body.accessToken, "string");
     assert.equal(typeof body.refreshToken, "string");
     assert.ok(body.workspace?.id);
+
+    const sitesCount = await prisma.site.count({
+      where: {
+        workspaceId: body.workspace.id,
+      },
+    });
+
+    assert.equal(
+      sitesCount,
+      0,
+      "Expected register flow to not auto-create an initial site",
+    );
   });
 
   it("sends verification email and verifies the user email with the token", async () => {
@@ -364,5 +376,55 @@ describe("Auth API integration", () => {
 
     assert.equal(newPasswordLogin.statusCode, 201);
     assert.ok(newPasswordLogin.json().accessToken);
+  });
+
+  it("deletes current account and invalidates future authenticated access", async () => {
+    const email = uniqueEmail("delete-account");
+    createdEmails.push(email);
+
+    const registerResponse = await app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      payload: {
+        email,
+        password: "Password123!",
+        name: "Auth Test Delete",
+      },
+    });
+
+    assert.equal(registerResponse.statusCode, 201);
+    const registerBody = registerResponse.json() as AuthTokens;
+
+    const deleteResponse = await app.inject({
+      method: "DELETE",
+      url: "/api/auth/me",
+      headers: {
+        authorization: `Bearer ${registerBody.accessToken}`,
+      },
+    });
+
+    assert.equal(deleteResponse.statusCode, 200);
+    assert.equal(deleteResponse.json().success, true);
+
+    const meAfterDeleteResponse = await app.inject({
+      method: "GET",
+      url: "/api/auth/me",
+      headers: {
+        authorization: `Bearer ${registerBody.accessToken}`,
+      },
+    });
+
+    assert.equal(meAfterDeleteResponse.statusCode, 401);
+
+    const loginAfterDeleteResponse = await app.inject({
+      method: "POST",
+      url: "/api/auth/login",
+      payload: {
+        email,
+        password: "Password123!",
+      },
+    });
+
+    assert.equal(loginAfterDeleteResponse.statusCode, 401);
   });
 });

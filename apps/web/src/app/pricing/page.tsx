@@ -6,27 +6,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { FINNWEB_PLAN_CATALOG } from "@/lib/plan-catalog";
 
-const plans = [
-  {
-    name: "Basic",
-    price: "250 บาท/เดือน",
-    href: "/register?plan=BASIC",
-    features: ["1 website", "3 pages", "Lead capture form"],
-  },
-  {
-    name: "Business",
-    price: "490 บาท/เดือน",
-    href: "/register?plan=BUSINESS",
-    features: ["3 websites", "10 pages", "Blog + analytics"],
-  },
-  {
-    name: "Pro",
-    price: "990 บาท/เดือน",
-    href: "/register?plan=PRO",
-    features: ["10 websites", "50 pages", "Priority support"],
-  },
-];
+function formatMonthlyPrice(value: number) {
+  if (value === 0) {
+    return "฿0";
+  }
+
+  return `${value.toLocaleString("th-TH")} บาท/เดือน`;
+}
 
 export default function PricingPage() {
   return (
@@ -43,8 +31,8 @@ export default function PricingPage() {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          {plans.map((plan) => (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {FINNWEB_PLAN_CATALOG.map((plan) => (
             <Card
               key={plan.name}
               className="border-slate-800 bg-slate-950 text-slate-50"
@@ -52,17 +40,17 @@ export default function PricingPage() {
               <CardHeader>
                 <CardTitle>{plan.name}</CardTitle>
                 <CardDescription className="text-slate-300">
-                  {plan.price}
+                  {formatMonthlyPrice(plan.monthlyPrice)}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <ul className="space-y-2 text-sm text-slate-300">
-                  {plan.features.map((feature) => (
+                  {plan.pricingHighlights.map((feature) => (
                     <li key={feature}>• {feature}</li>
                   ))}
                 </ul>
                 <Link
-                  href={plan.href}
+                  href={plan.pricingHref}
                   className="inline-flex w-full items-center justify-center rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
                 >
                   Choose {plan.name}

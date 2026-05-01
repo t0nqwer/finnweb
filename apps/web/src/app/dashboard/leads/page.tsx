@@ -258,36 +258,38 @@ export default function DashboardLeadsPage() {
 
   return (
     <AppPageShell
-      title="Leads"
-      description="View latest leads by site with quick filters for page and date range."
+      title="รายชื่อลูกค้า"
+      description="กรองและติดตามลีดล่าสุดจากแต่ละเว็บไซต์ได้ในหน้าเดียว"
       actions={
-        <Button onClick={() => window.location.assign("/sites")}>
-          Manage sites
+        <Button
+          className="bg-linear-to-r from-primary to-[#ff4500] text-primary-foreground"
+          onClick={() => window.location.assign("/sites")}
+        >
+          จัดการเว็บไซต์
         </Button>
       }
     >
-      <div className="grid gap-4 px-4 lg:grid-cols-[0.95fr_1.05fr] lg:px-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Lead filters</CardTitle>
+      <div className="mx-auto grid w-full max-w-350 gap-6 px-4 lg:grid-cols-[0.95fr_1.05fr] lg:px-6">
+        <Card className="border-border/70 bg-card/85">
+          <CardHeader className="border-b border-border/60">
+            <CardTitle>ตัวกรองรายชื่อลูกค้า</CardTitle>
             <CardDescription>
-              Filter by site, page, and date to focus on the right
-              opportunities.
+              เลือกเว็บไซต์, หน้า และช่วงเวลา เพื่อดูลีดที่ต้องโฟกัส
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="siteId" className="text-sm font-medium">
-                Site
+                เว็บไซต์
               </label>
               <select
                 id="siteId"
                 value={selectedSiteId}
                 onChange={(event) => setSelectedSiteId(event.target.value)}
                 disabled={isLoadingSites}
-                className="flex h-10 w-full rounded-md border border-slate-200 bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 disabled:opacity-60 dark:border-slate-800"
+                className="flex h-10 w-full rounded-lg border border-border/70 bg-black/10 px-3 py-2 text-sm shadow-none outline-none focus:ring-1 focus:ring-primary disabled:opacity-60"
               >
-                <option value="">Select a site</option>
+                <option value="">เลือกเว็บไซต์</option>
                 {sites.map((site) => (
                   <option key={site.id} value={site.id}>
                     {site.name} ({site.slug})
@@ -298,15 +300,15 @@ export default function DashboardLeadsPage() {
 
             <div className="space-y-2">
               <label htmlFor="pageId" className="text-sm font-medium">
-                Page
+                หน้าเว็บไซต์
               </label>
               <select
                 id="pageId"
                 value={selectedPageId}
                 onChange={(event) => setSelectedPageId(event.target.value)}
-                className="flex h-10 w-full rounded-md border border-slate-200 bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 dark:border-slate-800"
+                className="flex h-10 w-full rounded-lg border border-border/70 bg-black/10 px-3 py-2 text-sm shadow-none outline-none focus:ring-1 focus:ring-primary"
               >
-                <option value="">All pages</option>
+                <option value="">ทุกหน้า</option>
                 {pages.map((page) => (
                   <option key={page.id} value={page.id}>
                     {page.title} ({page.slug})
@@ -318,51 +320,51 @@ export default function DashboardLeadsPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <label htmlFor="fromDate" className="text-sm font-medium">
-                  From date
+                  จากวันที่
                 </label>
                 <input
                   id="fromDate"
                   type="date"
                   value={fromDate}
                   onChange={(event) => setFromDate(event.target.value)}
-                  className="flex h-10 w-full rounded-md border border-slate-200 bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 dark:border-slate-800"
+                  className="flex h-10 w-full rounded-lg border border-border/70 bg-black/10 px-3 py-2 text-sm shadow-none outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
               <div className="space-y-2">
                 <label htmlFor="toDate" className="text-sm font-medium">
-                  To date
+                  ถึงวันที่
                 </label>
                 <input
                   id="toDate"
                   type="date"
                   value={toDate}
                   onChange={(event) => setToDate(event.target.value)}
-                  className="flex h-10 w-full rounded-md border border-slate-200 bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 dark:border-slate-800"
+                  className="flex h-10 w-full rounded-lg border border-border/70 bg-black/10 px-3 py-2 text-sm shadow-none outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
             </div>
 
-            <div className="grid gap-2 text-sm text-slate-600 dark:text-slate-300 sm:grid-cols-2">
-              <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
-                <p className="font-medium text-slate-900 dark:text-slate-100">
-                  Selected site
+            <div className="grid gap-2 text-sm sm:grid-cols-2">
+              <div className="rounded-lg border border-border/70 bg-black/10 p-3">
+                <p className="font-medium text-foreground">เว็บไซต์ที่เลือก</p>
+                <p className="text-muted-foreground">
+                  {selectedSite?.name ?? "-"}
                 </p>
-                <p>{selectedSite?.name ?? "-"}</p>
               </div>
-              <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-800">
-                <p className="font-medium text-slate-900 dark:text-slate-100">
-                  Leads shown
+              <div className="rounded-lg border border-border/70 bg-black/10 p-3">
+                <p className="font-medium text-foreground">จำนวนลีดที่แสดง</p>
+                <p className="text-muted-foreground">
+                  {isLoadingLeads ? "กำลังโหลด..." : leads.length}
                 </p>
-                <p>{isLoadingLeads ? "Loading..." : leads.length}</p>
               </div>
             </div>
 
             {(statusMessage || errorMessage) && (
               <div
-                className={`rounded-md border px-3 py-2 text-sm ${
+                className={`rounded-lg border px-3 py-2 text-sm ${
                   errorMessage
-                    ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200"
-                    : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-200"
+                    ? "border-red-900/60 bg-red-950/40 text-red-200"
+                    : "border-emerald-900/60 bg-emerald-950/40 text-emerald-200"
                 }`}
               >
                 {errorMessage ?? statusMessage}
@@ -371,53 +373,60 @@ export default function DashboardLeadsPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Latest leads</CardTitle>
+        <Card className="border-border/70 bg-card/85">
+          <CardHeader className="border-b border-border/60">
+            <CardTitle>รายชื่อลูกค้าล่าสุด</CardTitle>
             <CardDescription>
-              See key contact fields and page context at a glance.
+              ดูข้อมูลติดต่อและแหล่งที่มาของลีดได้อย่างรวดเร็ว
             </CardDescription>
           </CardHeader>
           <CardContent>
             {isLoadingLeads ? (
-              <p className="text-sm text-slate-500">Loading leads...</p>
+              <div className="space-y-3">
+                {[...Array.from({ length: 3 })].map((_, index) => (
+                  <div
+                    key={`lead-loading-${index}`}
+                    className="h-28 animate-pulse rounded-xl border border-border/60 bg-black/10"
+                  />
+                ))}
+              </div>
             ) : leads.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
-                No leads found for this filter. Try changing date range or page.
+              <div className="rounded-lg border border-dashed border-border/70 bg-black/10 p-5 text-sm text-muted-foreground">
+                ยังไม่พบลีดในเงื่อนไขนี้ ลองเปลี่ยนช่วงวันหรือเลือกหน้าอื่น
               </div>
             ) : (
               <div className="space-y-3">
                 {leads.map((lead) => (
                   <article
                     key={lead.id}
-                    className="rounded-xl border border-slate-200 p-4 dark:border-slate-800"
+                    className="rounded-xl border border-border/70 bg-black/10 p-4"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        <p className="text-sm font-semibold text-foreground">
                           {lead.contact.name ?? "Unknown contact"}
                         </p>
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-muted-foreground">
                           {formatDateTime(lead.createdAt)}
                         </p>
                       </div>
-                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                      <span className="rounded-full bg-primary/20 px-2 py-1 text-xs text-primary">
                         {lead.form.name}
                       </span>
                     </div>
 
-                    <div className="mt-3 grid gap-2 text-sm text-slate-700 dark:text-slate-200 sm:grid-cols-2">
+                    <div className="mt-3 grid gap-2 text-sm text-foreground/90 sm:grid-cols-2">
                       <p>Email: {lead.contact.email ?? "-"}</p>
                       <p>Phone: {lead.contact.phone ?? "-"}</p>
                     </div>
 
                     {lead.contact.message && (
-                      <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                      <p className="mt-2 rounded-lg bg-black/20 px-3 py-2 text-sm text-muted-foreground">
                         {lead.contact.message}
                       </p>
                     )}
 
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-2 text-xs text-muted-foreground">
                       Page: {lead.page?.title ?? "Unknown page"}
                       {lead.page?.path ? ` (${lead.page.path})` : ""}
                     </p>
