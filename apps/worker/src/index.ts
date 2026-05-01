@@ -1,4 +1,5 @@
-import "dotenv/config";
+import path from "node:path";
+import dotenv from "dotenv";
 import { Job, Worker } from "bullmq";
 import IORedis from "ioredis";
 import {
@@ -11,10 +12,18 @@ import { BillingRepository } from "../../api/src/modules/billing/billing.reposit
 import { BillingWebhookService } from "../../api/src/modules/billing/billing-webhook.service";
 import { PrismaService } from "../../api/src/prisma/prisma.service";
 
+dotenv.config({ path: path.resolve(process.cwd(), "../../.env"), quiet: true });
+dotenv.config({ quiet: true });
+
 async function main() {
   const redisUrl = process.env.REDIS_URL;
 
   if (!redisUrl) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn("[worker] REDIS_URL missing; worker disabled for local dev");
+      return;
+    }
+
     throw new Error("REDIS_URL_MISSING");
   }
 

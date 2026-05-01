@@ -15,7 +15,6 @@ import {
   Smartphone,
   Stethoscope,
   Timer,
-  Zap,
 } from "lucide-react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -313,7 +312,7 @@ export default function LandingPage() {
             </span>
           </h1>
           <p className="body-th text-lg text-slate-200">
-            เปลี่ยนเรื่องยากให้เป็นเรื่อง "ฟิน" ไม่ว่าคุณจะเป็นใคร ทำอาชีพอะไร
+            เปลี่ยนเรื่องยากให้เป็นเรื่อง &quot;ฟิน&quot; ไม่ว่าคุณจะเป็นใคร ทำอาชีพอะไร
             ก็เริ่มต้นธุรกิจออนไลน์ได้ทันที พร้อมระบบแจ้งเตือนลูกค้าเข้า LINE
             และเครื่องมือวิเคราะห์การตลาดครบวงจร
           </p>

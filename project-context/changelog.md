@@ -17,6 +17,10 @@
 - Added “Save as template” flow from site editor to create user-owned custom templates from current site pages/sections.
 - Verified rollout by running `prisma db push --accept-data-loss`, `prisma db seed`, API typecheck, web typecheck, and passing integration suites for both sites and templates modules.
 
+## 2026-05-01
+
+- Rebuilt `/sites/create` to follow the site-builder brief: business questions first, API template picker second, review/create third, then open the builder. The flow no longer relies on client-side fallback templates or manual section seeding, and `POST /api/sites` now carries `templateId` plus business/contact placeholders for backend template replacement.
+
 ## 2026-04-18
 
 - Started canonical pricing matrix rollout requested by product direction; registered matrix in `project-context/pricing-feature-matrix.md` and aligned context files (`decisions.md`, `memory.md`, `finn_web_summary.md`) to treat 2026-04-18 package definition as official baseline.

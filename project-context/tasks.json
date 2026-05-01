@@ -829,7 +829,8 @@
         "2026-04-19: ทำ Phase 3 Wizard Setup ในหน้า /sites โดยเพิ่มฟิลด์ชื่อแบรนด์/เบอร์โทร/LINE OA ID/โลโก้ และใช้ข้อมูลนี้พรีฟิล section props ตอน clone template (HERO/FORM/CTA/IMAGE) ก่อนเข้า editor; ตรวจผ่าน eslint และ web typecheck",
         "2026-04-19: เริ่ม Phase 4 ใน Site Editor โดยเพิ่มแท็บ Global (accent color/section radius/content width/hero tone) และ Ad Ready setup (Facebook Pixel/Google Tag/TikTok Pixel/campaign/UTM toggle) พร้อมผูก global style เข้ากับ live preview และแสดง readiness counter; ตรวจผ่าน eslint และ web typecheck",
         "2026-04-19: บันทึก next target ตามคำขอ: ทำ Phase 5 Launch flow (publish checklist + launch readiness) และแยกหน้า create site experience แบบ step-by-step ที่ /sites/create",
-        "2026-04-19: สร้างหน้าใหม่ /sites/create ตาม reference flow (เลือกหมวดธุรกิจ > เลือกเทมเพลต > brand setup) พร้อมเชื่อม API สร้าง site/page/sections จริงและเข้า editor อัตโนมัติหลังสร้างเสร็จ; เชื่อมปุ่มใน /sites ให้ไปหน้าใหม่แล้ว"
+        "2026-04-19: สร้างหน้าใหม่ /sites/create ตาม reference flow (เลือกหมวดธุรกิจ > เลือกเทมเพลต > brand setup) พร้อมเชื่อม API สร้าง site/page/sections จริงและเข้า editor อัตโนมัติหลังสร้างเสร็จ; เชื่อมปุ่มใน /sites ให้ไปหน้าใหม่แล้ว",
+        "2026-05-01: Rebuilt /sites/create to match the site-builder brief: business questions first, API template picker second, review/create third, no client-side manual section seeding, and POST /sites carries templateId plus businessType/goal/style/language/contact placeholders for backend replacement."
       ]
     },
     {

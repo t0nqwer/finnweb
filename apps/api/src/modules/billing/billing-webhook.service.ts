@@ -1,4 +1,4 @@
-import { Injectable, Logger, Optional } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import Stripe from "stripe";
 import {
   BillingStripeEventPayload,
@@ -27,7 +27,7 @@ export class BillingWebhookService {
 
   constructor(
     private readonly billingRepository: BillingRepository,
-    @Optional() private readonly jobsService?: JobsService,
+    private readonly jobsService?: JobsService,
   ) {}
 
   async handleEvent(event: Stripe.Event) {

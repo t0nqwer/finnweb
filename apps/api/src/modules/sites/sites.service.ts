@@ -24,6 +24,8 @@ import {
   PreviewTokenPolicyDto,
 } from "./dto/preview-token.dto";
 
+type TemplatePlaceholderValues = Record<string, string>;
+
 @Injectable()
 export class SitesService {
   constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
@@ -1089,6 +1091,91 @@ export class SitesService {
       });
   }
 
+  private buildLineUrl(lineId: string) {
+    const normalizedLineId = lineId.trim();
+
+    if (!normalizedLineId) {
+      return "";
+    }
+
+    return `https://line.me/R/ti/p/${normalizedLineId}`;
+  }
+
+  private buildTemplatePlaceholderValues(
+    name: string,
+    dto: CreateSiteDto,
+  ): TemplatePlaceholderValues {
+    const brandName = dto.brandName?.trim() || name;
+    const phone = dto.phone?.trim() || "";
+    const lineId = dto.lineId?.trim() || "";
+    const logoUrl = dto.logoUrl?.trim() || "";
+    const businessType = dto.businessType?.trim() || "";
+    const goal = dto.goal?.trim() || "";
+    const style = dto.style?.trim() || "";
+    const language = dto.language?.trim() || "";
+
+    return {
+      businessName: brandName,
+      brandName,
+      siteName: name,
+      businessType,
+      goal,
+      mainGoal: goal,
+      style,
+      language,
+      phone,
+      lineId,
+      lineUrl: this.buildLineUrl(lineId),
+      logoUrl,
+    };
+  }
+
+  private replaceTemplatePlaceholdersInString(
+    value: string,
+    placeholders: TemplatePlaceholderValues,
+  ) {
+    return value.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, key: string) => {
+      return placeholders[key] ?? "";
+    });
+  }
+
+  private replaceOptionalTemplatePlaceholders(
+    value: string | null | undefined,
+    placeholders: TemplatePlaceholderValues,
+  ) {
+    if (typeof value !== "string") {
+      return value ?? null;
+    }
+
+    return this.replaceTemplatePlaceholdersInString(value, placeholders);
+  }
+
+  private replaceTemplatePlaceholders(
+    value: unknown,
+    placeholders: TemplatePlaceholderValues,
+  ): unknown {
+    if (typeof value === "string") {
+      return this.replaceTemplatePlaceholdersInString(value, placeholders);
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((item) =>
+        this.replaceTemplatePlaceholders(item, placeholders),
+      );
+    }
+
+    if (this.isPlainObject(value)) {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, nestedValue]) => [
+          key,
+          this.replaceTemplatePlaceholders(nestedValue, placeholders),
+        ]),
+      );
+    }
+
+    return value;
+  }
+
   private async installTemplateIntoSite(
     tx: any,
     siteId: string,
@@ -1096,33 +1183,90 @@ export class SitesService {
       Awaited<ReturnType<typeof this.resolveTemplateForSiteCreation>>
     >,
     installedById: string,
+    placeholders: TemplatePlaceholderValues,
   ) {
     const templatePages =
       template.pages.length > 0
         ? template.pages.map((page) => ({
-            title: page.title,
+            title: this.replaceTemplatePlaceholdersInString(
+              page.title,
+              placeholders,
+            ),
             slug: page.slug,
             pageType: page.pageType,
             path: page.path,
             isHomePage: page.isHomePage,
             isPublished: page.isPublished,
             sortOrder: page.sortOrder,
-            seoTitle: page.seoTitle,
-            seoDescription: page.seoDescription,
-            seoKeywords: page.seoKeywords,
-            ogImageUrl: page.ogImageUrl,
+            seoTitle: this.replaceOptionalTemplatePlaceholders(
+              page.seoTitle,
+              placeholders,
+            ),
+            seoDescription: this.replaceOptionalTemplatePlaceholders(
+              page.seoDescription,
+              placeholders,
+            ),
+            seoKeywords: this.replaceOptionalTemplatePlaceholders(
+              page.seoKeywords,
+              placeholders,
+            ),
+            ogImageUrl: this.replaceOptionalTemplatePlaceholders(
+              page.ogImageUrl,
+              placeholders,
+            ),
             sections: page.sections.map((section) => ({
               type: section.type,
-              name: section.name,
+              name: this.replaceOptionalTemplatePlaceholders(
+                section.name,
+                placeholders,
+              ),
               sortOrder: section.sortOrder,
               isVisible: section.isVisible,
               props:
                 this.isPlainObject(section.props) || Array.isArray(section.props)
-                  ? (section.props as Record<string, unknown>)
+                  ? this.replaceTemplatePlaceholders(
+                      section.props,
+                      placeholders,
+                    )
                   : {},
             })),
           }))
-        : this.normalizeTemplateSnapshot(template.versions[0]?.snapshot);
+        : this.normalizeTemplateSnapshot(template.versions[0]?.snapshot).map(
+            (page) => ({
+              ...page,
+              title: this.replaceTemplatePlaceholdersInString(
+                page.title,
+                placeholders,
+              ),
+              seoTitle: this.replaceOptionalTemplatePlaceholders(
+                page.seoTitle,
+                placeholders,
+              ),
+              seoDescription: this.replaceOptionalTemplatePlaceholders(
+                page.seoDescription,
+                placeholders,
+              ),
+              seoKeywords: this.replaceOptionalTemplatePlaceholders(
+                page.seoKeywords,
+                placeholders,
+              ),
+              ogImageUrl: this.replaceOptionalTemplatePlaceholders(
+                page.ogImageUrl,
+                placeholders,
+              ),
+              sections: page.sections.map((section) => ({
+                ...section,
+                name: this.replaceOptionalTemplatePlaceholders(
+                  section.name,
+                  placeholders,
+                ),
+                props: this.replaceTemplatePlaceholders(
+                  section.props,
+                  placeholders,
+                ),
+              })),
+            }),
+          );
 
     if (templatePages.length === 0) {
       await tx.page.create({
@@ -1264,6 +1408,7 @@ export class SitesService {
     const templateThemeConfig = template
       ? this.extractTemplateThemeConfig(template)
       : undefined;
+    const templatePlaceholders = this.buildTemplatePlaceholderValues(name, dto);
 
     return this.prisma.$transaction(async (tx) => {
       const site = await tx.site.create({
@@ -1282,7 +1427,13 @@ export class SitesService {
       });
 
       if (template) {
-        await this.installTemplateIntoSite(tx, site.id, template, userId);
+        await this.installTemplateIntoSite(
+          tx,
+          site.id,
+          template,
+          userId,
+          templatePlaceholders,
+        );
       } else {
         await tx.page.create({
           data: {
