@@ -20,6 +20,20 @@
 ## 2026-05-01
 
 - Rebuilt `/sites/create` to follow the site-builder brief: business questions first, API template picker second, review/create third, then open the builder. The flow no longer relies on client-side fallback templates or manual section seeding, and `POST /api/sites` now carries `templateId` plus business/contact placeholders for backend template replacement.
+- Refactored the create-site wizard into `apps/web/src/features/site-create/` with separate step components, template normalization/matching helpers, and explicit flow types; the route page now only renders `CreateSiteWizard`.
+- Changed create-site success handling to redirect to `/sites/{siteId}/builder` instead of rendering `SiteEditorSimulator`, and added a temporary builder shell route with topbar, section list, canvas, and edit panel placeholders.
+- Added the first feature-based builder shell UI under `features/builder/components`, including topbar, device preview toggle, save status, mock section list, canvas preview, and edit panel for `/sites/[siteId]/builder`.
+- Added the first builder section registry foundation under `features/builder/registry` and `features/builder/sections`, with registry-driven mock canvas rendering plus a safe unknown-section fallback.
+- Added schema-driven section editing for the builder shell: registry entries now define typed editor fields and the right edit panel updates local section props so the canvas preview changes immediately.
+- Connected `/sites/[siteId]/builder` to real authenticated page/section APIs, including page selection, loading/error states, backend section-to-registry adaptation, and local-only section prop editing.
+- Added debounced builder autosave for section prop edits with optimistic preview updates, topbar save status, failed-save retry, and latest-edit-wins guards.
+- Improved builder section management with synced list/canvas/edit selection, visible canvas highlight, local/API hide-show action, hidden-section placeholders, and duplicate/delete placeholders.
+- Added basic builder section reorder support with up/down controls, optimistic local ordering, sort-order normalization, reorder API calls, and rollback on failure.
+
+## 2026-05-02
+
+- Added explicit template metadata for create-site matching: official template seeds now include `businessTypes`, `goals`, `styles`, `languages`, and `keywords` in template `tags`; the template API exposes those arrays as top-level response fields while keeping old records safe with empty arrays.
+- Updated frontend template normalization and matching to read metadata first, then fall back to legacy inference for older templates; create-site sorting now prioritizes business type, goal, style, language, then free/popular templates.
 
 ## 2026-04-18
 

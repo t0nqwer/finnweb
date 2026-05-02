@@ -11,6 +11,7 @@ import { PLAN_GATING_ERROR_CODES } from "@/common/constants/plan-gating-errors.c
 import type * as runtime from "@prisma/client/runtime/client";
 import { CreatePageDto } from "./dto/create-page.dto";
 import { CreateSiteDto } from "./dto/create-site.dto";
+import { ApplySiteTemplateDto } from "./dto/apply-site-template.dto";
 import { UpdatePageDto } from "./dto/update-page.dto";
 import { CreateSectionDto } from "./dto/create-section.dto";
 import { UpdateSectionDto } from "./dto/update-section.dto";
@@ -25,6 +26,17 @@ import {
 } from "./dto/preview-token.dto";
 
 type TemplatePlaceholderValues = Record<string, string>;
+type TemplateAnswersInput = {
+  brandName?: string;
+  businessName?: string;
+  businessType?: string;
+  goal?: string;
+  style?: string;
+  language?: string;
+  phone?: string;
+  lineId?: string;
+  logoUrl?: string;
+};
 
 @Injectable()
 export class SitesService {
@@ -438,7 +450,10 @@ export class SitesService {
       normalized.openInNewTab = openInNewTab;
     }
 
-    const noFollow = this.normalizeOptionalBooleanProp(item.noFollow, errorCode);
+    const noFollow = this.normalizeOptionalBooleanProp(
+      item.noFollow,
+      errorCode,
+    );
     if (noFollow !== undefined) {
       normalized.noFollow = noFollow;
     }
@@ -472,7 +487,9 @@ export class SitesService {
       throw new BadRequestException(errorCode);
     }
 
-    props[key] = raw.map((item) => this.normalizeNavbarLinkItem(item, errorCode));
+    props[key] = raw.map((item) =>
+      this.normalizeNavbarLinkItem(item, errorCode),
+    );
   }
 
   private normalizeNavbarCtaProp(
@@ -896,6 +913,53 @@ export class SitesService {
     return site;
   }
 
+  private async getEditableSite(userId: string, siteId: string) {
+    const site = await this.prisma.site.findFirst({
+      where: {
+        id: siteId,
+        workspace: {
+          members: {
+            some: {
+              userId,
+              role: {
+                in: ["OWNER", "ADMIN", "EDITOR", "MARKETER"],
+              },
+            },
+          },
+        },
+      },
+      include: {
+        workspace: {
+          include: {
+            subscriptions: {
+              where: {
+                isCurrent: true,
+              },
+              include: {
+                plan: true,
+              },
+              orderBy: {
+                createdAt: "desc",
+              },
+              take: 1,
+            },
+          },
+        },
+        _count: {
+          select: {
+            pages: true,
+          },
+        },
+      },
+    });
+
+    if (!site) {
+      throw new ForbiddenException("SITE_NOT_FOUND_OR_FORBIDDEN");
+    }
+
+    return site;
+  }
+
   private async ensureUniqueSlug(workspaceId: string, baseSlug: string) {
     const safeBaseSlug = baseSlug || "site";
     let slug = safeBaseSlug;
@@ -1063,7 +1127,9 @@ export class SitesService {
             typeof page.sortOrder === "number" ? page.sortOrder : pageIndex,
           seoTitle: typeof page.seoTitle === "string" ? page.seoTitle : null,
           seoDescription:
-            typeof page.seoDescription === "string" ? page.seoDescription : null,
+            typeof page.seoDescription === "string"
+              ? page.seoDescription
+              : null,
           seoKeywords:
             typeof page.seoKeywords === "string" ? page.seoKeywords : null,
           ogImageUrl:
@@ -1081,11 +1147,12 @@ export class SitesService {
                   ? section.sortOrder
                   : sectionIndex,
               isVisible:
-                section.isVisible === undefined ? true : Boolean(section.isVisible),
-              props:
-                this.isPlainObject(section.props)
-                  ? (section.props as Record<string, unknown>)
-                  : {},
+                section.isVisible === undefined
+                  ? true
+                  : Boolean(section.isVisible),
+              props: this.isPlainObject(section.props)
+                ? (section.props as Record<string, unknown>)
+                : {},
             })),
         };
       });
@@ -1103,16 +1170,17 @@ export class SitesService {
 
   private buildTemplatePlaceholderValues(
     name: string,
-    dto: CreateSiteDto,
+    answers: TemplateAnswersInput,
   ): TemplatePlaceholderValues {
-    const brandName = dto.brandName?.trim() || name;
-    const phone = dto.phone?.trim() || "";
-    const lineId = dto.lineId?.trim() || "";
-    const logoUrl = dto.logoUrl?.trim() || "";
-    const businessType = dto.businessType?.trim() || "";
-    const goal = dto.goal?.trim() || "";
-    const style = dto.style?.trim() || "";
-    const language = dto.language?.trim() || "";
+    const brandName =
+      answers.businessName?.trim() || answers.brandName?.trim() || name;
+    const phone = answers.phone?.trim() || "";
+    const lineId = answers.lineId?.trim() || "";
+    const logoUrl = answers.logoUrl?.trim() || "";
+    const businessType = answers.businessType?.trim() || "";
+    const goal = answers.goal?.trim() || "";
+    const style = answers.style?.trim() || "";
+    const language = answers.language?.trim() || "";
 
     return {
       businessName: brandName,
@@ -1184,7 +1252,38 @@ export class SitesService {
     >,
     installedById: string,
     placeholders: TemplatePlaceholderValues,
+    options?: {
+      replaceDraftPages?: boolean;
+      forceDraftPages?: boolean;
+    },
   ) {
+    let replacedDraftPagesCount = 0;
+    let createdPagesCount = 0;
+    let createdSectionsCount = 0;
+
+    if (options?.replaceDraftPages) {
+      const draftPages = await tx.page.findMany({
+        where: {
+          siteId,
+          isPublished: false,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (draftPages.length > 0) {
+        replacedDraftPagesCount = draftPages.length;
+        await tx.page.deleteMany({
+          where: {
+            id: {
+              in: draftPages.map((page: { id: string }) => page.id),
+            },
+          },
+        });
+      }
+    }
+
     const templatePages =
       template.pages.length > 0
         ? template.pages.map((page) => ({
@@ -1223,7 +1322,8 @@ export class SitesService {
               sortOrder: section.sortOrder,
               isVisible: section.isVisible,
               props:
-                this.isPlainObject(section.props) || Array.isArray(section.props)
+                this.isPlainObject(section.props) ||
+                Array.isArray(section.props)
                   ? this.replaceTemplatePlaceholders(
                       section.props,
                       placeholders,
@@ -1281,13 +1381,12 @@ export class SitesService {
           sortOrder: 0,
         },
       });
+      createdPagesCount += 1;
     } else {
       for (const [pageIndex, templatePage] of templatePages.entries()) {
         const slug = this.makeSlug(templatePage.slug || templatePage.title);
         const finalSlug = slug || `page-${pageIndex + 1}`;
-        const isHomePage = Boolean(
-          templatePage.isHomePage || pageIndex === 0,
-        );
+        const isHomePage = Boolean(templatePage.isHomePage || pageIndex === 0);
         const path = this.buildPagePath(
           finalSlug,
           templatePage.path ?? undefined,
@@ -1302,7 +1401,9 @@ export class SitesService {
             pageType: templatePage.pageType,
             path,
             isHomePage,
-            isPublished: Boolean(templatePage.isPublished),
+            isPublished: options?.forceDraftPages
+              ? false
+              : Boolean(templatePage.isPublished),
             sortOrder: pageIndex,
             seoTitle: templatePage.seoTitle,
             seoDescription: templatePage.seoDescription,
@@ -1310,8 +1411,12 @@ export class SitesService {
             ogImageUrl: templatePage.ogImageUrl,
           },
         });
+        createdPagesCount += 1;
 
-        for (const [sectionIndex, templateSection] of templatePage.sections.entries()) {
+        for (const [
+          sectionIndex,
+          templateSection,
+        ] of templatePage.sections.entries()) {
           await tx.section.create({
             data: {
               pageId: createdPage.id,
@@ -1333,6 +1438,7 @@ export class SitesService {
               ),
             },
           });
+          createdSectionsCount += 1;
         }
       }
     }
@@ -1354,6 +1460,12 @@ export class SitesService {
         },
       },
     });
+
+    return {
+      createdPagesCount,
+      createdSectionsCount,
+      replacedDraftPagesCount,
+    };
   }
 
   private extractTemplateThemeConfig(template: {
@@ -1450,6 +1562,88 @@ export class SitesService {
       }
 
       return site;
+    });
+  }
+
+  async applyTemplate(
+    userId: string,
+    siteId: string,
+    dto: ApplySiteTemplateDto,
+  ) {
+    const site = await this.getEditableSite(userId, siteId);
+    const template = await this.resolveTemplateForSiteCreation(
+      userId,
+      dto.templateId,
+    );
+    if (!template) {
+      throw new NotFoundException("TEMPLATE_NOT_FOUND");
+    }
+    const templateThemeConfig = this.extractTemplateThemeConfig(template);
+    const templatePlaceholders = this.buildTemplatePlaceholderValues(
+      site.name,
+      {
+        businessName: dto.businessName,
+        businessType: dto.businessType,
+        goal: dto.goal,
+        style: dto.style,
+        language: dto.language,
+        phone: dto.phone,
+        lineId: dto.lineId,
+        logoUrl: dto.logoUrl,
+      },
+    );
+
+    return this.prisma.$transaction(async (tx) => {
+      const installResult = await this.installTemplateIntoSite(
+        tx,
+        site.id,
+        template,
+        userId,
+        templatePlaceholders,
+        {
+          replaceDraftPages: true,
+          forceDraftPages: true,
+        },
+      );
+
+      if (templateThemeConfig !== undefined) {
+        await tx.site.update({
+          where: { id: site.id },
+          data: {
+            themeConfig: templateThemeConfig,
+          },
+        });
+      }
+
+      const updatedSite = await tx.site.findUnique({
+        where: {
+          id: site.id,
+        },
+        include: {
+          workspace: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+          _count: {
+            select: {
+              pages: true,
+            },
+          },
+        },
+      });
+
+      if (!updatedSite) {
+        throw new NotFoundException("SITE_NOT_FOUND_OR_FORBIDDEN");
+      }
+
+      return {
+        site: updatedSite,
+        createdOrUpdatedPagesCount: installResult.createdPagesCount,
+        createdSectionsCount: installResult.createdSectionsCount,
+      };
     });
   }
 
@@ -1888,7 +2082,10 @@ export class SitesService {
     return props as Record<string, unknown>;
   }
 
-  private async getAccessibleSectionTemplate(userId: string, templateId: string) {
+  private async getAccessibleSectionTemplate(
+    userId: string,
+    templateId: string,
+  ) {
     const template = await (this.prisma as any).sectionTemplate.findFirst({
       where: {
         id: templateId,
@@ -1967,7 +2164,9 @@ export class SitesService {
       return reloaded ?? section;
     }
 
-    const defaultTemplate = await this.getDefaultSectionTemplateByType(section.type);
+    const defaultTemplate = await this.getDefaultSectionTemplateByType(
+      section.type,
+    );
     if (!defaultTemplate) {
       return section;
     }
@@ -2045,7 +2244,10 @@ export class SitesService {
           nextProps: (dto.props || {}) as Record<string, unknown>,
           unmappedLegacy: {},
         };
-    const validatedProps = this.validateSectionProps(sectionType, merged.nextProps);
+    const validatedProps = this.validateSectionProps(
+      sectionType,
+      merged.nextProps,
+    );
 
     return (this.prisma.section as any).create({
       data: {
@@ -2093,7 +2295,9 @@ export class SitesService {
     });
 
     return Promise.all(
-      sections.map((section: any) => this.ensureSectionTemplateAttached(section)),
+      sections.map((section: any) =>
+        this.ensureSectionTemplateAttached(section),
+      ),
     );
   }
 
@@ -2190,7 +2394,10 @@ export class SitesService {
       this.extractSectionTemplateDefaultProps(nextTemplate),
     );
 
-    const validatedProps = this.validateSectionProps(section.type, merged.nextProps);
+    const validatedProps = this.validateSectionProps(
+      section.type,
+      merged.nextProps,
+    );
 
     return (this.prisma.section as any).update({
       where: {
@@ -2380,7 +2587,10 @@ export class SitesService {
     >;
   }
 
-  private buildPublicUrlFromDomainOrSlug(input: { host?: string | null; slug: string }) {
+  private buildPublicUrlFromDomainOrSlug(input: {
+    host?: string | null;
+    slug: string;
+  }) {
     const host = input.host?.trim().toLowerCase();
     if (host) {
       return `https://${host}`;
@@ -2399,7 +2609,9 @@ export class SitesService {
 
     if (!pathOrSlug || !pathOrSlug.trim()) {
       return (
-        pages.find((page) => page.isHomePage === true && page.isPublished !== false) ??
+        pages.find(
+          (page) => page.isHomePage === true && page.isPublished !== false,
+        ) ??
         pages.find((page) => page.isPublished !== false) ??
         null
       );
@@ -2414,12 +2626,135 @@ export class SitesService {
 
     return (
       pages.find((page) => {
-        const path = typeof page.path === "string" ? page.path.toLowerCase() : "";
-        const slug = typeof page.slug === "string" ? page.slug.toLowerCase() : "";
+        const path =
+          typeof page.path === "string" ? page.path.toLowerCase() : "";
+        const slug =
+          typeof page.slug === "string" ? page.slug.toLowerCase() : "";
         const isPublished = page.isPublished !== false;
-        return isPublished && (path === normalizedPath || slug === normalizedSlug);
+        return (
+          isPublished && (path === normalizedPath || slug === normalizedSlug)
+        );
       }) ?? null
     );
+  }
+
+  private hasUnresolvedPlaceholders(value: unknown): boolean {
+    if (typeof value === "string") {
+      return /\{\{\s*[a-zA-Z0-9_]+\s*\}\}/.test(value);
+    }
+
+    if (Array.isArray(value)) {
+      return value.some((item) => this.hasUnresolvedPlaceholders(item));
+    }
+
+    if (this.isPlainObject(value)) {
+      return Object.values(value).some((item) =>
+        this.hasUnresolvedPlaceholders(item),
+      );
+    }
+
+    return false;
+  }
+
+  private getRequiredFieldMissingForPublish(
+    sectionType: string,
+    props: unknown,
+  ): string | null {
+    if (!this.isPlainObject(props)) {
+      return "props";
+    }
+
+    const getTrimmed = (key: string) => {
+      const value = props[key];
+      return typeof value === "string" ? value.trim() : "";
+    };
+
+    switch (sectionType) {
+      case "HERO":
+      case "CTA":
+      case "FORM":
+      case "CONTACT": {
+        return getTrimmed("title") ? null : "title";
+      }
+      case "NAVBAR": {
+        const menuItems = props.menuItems;
+        if (!Array.isArray(menuItems) || menuItems.length === 0) {
+          return "menuItems";
+        }
+        return null;
+      }
+      case "BOOKING": {
+        return getTrimmed("title") ? null : "title";
+      }
+      case "COMPARISON": {
+        const plans = props.plans;
+        if (!Array.isArray(plans) || plans.length === 0) {
+          return "plans";
+        }
+        return null;
+      }
+      default:
+        return null;
+    }
+  }
+
+  private validatePublishContent(
+    pages: Array<{
+      id: string;
+      title: string;
+      slug: string;
+      seoTitle: string | null;
+      seoDescription: string | null;
+      seoKeywords: string | null;
+      ogImageUrl: string | null;
+      sections: Array<{
+        id: string;
+        type: string;
+        name: string | null;
+        isVisible: boolean;
+        props: unknown;
+      }>;
+    }>,
+  ) {
+    for (const page of pages) {
+      if (
+        this.hasUnresolvedPlaceholders(page.title) ||
+        this.hasUnresolvedPlaceholders(page.slug) ||
+        this.hasUnresolvedPlaceholders(page.seoTitle) ||
+        this.hasUnresolvedPlaceholders(page.seoDescription) ||
+        this.hasUnresolvedPlaceholders(page.seoKeywords) ||
+        this.hasUnresolvedPlaceholders(page.ogImageUrl)
+      ) {
+        throw new BadRequestException(
+          `PUBLISH_UNRESOLVED_PLACEHOLDERS_IN_PAGE:${page.id}`,
+        );
+      }
+
+      for (const section of page.sections) {
+        if (
+          this.hasUnresolvedPlaceholders(section.name) ||
+          this.hasUnresolvedPlaceholders(section.props)
+        ) {
+          throw new BadRequestException(
+            `PUBLISH_UNRESOLVED_PLACEHOLDERS_IN_SECTION:${section.id}`,
+          );
+        }
+
+        if (!section.isVisible) {
+          continue;
+        }
+
+        const missingField = this.getRequiredFieldMissingForPublish(
+          section.type,
+          section.props,
+        );
+        if (missingField) {
+          throw new BadRequestException(
+            `PUBLISH_REQUIRED_FIELD_MISSING:${section.type}:${missingField}`,
+          );
+        }
+      }
+    }
   }
 
   async publishSite(userId: string, siteId: string) {
@@ -2452,10 +2787,31 @@ export class SitesService {
       throw new BadRequestException("PUBLISH_HOME_PAGE_REQUIRED");
     }
 
-    const homeVisibleSections = homePage.sections.filter((section) => section.isVisible);
+    const homeVisibleSections = homePage.sections.filter(
+      (section) => section.isVisible,
+    );
     if (homeVisibleSections.length === 0) {
       throw new BadRequestException("PUBLISH_HOME_SECTION_REQUIRED");
     }
+
+    this.validatePublishContent(
+      pages.map((page) => ({
+        id: page.id,
+        title: page.title,
+        slug: page.slug,
+        seoTitle: page.seoTitle,
+        seoDescription: page.seoDescription,
+        seoKeywords: page.seoKeywords,
+        ogImageUrl: page.ogImageUrl,
+        sections: page.sections.map((section) => ({
+          id: section.id,
+          type: section.type,
+          name: section.name,
+          isVisible: section.isVisible,
+          props: section.props,
+        })),
+      })),
+    );
 
     const pageSnapshots = pages.map((page) => ({
       id: page.id,
@@ -2556,9 +2912,12 @@ export class SitesService {
     return 7;
   }
 
-  private buildPreviewTokenResponse(
-    token: { id: string; token: string; expiresAt: Date; createdAt: Date },
-  ) {
+  private buildPreviewTokenResponse(token: {
+    id: string;
+    token: string;
+    expiresAt: Date;
+    createdAt: Date;
+  }) {
     return {
       id: token.id,
       token: token.token,
@@ -2626,7 +2985,11 @@ export class SitesService {
     };
   }
 
-  async revokePreviewToken(userId: string, siteId: string, previewTokenId: string) {
+  async revokePreviewToken(
+    userId: string,
+    siteId: string,
+    previewTokenId: string,
+  ) {
     const site = await this.getAccessibleSite(userId, siteId);
 
     const existing = await this.prisma.previewToken.findFirst({
@@ -2782,7 +3145,6 @@ export class SitesService {
       .replace(/\/$/, "")
       .split(":")[0];
 
-
     const site = await this.prisma.site.findFirst({
       where: {
         domains: {
@@ -2825,6 +3187,82 @@ export class SitesService {
 
     const pages = this.extractPublishedPagesFromSnapshot(snapshot);
     const page = this.selectPageFromSnapshot(pages, pathOrSlug);
+
+    if (!page) {
+      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
+    }
+
+    const sectionsRaw = Array.isArray(page.sections) ? page.sections : [];
+    const sections = sectionsRaw
+      .filter((section) => this.isPlainObject(section))
+      .filter((section) => section.isVisible !== false)
+      .sort(
+        (a, b) =>
+          Number((a as Record<string, unknown>).sortOrder ?? 0) -
+          Number((b as Record<string, unknown>).sortOrder ?? 0),
+      );
+
+    const siteSnapshot = this.isPlainObject(snapshot.site)
+      ? (snapshot.site as Record<string, unknown>)
+      : {};
+
+    return {
+      site: siteSnapshot,
+      page: {
+        id: page.id,
+        title: page.title,
+        slug: page.slug,
+        path: page.path,
+        pageType: page.pageType,
+        isHomePage: page.isHomePage,
+        seoTitle: page.seoTitle,
+        seoDescription: page.seoDescription,
+        seoKeywords: page.seoKeywords,
+        ogImageUrl: page.ogImageUrl,
+      },
+      sections,
+    };
+  }
+
+  async getPublicPageBySlugAndPath(
+    siteSlug: string,
+    pageSlug?: string | null,
+  ) {
+    const site = await this.prisma.site.findFirst({
+      where: {
+        slug: siteSlug,
+        status: "PUBLISHED",
+      },
+      select: { id: true },
+    });
+
+    if (!site) {
+      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
+    }
+
+    const latestPublish = await this.prisma.publishLog.findFirst({
+      where: {
+        siteId: site.id,
+        action: "PUBLISH",
+      },
+      orderBy: [{ version: "desc" }, { createdAt: "desc" }],
+      select: { snapshot: true },
+    });
+
+    if (!latestPublish) {
+      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
+    }
+
+    const snapshot = this.isPlainObject(latestPublish.snapshot)
+      ? (latestPublish.snapshot as Record<string, unknown>)
+      : null;
+
+    if (!snapshot) {
+      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
+    }
+
+    const pages = this.extractPublishedPagesFromSnapshot(snapshot);
+    const page = this.selectPageFromSnapshot(pages, pageSlug ?? undefined);
 
     if (!page) {
       throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");

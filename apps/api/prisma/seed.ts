@@ -213,6 +213,13 @@ async function main() {
       description: "เทมเพลตเก็บลีดสายยิงแอดสำหรับ SME ไทย",
       thumbnailUrl:
         "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80",
+      tags: {
+        businessTypes: ["service", "product"],
+        goals: ["leads", "sales"],
+        styles: ["modern"],
+        languages: ["thai", "thai-english"],
+        keywords: ["sme", "lead generation", "ads", "line oa", "landing page"],
+      },
       pages: [
         {
           title: "หน้าแรก",
@@ -260,6 +267,13 @@ async function main() {
       description: "เทมเพลตคลินิกพร้อมจองคิวและรีวิว",
       thumbnailUrl:
         "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=800&q=80",
+      tags: {
+        businessTypes: ["clinic", "service"],
+        goals: ["booking", "leads"],
+        styles: ["modern", "minimal"],
+        languages: ["thai", "thai-english"],
+        keywords: ["clinic", "wellness", "booking", "appointment", "review"],
+      },
       pages: [
         {
           title: "หน้าแรก",
@@ -298,6 +312,11 @@ async function main() {
         "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
       sortOrder: 10,
       tags: {
+        businessTypes: ["restaurant"],
+        goals: ["booking", "store", "sales"],
+        styles: ["luxury"],
+        languages: ["thai", "english", "thai-english"],
+        keywords: ["restaurant", "fine dining", "reservation", "menu", "gold"],
         themePreset: "deep-space-gold",
         editable: ["text", "image", "seo", "theme", "cta"],
         theme: {
@@ -516,6 +535,13 @@ async function main() {
       description: "เทมเพลตอสังหาพร้อม Listing และเปรียบเทียบโครงการ",
       thumbnailUrl:
         "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80",
+      tags: {
+        businessTypes: ["product", "service"],
+        goals: ["sales", "leads"],
+        styles: ["modern", "luxury"],
+        languages: ["thai", "thai-english"],
+        keywords: ["real estate", "listing", "compare", "property", "project"],
+      },
       pages: [
         {
           title: "หน้าแรก",
@@ -550,6 +576,13 @@ async function main() {
       description: "เทมเพลตเอเจนซี่โชว์บริการและเคสจริง",
       thumbnailUrl:
         "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=800&q=80",
+      tags: {
+        businessTypes: ["service", "product"],
+        goals: ["leads", "store"],
+        styles: ["modern", "minimal"],
+        languages: ["thai", "english", "thai-english"],
+        keywords: ["agency", "portfolio", "case study", "service", "blog"],
+      },
       pages: [
         {
           title: "หน้าแรก",

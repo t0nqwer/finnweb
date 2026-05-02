@@ -20,6 +20,40 @@ export class PublicSitesController {
     @Inject(SitesService) private readonly sitesService: SitesService,
   ) {}
 
+  @Get("by-slug/:siteSlug")
+  async getPublicSiteHomePage(@Param("siteSlug") siteSlug: string) {
+    if (!siteSlug) {
+      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
+    }
+
+    const data = await this.sitesService.getPublicPageBySlugAndPath(siteSlug);
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
+  @Get("by-slug/:siteSlug/pages/:pageSlug")
+  async getPublicSitePage(
+    @Param("siteSlug") siteSlug: string,
+    @Param("pageSlug") pageSlug: string,
+  ) {
+    if (!siteSlug || !pageSlug) {
+      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
+    }
+
+    const data = await this.sitesService.getPublicPageBySlugAndPath(
+      siteSlug,
+      pageSlug,
+    );
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
   @Get("page")
   async getPublicPage(
     @Query("domain") domain: string,

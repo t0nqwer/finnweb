@@ -134,6 +134,36 @@ export class CreateTemplateDto {
   @MaxLength(80)
   category?: string;
 
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(80, { each: true })
+  businessTypes?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(80, { each: true })
+  goals?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(80, { each: true })
+  styles?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(80, { each: true })
+  languages?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(120, { each: true })
+  keywords?: string[];
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => TemplatePageInputDto)

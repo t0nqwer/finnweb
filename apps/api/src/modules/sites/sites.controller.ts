@@ -22,6 +22,7 @@ import { GetSiteLeadsQueryDto } from "./dto/get-site-leads-query.dto";
 import { SitesService } from "./sites.service";
 import { SwitchSectionTemplateDto } from "./dto/switch-section-template.dto";
 import { PreviewTokenPolicyDto } from "./dto/preview-token.dto";
+import { ApplySiteTemplateDto } from "./dto/apply-site-template.dto";
 
 @UseGuards(AccessJwtGuard)
 @Controller("sites")
@@ -91,13 +92,31 @@ export class SitesController {
     };
   }
 
+  @Post(":siteId/apply-template")
+  async applyTemplate(
+    @CurrentUser("sub") userId: string,
+    @Param("siteId") siteId: string,
+    @Body() dto: ApplySiteTemplateDto,
+  ) {
+    const data = await this.sitesService.applyTemplate(userId, siteId, dto);
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
   @Post(":siteId/preview-token")
   async createPreviewToken(
     @CurrentUser("sub") userId: string,
     @Param("siteId") siteId: string,
     @Body() dto: PreviewTokenPolicyDto,
   ) {
-    const data = await this.sitesService.createPreviewToken(userId, siteId, dto);
+    const data = await this.sitesService.createPreviewToken(
+      userId,
+      siteId,
+      dto,
+    );
 
     return {
       success: true,

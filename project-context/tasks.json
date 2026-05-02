@@ -1,6 +1,61 @@
 {
-  "updatedAt": "2026-05-01",
+  "updatedAt": "2026-05-02",
   "tasks": [
+    {
+      "id": "publish-validation-improvement",
+      "title": "Improve publish validation and snapshot generation for sites",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "site-builder",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": ["apply-template-existing-site-api"],
+      "scope": [
+        "ตรวจสอบ unresolved placeholders ใน section props และ page fields ก่อน publish",
+        "ตรวจสอบ required fields ของ section types เช่น HERO, CTA, FORM, NAVBAR",
+        "เพิ่ม integration tests สำหรับ placeholder error และ snapshot isolation"
+      ],
+      "progressNotes": [
+        "2026-05-02: เพิ่ม hasUnresolvedPlaceholders, getRequiredFieldMissingForPublish, validatePublishContent helpers ใน SitesService",
+        "2026-05-02: เรียก validatePublishContent ใน publishSite() ก่อนสร้าง PublishLog snapshot",
+        "2026-05-02: เพิ่ม 2 integration tests: unresolved placeholder rejection + snapshot isolation until republish"
+      ],
+      "acceptanceCriteria": [
+        "publish ที่มี {{placeholder}} ใน section props คืน 400 PUBLISH_UNRESOLVED_PLACEHOLDERS_IN_SECTION",
+        "publish ที่ขาด required field คืน 400 PUBLISH_REQUIRED_FIELD_MISSING",
+        "draft edit หลัง publish ไม่กระทบ public render จนกว่าจะ republish",
+        "typecheck clean และ integration tests ผ่าน"
+      ]
+    },
+    {
+      "id": "apply-template-existing-site-api",
+      "title": "Add API to apply template to existing site drafts",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "site-builder",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": ["website-template-system-v1"],
+      "scope": [
+        "เพิ่ม endpoint POST /sites/:siteId/apply-template",
+        "รองรับ answers/profile data สำหรับ placeholder replacement",
+        "replace draft pages/sections แบบ transaction-safe โดยไม่แตะ published snapshot"
+      ],
+      "progressNotes": [
+        "2026-05-02: Kickoff implementation และตั้งสถานะเป็น in-progress",
+        "2026-05-02: เพิ่ม API POST /sites/:siteId/apply-template พร้อม DTO validation, permission check, draft-only transactional replace, placeholder replacement และ theme apply",
+        "2026-05-02: เพิ่ม integration tests สำหรับ apply-template success + permission protection และยืนยันว่า published snapshots ไม่ถูกแก้ไข"
+      ],
+      "acceptanceCriteria": [
+        "เว็บไซต์ที่มีอยู่สามารถ apply template ใหม่ได้",
+        "draft pages/sections ถูกสร้างหรือแทนที่จาก template",
+        "published snapshot ไม่ถูกแก้ไข",
+        "endpoint ถูกป้องกันด้วยสิทธิ์ของผู้ใช้",
+        "ไม่มี TypeScript errors"
+      ]
+    },
     {
       "id": "db-html-template-render-refactor",
       "title": "Refactor to DB-driven HTML/CSS section template rendering",
@@ -10,9 +65,7 @@
       "epic": "site-builder",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "section-template-library-v11"
-      ],
+      "dependsOn": ["section-template-library-v11"],
       "scope": [
         "เพิ่ม html/css/render mode ลง section template versions",
         "ทำ renderer ใช้ DB template payload สำหรับ SAFE_HTML",
@@ -44,9 +97,7 @@
       "epic": "site-builder",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": [
-        "section-template-library-v11"
-      ],
+      "dependsOn": ["section-template-library-v11"],
       "scope": [
         "เพิ่ม official navbar section templates ให้ครบ 10 layout",
         "อัปเดต preview renderer ให้รองรับแต่ละ layout และ responsive",
@@ -73,9 +124,7 @@
       "epic": "site-builder",
       "estimatePoints": 13,
       "owner": "unassigned",
-      "dependsOn": [
-        "website-template-system-v1"
-      ],
+      "dependsOn": ["website-template-system-v1"],
       "scope": [
         "เพิ่มโมเดล SectionTemplate/SectionTemplateVersion และเชื่อมกับ Section",
         "เพิ่ม API section templates + switch section template พร้อม canonical slot mapping",
@@ -102,9 +151,7 @@
       "epic": "site-builder",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "theme-font-color-per-section-mode"
-      ],
+      "dependsOn": ["theme-font-color-per-section-mode"],
       "scope": [
         "ขยาย validation NAVBAR props รองรับ logo mode + menu linkType + cta linkType",
         "เพิ่ม UI ตั้งค่า NAVBAR ใน editor (menu/cta/logo)",
@@ -131,9 +178,7 @@
       "epic": "site-builder",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": [
-        "template-preview-real-render"
-      ],
+      "dependsOn": ["template-preview-real-render"],
       "scope": [
         "เพิ่ม Website Theme preset และ default font/color ใน editor",
         "เพิ่มตัวเลือก styleMode ระดับ section (theme หรือ custom)",
@@ -161,9 +206,7 @@
       "epic": "site-builder",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": [
-        "website-template-system-v1"
-      ],
+      "dependsOn": ["website-template-system-v1"],
       "scope": [
         "ปรับ renderer section หลักให้มีดีไซน์จริง",
         "รองรับธีมสีจาก template/site",
@@ -187,9 +230,7 @@
       "epic": "site-builder",
       "estimatePoints": 1,
       "owner": "unassigned",
-      "dependsOn": [
-        "cms-site-delete-button"
-      ],
+      "dependsOn": ["cms-site-delete-button"],
       "scope": [
         "รองรับ API ลบเว็บไซต์ผ่าน POST fallback",
         "ปรับหน้า /sites ให้ใช้ endpoint ที่ไม่ติด CORS ในบาง environment"
@@ -199,9 +240,7 @@
         "2026-04-23: เพิ่ม fallback endpoint POST /sites/:siteId/delete และปรับหน้า /sites ให้ใช้ POST เพื่อลดปัญหา CORS จาก DELETE preflight ในบาง environment",
         "2026-04-23: ขยาย CORS methods ใน API main.ts ให้รองรับ PATCH/PUT/DELETE/OPTIONS และ allowedHeaders เพื่อแก้ preflight ของ section PATCH ใน CMS"
       ],
-      "acceptanceCriteria": [
-        "กดลบเว็บไซต์จากหน้า CMS ได้โดยไม่เจอ CORS error"
-      ]
+      "acceptanceCriteria": ["กดลบเว็บไซต์จากหน้า CMS ได้โดยไม่เจอ CORS error"]
     },
     {
       "id": "cms-site-delete-button",
@@ -290,9 +329,7 @@
       "epic": "pricing",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "pricing-consistency-audit"
-      ],
+      "dependsOn": ["pricing-consistency-audit"],
       "scope": [
         "บันทึก matrix ทางการในเอกสาร project-context",
         "sync seed และหน้า pricing/subscription/checkout ให้ตรง matrix ใหม่",
@@ -321,9 +358,7 @@
       "epic": "pricing",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "pricing-feature-matrix-canonicalization"
-      ],
+      "dependsOn": ["pricing-feature-matrix-canonicalization"],
       "scope": [
         "สร้าง migration/backfill สำหรับข้อมูล plan เดิม",
         "ทำให้ฐานข้อมูลที่ deploy ไปแล้วได้ค่า plan ใหม่ครบ",
@@ -347,9 +382,7 @@
       "epic": "pricing",
       "estimatePoints": 8,
       "owner": "unassigned",
-      "dependsOn": [
-        "pricing-feature-matrix-canonicalization"
-      ],
+      "dependsOn": ["pricing-feature-matrix-canonicalization"],
       "scope": [
         "เพิ่มฟิลด์โครงสร้างสำหรับ line quota, support tier, tracking level, analytics level",
         "ปรับ Prisma schema + seed + DTO/API response",
@@ -377,9 +410,7 @@
       "epic": "billing",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "plan-schema-feature-expansion"
-      ],
+      "dependsOn": ["plan-schema-feature-expansion"],
       "scope": [
         "นับการส่งแจ้งเตือนราย workspace รายเดือน",
         "บล็อกเมื่อเกิน quota พร้อม error code มาตรฐาน",
@@ -405,10 +436,7 @@
       "epic": "billing",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "plan-schema-feature-expansion",
-        "plan-gating-enforcement"
-      ],
+      "dependsOn": ["plan-schema-feature-expansion", "plan-gating-enforcement"],
       "scope": [
         "กำหนด capability: BASIC ไม่มี, BUSINESS full integration, PRO full+custom code",
         "เพิ่ม guard/error code ที่อ่านง่ายเมื่อสิทธิ์ไม่ถึง",
@@ -454,9 +482,7 @@
       "epic": "dashboard",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": [
-        "plan-schema-feature-expansion"
-      ],
+      "dependsOn": ["plan-schema-feature-expansion"],
       "scope": [
         "กำหนดเส้นทางช่วยเหลือตาม tier (Help Center/Standard/Priority/Exclusive)",
         "แสดง support tier ในหน้าจัดการ subscription",
@@ -476,9 +502,7 @@
       "epic": "pricing",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "plan-schema-feature-expansion"
-      ],
+      "dependsOn": ["plan-schema-feature-expansion"],
       "scope": [
         "ลด hardcode ซ้ำในหน้า pricing/subscription/checkout",
         "ดึง plan metadata จาก API หรือ shared config กลาง",
@@ -560,9 +584,7 @@
       "epic": "pricing",
       "estimatePoints": 2,
       "owner": "unassigned",
-      "dependsOn": [
-        "pricing-consistency-audit"
-      ],
+      "dependsOn": ["pricing-consistency-audit"],
       "scope": [
         "ตัดสินใจว่า Business เป็น tier สาธารณะถาวรหรือไม่",
         "ยืนยัน copy ราคาสำหรับตลาดไทย"
@@ -586,9 +608,7 @@
       "epic": "auth",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": [
-        "auth-production-hardening"
-      ],
+      "dependsOn": ["auth-production-hardening"],
       "scope": [
         "จำกัด rate ของ endpoint login และ password reset",
         "ทำให้ error response ใช้งานง่ายและรองรับภาษาไทย"
@@ -615,9 +635,7 @@
       "epic": "auth",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "auth-production-hardening"
-      ],
+      "dependsOn": ["auth-production-hardening"],
       "scope": [
         "แยกหน้า login และ register ให้ชัดเจนพร้อม UX ที่เร็วขึ้น",
         "รักษา flow auth เดิม (register/login -> persist token -> redirect)",
@@ -646,9 +664,7 @@
       "epic": "billing",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "pricing-consistency-audit"
-      ],
+      "dependsOn": ["pricing-consistency-audit"],
       "scope": [
         "การสร้าง checkout session",
         "การประมวลผล webhook สำหรับ subscription upsert",
@@ -676,9 +692,7 @@
       "epic": "billing",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": [
-        "billing-checkout-success-path"
-      ],
+      "dependsOn": ["billing-checkout-success-path"],
       "scope": [
         "จัดการ invoice.payment_failed",
         "UX + API สำหรับยกเลิกเมื่อสิ้นสุดรอบบิล",
@@ -699,9 +713,7 @@
       "epic": "billing",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "billing-checkout-success-path"
-      ],
+      "dependsOn": ["billing-checkout-success-path"],
       "scope": [
         "บังคับใช้ maxSites และ maxPagesPerSite",
         "error ที่สม่ำเสมอสำหรับการกระทำที่เกินขีดจำกัด",
@@ -748,9 +760,7 @@
       "epic": "builder",
       "estimatePoints": 8,
       "owner": "unassigned",
-      "dependsOn": [
-        "auth-production-hardening"
-      ],
+      "dependsOn": ["auth-production-hardening"],
       "scope": [
         "Section Hero, Text, Image, CTA, Form",
         "การตรวจสอบและบันทึก Section JSON",
@@ -770,9 +780,7 @@
       "epic": "builder",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "builder-sections-core"
-      ],
+      "dependsOn": ["builder-sections-core"],
       "scope": [
         "สร้าง/แก้ไข/ลบ page",
         "แจ้งเตือนความไม่ซ้ำกันของ slug/path",
@@ -802,10 +810,7 @@
       "epic": "builder",
       "estimatePoints": 8,
       "owner": "unassigned",
-      "dependsOn": [
-        "builder-page-editing-flow",
-        "publish-public-render"
-      ],
+      "dependsOn": ["builder-page-editing-flow", "publish-public-render"],
       "scope": [
         "ออกแบบ flow ใหม่สำหรับ create landing page ให้ผู้ใช้เริ่มได้ในไม่กี่คลิก",
         "เชื่อมต่อกับ API page CRUD และ section ที่มีอยู่โดยไม่ใช้หน้า debug",
@@ -830,7 +835,24 @@
         "2026-04-19: เริ่ม Phase 4 ใน Site Editor โดยเพิ่มแท็บ Global (accent color/section radius/content width/hero tone) และ Ad Ready setup (Facebook Pixel/Google Tag/TikTok Pixel/campaign/UTM toggle) พร้อมผูก global style เข้ากับ live preview และแสดง readiness counter; ตรวจผ่าน eslint และ web typecheck",
         "2026-04-19: บันทึก next target ตามคำขอ: ทำ Phase 5 Launch flow (publish checklist + launch readiness) และแยกหน้า create site experience แบบ step-by-step ที่ /sites/create",
         "2026-04-19: สร้างหน้าใหม่ /sites/create ตาม reference flow (เลือกหมวดธุรกิจ > เลือกเทมเพลต > brand setup) พร้อมเชื่อม API สร้าง site/page/sections จริงและเข้า editor อัตโนมัติหลังสร้างเสร็จ; เชื่อมปุ่มใน /sites ให้ไปหน้าใหม่แล้ว",
-        "2026-05-01: Rebuilt /sites/create to match the site-builder brief: business questions first, API template picker second, review/create third, no client-side manual section seeding, and POST /sites carries templateId plus businessType/goal/style/language/contact placeholders for backend replacement."
+        "2026-05-01: Rebuilt /sites/create to match the site-builder brief: business questions first, API template picker second, review/create third, no client-side manual section seeding, and POST /sites carries templateId plus businessType/goal/style/language/contact placeholders for backend replacement.",
+        "2026-05-01: Refactored /sites/create into feature-scoped site-create modules (CreateSiteWizard, step components, TemplateCard, StepRail, normalize-template, template-matching, explicit create-site types) while preserving the existing 3-step API-first behavior.",
+        "2026-05-01: Updated create-site success flow to redirect to /sites/{siteId}/builder instead of rendering SiteEditorSimulator; added temporary builder route shell with topbar, section list, canvas, and edit panel placeholders.",
+        "2026-05-01: Added first real /sites/{siteId}/builder shell UI under features/builder/components with topbar, device preview toggle, save status, section list, canvas, and edit panel using mock sections only.",
+        "2026-05-01: Added builder section registry foundation with type-keyed section components and updated builder canvas mock rendering to use the registry with unknown-section fallback.",
+        "2026-05-01: Started dynamic section edit panel driven by per-section editor schemas with local-only builder state.",
+        "2026-05-01: Completed dynamic section edit panel foundation: registry editor schemas render form fields and update builder canvas preview through local section props.",
+        "2026-05-01: Started wiring builder shell to real site page/section APIs while keeping section edits local-only.",
+        "2026-05-01: Connected builder shell to real authenticated page/section APIs with home-page default selection, registry rendering, loading/error states, and local-only edit updates.",
+        "2026-05-01: Started debounced autosave for builder section prop edits with optimistic local state and latest-edit-wins guards.",
+        "2026-05-01: Added debounced autosave for builder section prop edits with optimistic preview updates, save status UI, failed-save retry, and stale response guards.",
+        "2026-05-01: Started builder section selection/actions pass for synced canvas/list/edit selection and local hide/show controls.",
+        "2026-05-01: Improved builder section management with synced list/canvas/edit selection, hide-show API action, hidden placeholders, and duplicate/delete UI placeholders.",
+        "2026-05-02: Started builder section reorder support using simple up/down controls and existing sections/reorder API.",
+        "2026-05-02: Added builder section reorder support with up/down controls, optimistic local ordering, sortOrder normalization, reorder API call, and rollback on failure.",
+        "2026-05-02: Started explicit template metadata matching pass for create-site template selection.",
+        "2026-05-02: Completed explicit template metadata matching: template API now returns businessTypes/goals/styles/languages/keywords from tags JSON, official seeds include metadata, and create-site sorting uses metadata before free/popular fallback.",
+        "2026-05-02: Added frontend validation to the create-site wizard for required profile fields, Thai-ish phone numbers, logo URL format, disabled invalid step actions, and normalized LINE ID before POST /sites."
       ]
     },
     {
@@ -877,9 +899,7 @@
       "epic": "publishing",
       "estimatePoints": 8,
       "owner": "unassigned",
-      "dependsOn": [
-        "builder-page-editing-flow"
-      ],
+      "dependsOn": ["builder-page-editing-flow"],
       "progressNotes": [
         "Switched focus from plan-gating frontend work to backend publishing route implementation.",
         "Kickoff: implement public route resolution by domain + page path/slug with published-only guard.",
@@ -909,9 +929,7 @@
       "epic": "publishing",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": [
-        "publish-public-render"
-      ],
+      "dependsOn": ["publish-public-render"],
       "scope": [
         "Title, description, keywords, OG image",
         "ใช้ค่าเริ่มต้นของ site เมื่อ metadata ของ page ว่างเปล่า"
@@ -930,9 +948,7 @@
       "epic": "forms",
       "estimatePoints": 8,
       "owner": "unassigned",
-      "dependsOn": [
-        "builder-sections-core"
-      ],
+      "dependsOn": ["builder-sections-core"],
       "scope": [
         "ฟิลด์ฟอร์ม: ชื่อ, อีเมล, โทรศัพท์, ข้อความ",
         "endpoint รับ submission และการตรวจสอบ",
@@ -960,9 +976,7 @@
       "epic": "forms",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "forms-schema-and-submission"
-      ],
+      "dependsOn": ["forms-schema-and-submission"],
       "scope": [
         "template อีเมล transactional",
         "พฤติกรรม retry ที่ปลอดภัยจากความล้มเหลว"
@@ -981,9 +995,7 @@
       "epic": "forms",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "forms-schema-and-submission"
-      ],
+      "dependsOn": ["forms-schema-and-submission"],
       "scope": [
         "การผสานรวม LINE notification",
         "การตั้งค่า LINE ระดับ workspace"
@@ -1002,10 +1014,7 @@
       "epic": "dashboard",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "builder-page-editing-flow",
-        "plan-gating-enforcement"
-      ],
+      "dependsOn": ["builder-page-editing-flow", "plan-gating-enforcement"],
       "scope": [
         "ความสม่ำเสมอของ site switcher และรายการ page",
         "ข้อความ empty state และขีดจำกัดที่ชัดเจน",
@@ -1034,9 +1043,7 @@
       "epic": "dashboard",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": [
-        "forms-schema-and-submission"
-      ],
+      "dependsOn": ["forms-schema-and-submission"],
       "scope": [
         "แสดง lead ล่าสุดของแต่ละ site",
         "ตัวกรองพื้นฐานตามวันที่และ page"
@@ -1069,10 +1076,7 @@
         "billing-checkout-success-path",
         "billing-failure-and-cancel-path"
       ],
-      "scope": [
-        "แสดงแผนปัจจุบันและวันต่ออายุ",
-        "การดำเนินการอัปเกรดและยกเลิก"
-      ],
+      "scope": ["แสดงแผนปัจจุบันและวันต่ออายุ", "การดำเนินการอัปเกรดและยกเลิก"],
       "progressNotes": [
         "เพิ่มหน้า dashboard subscription ใหม่ที่ /dashboard/subscription",
         "ดึงข้อมูลแผนปัจจุบันผ่าน GET /billing/subscription และแสดง plan/status/billing interval/renewal date",
@@ -1096,9 +1100,7 @@
       "epic": "dashboard",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": [
-        "dashboard-subscription-view"
-      ],
+      "dependsOn": ["dashboard-subscription-view"],
       "scope": [
         "ปรับ UI หน้า /subscription ให้ใกล้เคียง premium glass reference",
         "คงแพ็กเกจมาตรฐาน Free / Basic / Business / Pro",
@@ -1126,9 +1128,7 @@
       "epic": "billing",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "subscription-page-glass-redesign"
-      ],
+      "dependsOn": ["subscription-page-glass-redesign"],
       "scope": [
         "เพิ่ม custom checkout UI flow ในหน้า /subscription",
         "เพิ่ม web API handler สำหรับสร้าง checkout session",
@@ -1170,9 +1170,7 @@
       "epic": "templates",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "builder-sections-core"
-      ],
+      "dependsOn": ["builder-sections-core"],
       "scope": [
         "Template seeds: สินค้า, บริการ, คลินิก, ร้านอาหาร",
         "นำ template ไปใช้กับ site ใหม่ด้วยคลิกเดียว"
@@ -1222,9 +1220,7 @@
       "epic": "quality",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": [
-        "publish-public-render"
-      ],
+      "dependsOn": ["publish-public-render"],
       "scope": [
         "ประสิทธิภาพการโหลดครั้งแรกของ public page",
         "ความตอบสนองของ route ใน dashboard",
@@ -1276,9 +1272,7 @@
       "epic": "release",
       "estimatePoints": 5,
       "owner": "unassigned",
-      "dependsOn": [
-        "integration-test-suite-mvp"
-      ],
+      "dependsOn": ["integration-test-suite-mvp"],
       "scope": [
         "deploy flow ของ API, web และ worker",
         "checklist environment variable",
@@ -1298,10 +1292,7 @@
       "epic": "release",
       "estimatePoints": 3,
       "owner": "unassigned",
-      "dependsOn": [
-        "mobile-first-ux-pass",
-        "staging-release-pipeline"
-      ],
+      "dependsOn": ["mobile-first-ux-pass", "staging-release-pipeline"],
       "scope": [
         "ทดสอบแบบ task-based สำหรับผู้ใช้ที่ไม่ใช่นักเทคนิค",
         "ความชัดเจนของ copy และข้อความ error",
@@ -1321,9 +1312,7 @@
       "epic": "release",
       "estimatePoints": 2,
       "owner": "unassigned",
-      "dependsOn": [
-        "mvp-uat-thai-sme"
-      ],
+      "dependsOn": ["mvp-uat-thai-sme"],
       "scope": [
         "ตรวจสอบ production config",
         "ตรวจสอบ monitoring และ alert",

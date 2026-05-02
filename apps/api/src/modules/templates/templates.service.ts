@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
+import { Prisma } from "@/generated/prisma/client";
 import { PrismaService } from "@/prisma/prisma.service";
 import { SitesService } from "../sites/sites.service";
 import { CreateTemplateDto } from "./dto/create-template.dto";
@@ -17,6 +18,14 @@ import { ApplyTemplateDto } from "./dto/apply-template.dto";
 
 @Injectable()
 export class TemplatesService {
+  private readonly templateMetadataKeys = [
+    "businessTypes",
+    "goals",
+    "styles",
+    "languages",
+    "keywords",
+  ] as const;
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(SitesService) private readonly sitesService: SitesService,
@@ -80,7 +89,54 @@ export class TemplatesService {
     };
   }
 
+  private normalizeMetadataArray(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return Array.from(
+      new Set(
+        value
+          .filter((item): item is string => typeof item === "string")
+          .map((item) => item.trim().toLowerCase())
+          .filter(Boolean),
+      ),
+    );
+  }
+
+  private toTagObject(value: unknown): Prisma.InputJsonObject {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return {};
+    }
+
+    return value as Prisma.InputJsonObject;
+  }
+
+  private mergeMetadataTags(
+    existingTags: unknown,
+    dto: Pick<
+      CreateTemplateDto,
+      "businessTypes" | "goals" | "styles" | "languages" | "keywords"
+    >,
+  ) {
+    const tags = { ...this.toTagObject(existingTags) };
+    let hasMetadataUpdate = false;
+
+    for (const key of this.templateMetadataKeys) {
+      if (dto[key] === undefined) {
+        continue;
+      }
+
+      hasMetadataUpdate = true;
+      tags[key] = this.normalizeMetadataArray(dto[key]);
+    }
+
+    return hasMetadataUpdate ? tags : undefined;
+  }
+
   private toTemplatePayload(template: any) {
+    const tags = this.toTagObject(template.tags);
+
     return {
       id: template.id,
       code: template.code,
@@ -92,7 +148,17 @@ export class TemplatesService {
       status: template.status,
       visibility: template.visibility,
       isOfficial: template.visibility === "OFFICIAL",
+      isFree: Boolean(template.isFree),
+      installCount: template.installCount ?? 0,
+      ratingAvg: template.ratingAvg,
+      ratingCount: template.ratingCount ?? 0,
       ownerId: template.createdById,
+      tags: template.tags ?? null,
+      businessTypes: this.normalizeMetadataArray(tags.businessTypes),
+      goals: this.normalizeMetadataArray(tags.goals),
+      styles: this.normalizeMetadataArray(tags.styles),
+      languages: this.normalizeMetadataArray(tags.languages),
+      keywords: this.normalizeMetadataArray(tags.keywords),
       category: template.category
         ? {
             id: template.category.id,
@@ -351,6 +417,7 @@ export class TemplatesService {
       : null;
 
     const createdTemplate = await this.prisma.$transaction(async (tx) => {
+      const metadataTags = this.mergeMetadataTags(null, dto);
       const template = await tx.template.create({
         data: {
           code: dto.code?.trim() || `user-${slug}`,
@@ -364,6 +431,7 @@ export class TemplatesService {
           visibility: "PRIVATE",
           sortOrder: 999,
           isFree: true,
+          tags: metadataTags,
         },
       });
 
@@ -409,6 +477,7 @@ export class TemplatesService {
         slug: true,
         visibility: true,
         createdById: true,
+        tags: true,
       },
     });
 
@@ -447,6 +516,7 @@ export class TemplatesService {
       : null;
 
     const updatedTemplate = await this.prisma.$transaction(async (tx) => {
+      const metadataTags = this.mergeMetadataTags(existing.tags, dto);
       await tx.template.update({
         where: { id: existing.id },
         data: {
@@ -462,6 +532,7 @@ export class TemplatesService {
               ? dto.thumbnailUrl?.trim() || null
               : undefined,
           categoryId: category?.id,
+          tags: metadataTags,
         },
       });
 

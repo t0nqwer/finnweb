@@ -28,6 +28,13 @@ type CreatedContext = {
   pageId: string;
 };
 
+type RegisteredUserContext = {
+  email: string;
+  accessToken: string;
+  userId: string;
+  workspaceId: string;
+};
+
 const emailServiceMock = {
   async sendVerificationEmail() {
     return;
@@ -191,6 +198,52 @@ describe("Sites API integration - section props validation", () => {
     };
   }
 
+  async function registerUserContext(
+    label: string,
+  ): Promise<RegisteredUserContext> {
+    const email = uniqueEmail(label);
+    createdEmails.push(email);
+
+    const registerResponse = await app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      payload: {
+        email,
+        password: "Password123!",
+        name: `Sites Integration ${label}`,
+      },
+    });
+
+    assert.equal(registerResponse.statusCode, 201, registerResponse.body);
+
+    const registerBody = registerResponse.json() as AuthTokens;
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        workspaceMembers: {
+          select: {
+            workspaceId: true,
+          },
+          take: 1,
+        },
+      },
+    });
+
+    const userId = user?.id;
+    const workspaceId = user?.workspaceMembers[0]?.workspaceId;
+
+    assert.ok(userId, "Expected registered user to exist");
+    assert.ok(workspaceId, "Expected registered user to have workspace");
+
+    return {
+      email,
+      accessToken: registerBody.accessToken,
+      userId,
+      workspaceId,
+    };
+  }
+
   it("returns SECTION_PROPS_INVALID_TITLE when HERO title has invalid type", async () => {
     const context = await createSiteAndPageContext("hero-title-invalid");
 
@@ -341,7 +394,9 @@ describe("Sites API integration - section props validation", () => {
   });
 
   it("returns SECTION_PROPS_INVALID_SOURCE_MODE when PRODUCT_GRID sourceMode is invalid", async () => {
-    const context = await createSiteAndPageContext("product-grid-source-invalid");
+    const context = await createSiteAndPageContext(
+      "product-grid-source-invalid",
+    );
 
     const response = await app.inject({
       method: "POST",
@@ -359,7 +414,10 @@ describe("Sites API integration - section props validation", () => {
     });
 
     assert.equal(response.statusCode, 400, response.body);
-    assert.equal(getErrorMessage(response), "SECTION_PROPS_INVALID_SOURCE_MODE");
+    assert.equal(
+      getErrorMessage(response),
+      "SECTION_PROPS_INVALID_SOURCE_MODE",
+    );
   });
 
   it("returns SECTION_PROPS_INVALID_IMAGE_URL when IMAGE url is not http or root-relative", async () => {
@@ -607,7 +665,9 @@ describe("Sites API integration - section props validation", () => {
   });
 
   it("creates section from sectionTemplateId and returns sectionTemplate summary", async () => {
-    const context = await createSiteAndPageContext("create-from-section-template");
+    const context = await createSiteAndPageContext(
+      "create-from-section-template",
+    );
 
     const template = await prisma.sectionTemplate.create({
       data: {
@@ -760,7 +820,8 @@ describe("Sites API integration - section props validation", () => {
     });
 
     assert.equal(createSection.statusCode, 201, createSection.body);
-    const sectionId = (createSection.json() as { data: { id: string } }).data.id;
+    const sectionId = (createSection.json() as { data: { id: string } }).data
+      .id;
 
     const switchResponse = await app.inject({
       method: "PATCH",
@@ -785,5 +846,451 @@ describe("Sites API integration - section props validation", () => {
     assert.equal(switched.data.props.title, "Preserved title");
     assert.equal(switched.data.props.subtitle, "Preserved subtitle");
     assert.equal(switched.data.props.buttonText, "Preserved CTA");
+  });
+
+  it("applies template to existing site draft pages and keeps published snapshots unchanged", async () => {
+    const context = await createSiteAndPageContext(
+      "apply-template-existing-site",
+    );
+
+    const owner = await prisma.user.findUnique({
+      where: {
+        email: context.email,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    assert.ok(owner?.id, "Expected owner user for template creation");
+
+    await prisma.section.create({
+      data: {
+        pageId: context.pageId,
+        type: "HERO",
+        sortOrder: 0,
+        isVisible: true,
+        props: {
+          title: "Old draft title",
+        },
+      },
+    });
+
+    await prisma.publishLog.create({
+      data: {
+        siteId: context.siteId,
+        version: 1,
+        action: "PUBLISH",
+        snapshot: {
+          marker: "published-before-apply-template",
+          pages: [
+            {
+              title: "Published home",
+              path: "/",
+            },
+          ],
+        },
+      },
+    });
+
+    const template = await prisma.template.create({
+      data: {
+        name: "Apply Template IT",
+        slug: `apply-template-it-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        createdById: owner.id,
+        tags: {
+          theme: {
+            accentColor: "#112233",
+            textColor: "#ffffff",
+          },
+        },
+        pages: {
+          create: [
+            {
+              title: "{{businessName}} Home",
+              slug: "home",
+              path: "/",
+              pageType: "LANDING",
+              isHomePage: true,
+              sortOrder: 0,
+              sections: {
+                create: [
+                  {
+                    type: "HERO",
+                    name: "Hero {{businessName}}",
+                    sortOrder: 0,
+                    props: {
+                      title: "{{businessName}}",
+                      subtitle: "โทร {{phone}}",
+                      buttonText: "แชท {{lineUrl}}",
+                    },
+                  },
+                  {
+                    type: "RICH_TEXT",
+                    name: "About",
+                    sortOrder: 1,
+                    props: {
+                      title: "สไตล์ {{style}}",
+                      body: "ภาษา {{language}}",
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: `/api/sites/${context.siteId}/apply-template`,
+      headers: {
+        authorization: `Bearer ${context.accessToken}`,
+      },
+      payload: {
+        templateId: template.id,
+        businessName: "Finn Clinic",
+        style: "modern",
+        language: "th",
+        phone: "0812345678",
+        lineId: "@finnclinic",
+      },
+    });
+
+    assert.equal(response.statusCode, 201, response.body);
+
+    const body = response.json() as {
+      data: {
+        site: {
+          id: string;
+          themeConfig: Record<string, unknown> | null;
+        };
+        createdOrUpdatedPagesCount: number;
+        createdSectionsCount: number;
+      };
+    };
+
+    assert.equal(body.data.site.id, context.siteId);
+    assert.equal(body.data.createdOrUpdatedPagesCount, 1);
+    assert.equal(body.data.createdSectionsCount, 2);
+    assert.equal((body.data.site.themeConfig ?? {})["accentColor"], "#112233");
+
+    const replacedPage = await prisma.page.findFirst({
+      where: {
+        siteId: context.siteId,
+        isPublished: false,
+      },
+      include: {
+        sections: {
+          orderBy: {
+            sortOrder: "asc",
+          },
+        },
+      },
+    });
+
+    assert.ok(replacedPage, "Expected new draft page from template");
+    assert.equal(replacedPage?.title, "Finn Clinic Home");
+    assert.equal(replacedPage?.sections.length, 2);
+
+    const heroSection = replacedPage?.sections[0];
+    const heroProps = (heroSection?.props ?? {}) as Record<string, unknown>;
+
+    assert.equal(heroProps.title, "Finn Clinic");
+    assert.equal(heroProps.subtitle, "โทร 0812345678");
+    assert.equal(
+      heroProps.buttonText,
+      "แชท https://line.me/R/ti/p/@finnclinic",
+    );
+
+    const oldPage = await prisma.page.findUnique({
+      where: {
+        id: context.pageId,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    assert.equal(oldPage, null, "Expected old draft page to be replaced");
+
+    const publishLogs = await prisma.publishLog.findMany({
+      where: {
+        siteId: context.siteId,
+      },
+      orderBy: {
+        version: "asc",
+      },
+      select: {
+        version: true,
+        snapshot: true,
+      },
+    });
+
+    assert.equal(publishLogs.length, 1);
+    const snapshot = publishLogs[0]?.snapshot as Record<string, unknown>;
+    assert.equal(snapshot.marker, "published-before-apply-template");
+  });
+
+  it("blocks apply-template when user has no edit permission on site", async () => {
+    const owner = await createSiteAndPageContext(
+      "apply-template-permission-owner",
+    );
+    const anotherUser = await registerUserContext(
+      "apply-template-permission-other",
+    );
+
+    const ownerUser = await prisma.user.findUnique({
+      where: {
+        email: owner.email,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    assert.ok(ownerUser?.id, "Expected owner user for template creation");
+
+    const template = await prisma.template.create({
+      data: {
+        name: "Forbidden Apply Template",
+        slug: `forbidden-apply-template-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        createdById: ownerUser.id,
+        pages: {
+          create: [
+            {
+              title: "Home",
+              slug: "home",
+              pageType: "LANDING",
+              path: "/",
+              isHomePage: true,
+              sections: {
+                create: [
+                  {
+                    type: "HERO",
+                    props: {
+                      title: "Hello",
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: `/api/sites/${owner.siteId}/apply-template`,
+      headers: {
+        authorization: `Bearer ${anotherUser.accessToken}`,
+      },
+      payload: {
+        templateId: template.id,
+      },
+    });
+
+    assert.equal(response.statusCode, 403, response.body);
+    assert.equal(getErrorMessage(response), "SITE_NOT_FOUND_OR_FORBIDDEN");
+  });
+
+  it("returns clear validation error when publishing has unresolved placeholders", async () => {
+    const context = await createSiteAndPageContext(
+      "publish-placeholder-invalid",
+    );
+
+    await prisma.page.update({
+      where: {
+        id: context.pageId,
+      },
+      data: {
+        isHomePage: true,
+        isPublished: true,
+        path: "/",
+      },
+    });
+
+    const section = await prisma.section.create({
+      data: {
+        pageId: context.pageId,
+        type: "HERO",
+        sortOrder: 0,
+        isVisible: true,
+        props: {
+          title: "{{businessName}}",
+          subtitle: "ข้อความ",
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: `/api/sites/${context.siteId}/publish`,
+      headers: {
+        authorization: `Bearer ${context.accessToken}`,
+      },
+    });
+
+    assert.equal(response.statusCode, 400, response.body);
+    assert.equal(
+      getErrorMessage(response),
+      `PUBLISH_UNRESOLVED_PLACEHOLDERS_IN_SECTION:${section.id}`,
+    );
+  });
+
+  it("publishes snapshot and keeps public page stable until republish", async () => {
+    const context = await createSiteAndPageContext("publish-snapshot-stable");
+
+    await prisma.page.update({
+      where: {
+        id: context.pageId,
+      },
+      data: {
+        isHomePage: true,
+        isPublished: true,
+        path: "/",
+      },
+    });
+
+    const section = await prisma.section.create({
+      data: {
+        pageId: context.pageId,
+        type: "HERO",
+        sortOrder: 0,
+        isVisible: true,
+        props: {
+          title: "First publish title",
+          subtitle: "ข้อความเริ่มต้น",
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const domainHost = `pub-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.example.com`;
+    await prisma.domain.create({
+      data: {
+        siteId: context.siteId,
+        host: domainHost,
+        type: "SUBDOMAIN",
+        isPrimary: true,
+      },
+    });
+
+    const firstPublish = await app.inject({
+      method: "POST",
+      url: `/api/sites/${context.siteId}/publish`,
+      headers: {
+        authorization: `Bearer ${context.accessToken}`,
+      },
+    });
+
+    assert.equal(firstPublish.statusCode, 201, firstPublish.body);
+    const firstPublishBody = firstPublish.json() as {
+      data: {
+        version: number;
+      };
+    };
+    assert.equal(firstPublishBody.data.version, 1);
+
+    const firstPublic = await app.inject({
+      method: "GET",
+      url: `/api/public/sites/page?domain=${encodeURIComponent(domainHost)}&path=%2F`,
+    });
+
+    assert.equal(firstPublic.statusCode, 200, firstPublic.body);
+    const firstPublicBody = firstPublic.json() as {
+      data: {
+        sections: Array<{ props: Record<string, unknown> }>;
+      };
+    };
+    assert.equal(
+      firstPublicBody.data.sections[0]?.props.title,
+      "First publish title",
+    );
+
+    const draftUpdate = await app.inject({
+      method: "PATCH",
+      url: `/api/sites/${context.siteId}/pages/${context.pageId}/sections/${section.id}`,
+      headers: {
+        authorization: `Bearer ${context.accessToken}`,
+      },
+      payload: {
+        props: {
+          title: "Draft changed but not republished",
+          subtitle: "ข้อความใหม่",
+        },
+      },
+    });
+
+    assert.equal(draftUpdate.statusCode, 200, draftUpdate.body);
+
+    const publicAfterDraftEdit = await app.inject({
+      method: "GET",
+      url: `/api/public/sites/page?domain=${encodeURIComponent(domainHost)}&path=%2F`,
+    });
+
+    assert.equal(
+      publicAfterDraftEdit.statusCode,
+      200,
+      publicAfterDraftEdit.body,
+    );
+    const publicAfterDraftEditBody = publicAfterDraftEdit.json() as {
+      data: {
+        sections: Array<{ props: Record<string, unknown> }>;
+      };
+    };
+    assert.equal(
+      publicAfterDraftEditBody.data.sections[0]?.props.title,
+      "First publish title",
+    );
+
+    const secondPublish = await app.inject({
+      method: "POST",
+      url: `/api/sites/${context.siteId}/publish`,
+      headers: {
+        authorization: `Bearer ${context.accessToken}`,
+      },
+    });
+
+    assert.equal(secondPublish.statusCode, 201, secondPublish.body);
+    const secondPublishBody = secondPublish.json() as {
+      data: {
+        version: number;
+      };
+    };
+    assert.equal(secondPublishBody.data.version, 2);
+
+    const publicAfterRepublish = await app.inject({
+      method: "GET",
+      url: `/api/public/sites/page?domain=${encodeURIComponent(domainHost)}&path=%2F`,
+    });
+
+    assert.equal(
+      publicAfterRepublish.statusCode,
+      200,
+      publicAfterRepublish.body,
+    );
+    const publicAfterRepublishBody = publicAfterRepublish.json() as {
+      data: {
+        sections: Array<{ props: Record<string, unknown> }>;
+      };
+    };
+    assert.equal(
+      publicAfterRepublishBody.data.sections[0]?.props.title,
+      "Draft changed but not republished",
+    );
   });
 });
