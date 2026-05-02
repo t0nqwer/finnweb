@@ -1,14 +1,12 @@
-import { CheckCircle2Icon } from "lucide-react";
+import { CheckCircle2Icon, SparklesIcon } from "lucide-react";
 import { DEFAULT_TEMPLATE_IMAGE } from "../lib/normalize-template";
-import type {
-  PreviewMode,
-  SiteTemplate,
-} from "../types/create-site.types";
+import type { PreviewMode, SiteTemplate } from "../types/create-site.types";
 
 type TemplateCardProps = {
   template: SiteTemplate;
   selected: boolean;
   previewMode: PreviewMode;
+  isRecommended?: boolean;
   onSelect: () => void;
 };
 
@@ -16,6 +14,7 @@ export function TemplateCard({
   template,
   selected,
   previewMode,
+  isRecommended,
   onSelect,
 }: TemplateCardProps) {
   const homePage =
@@ -44,6 +43,26 @@ export function TemplateCard({
           alt={template.name}
           className="h-full w-full object-cover opacity-90 transition duration-500 hover:scale-105"
         />
+
+        {/* Recommended badge */}
+        {isRecommended ? (
+          <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-[#FF8C00] px-2 py-0.5 text-[11px] font-semibold text-white shadow">
+            <SparklesIcon className="size-3" />
+            แนะนำ
+          </div>
+        ) : null}
+
+        {/* Free / Paid badge */}
+        <div
+          className={`absolute right-2 top-2 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+            template.isFree
+              ? "bg-emerald-500/90 text-white"
+              : "bg-slate-700/80 text-slate-200"
+          }`}
+        >
+          {template.isFree ? "ฟรี" : "พรีเมียม"}
+        </div>
+
         <div className="absolute inset-x-3 bottom-3 rounded-lg bg-[#11131A]/82 p-2 backdrop-blur">
           <p className="line-clamp-1 text-xs font-semibold text-white">
             {homePage?.title ?? "Home page"}

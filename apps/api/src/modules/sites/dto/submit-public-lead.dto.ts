@@ -14,15 +14,16 @@ export class SubmitPublicLeadDto {
   name!: string;
 
   @IsString()
-  @IsEmail()
-  @MaxLength(255)
-  email!: string;
+  @MinLength(7)
+  @MaxLength(32)
+  @Matches(/^[0-9+()\-\s]{7,20}$/)
+  phone!: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(32)
-  @Matches(/^[0-9+()\-\s]{7,20}$/)
-  phone?: string;
+  @IsEmail()
+  @MaxLength(255)
+  email?: string;
 
   @IsOptional()
   @IsString()
@@ -36,4 +37,10 @@ export class SubmitPublicLeadDto {
   @IsOptional()
   @IsString()
   sectionId?: string;
+
+  /** Honeypot — must be empty. Populated by bots filling all inputs. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(0, { message: "Invalid submission" })
+  _hp?: string;
 }

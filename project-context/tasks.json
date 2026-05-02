@@ -2,6 +2,103 @@
   "updatedAt": "2026-05-02",
   "tasks": [
     {
+      "id": "template-factory",
+      "title": "Add foundation for scalable template generation using blueprint + theme + content pack",
+      "status": "done",
+      "priority": "medium",
+      "phase": "phase-2",
+      "epic": "site-builder",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": ["mvp-lead-capture-public-sites"],
+      "scope": [
+        "สร้าง packages/shared/src/templates/ พร้อม types/, blueprints/, themes/, content-packs/, generator/",
+        "กำหนด types: TemplateBlueprint, ThemePack, ContentPack, GeneratedTemplate",
+        "เพิ่ม restaurant-landing blueprint, 2 themes, 2 content packs",
+        "เพิ่ม generateTemplate() ที่รองรับ 4+ combinations",
+        "Export ผ่าน packages/shared/src/templates/index.ts และ package.json ./templates entry",
+        "รัน tests ด้วย Node built-in test runner ผ่าน tsx"
+      ],
+      "progressNotes": [
+        "2026-05-02: สร้าง types/template-factory.types.ts กำหนด TemplateBlueprint, BlueprintSection, ThemePack, ContentPack, GeneratedTemplate",
+        "2026-05-02: สร้าง blueprints/restaurant-landing.blueprint.ts (7 sections: NAVBAR, HERO, FEATURE, GALLERY, TESTIMONIAL, CONTACT, FOOTER)",
+        "2026-05-02: สร้าง themes/index.ts พร้อม modern-orange และ luxury-dark ThemePacks",
+        "2026-05-02: สร้าง content-packs: mala-restaurant-th + cafe-th พร้อม placeholder tokens",
+        "2026-05-02: สร้าง generator/generate-template.ts พร้อม deepMerge, placeholder resolution, registry accessors",
+        "2026-05-02: เพิ่ม test file generate-template.test.ts — 20 tests ผ่านทั้งหมด",
+        "2026-05-02: Export ผ่าน templates/index.ts และเพิ่ม ./templates entry ใน package.json"
+      ],
+      "acceptanceCriteria": [
+        "generateTemplate() รองรับ 4 combinations โดยไม่ throw",
+        "{{placeholder}} tokens ถูก resolve ทั้งหมดในผลลัพธ์",
+        "themeConfig ถูก inject จาก ThemePack.tokens",
+        "sectionOverrides จาก theme ถูก deep-merge ลง section props",
+        "placeholderOverrides มีความสำคัญสูงกว่า content-pack defaults",
+        "typecheck clean และ 20 tests ผ่าน"
+      ]
+    },
+    {
+      "id": "mvp-lead-capture-public-sites",
+      "title": "Add MVP lead capture for public FinnWeb sites",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "site-builder",
+      "estimatePoints": 4,
+      "owner": "unassigned",
+      "dependsOn": ["public-site-rendering-route"],
+      "scope": [
+        "เพิ่ม contact.form section component ในหน้า public site",
+        "ปรับ email ให้เป็น optional และ phone เป็น required ใน SubmitPublicLeadDto",
+        "เพิ่ม honeypot field _hp เพื่อป้องกัน bot",
+        "เพิ่ม leads dashboard /sites/:siteId/leads"
+      ],
+      "progressNotes": [
+        "2026-05-02: ปรับ SubmitPublicLeadDto: phone=required, email=optional, เพิ่ม _hp honeypot",
+        "2026-05-02: ปรับ submitPublicLead service ให้ validate email เฉพาะตอนมีค่า",
+        "2026-05-02: สร้าง ContactFormSection.tsx ใน features/site-renderer ใช้ POST /public/sites/:siteId/forms/submit",
+        "2026-05-02: อัปเดต PublicSectionRenderer ให้รองรับ FORM และ contact.form types + ส่ง siteId/pageId/sectionId ผ่าน props",
+        "2026-05-02: อัปเดต public page routes ส่ง siteId/pageId ไปยัง renderer",
+        "2026-05-02: สร้าง /sites/[siteId]/leads/page.tsx แสดงรายการ leads ผ่าน GET /sites/:siteId/leads"
+      ],
+      "acceptanceCriteria": [
+        "ผู้เยี่ยมชม public site กรอกฟอร์มและส่งได้โดยไม่ต้อง login",
+        "Lead ถูกบันทึกใน FormSubmission",
+        "เจ้าของไซต์ดู leads ได้ที่ /sites/:siteId/leads",
+        "honeypot field ป้องกัน bot submissions",
+        "typecheck clean"
+      ]
+    },
+    {
+      "id": "public-site-rendering-route",
+      "title": "Add public rendering route for published FinnWeb sites",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "site-builder",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": ["publish-validation-improvement"],
+      "scope": [
+        "เพิ่ม GET /public/sites/by-slug/:siteSlug และ /public/sites/by-slug/:siteSlug/pages/:pageSlug endpoints",
+        "เพิ่ม frontend routes /s/[siteSlug] และ /s/[siteSlug]/[pageSlug]",
+        "render sections ด้วย section registry เดิมพร้อม generic fallback"
+      ],
+      "progressNotes": [
+        "2026-05-02: เพิ่ม getPublicPageBySlugAndPath service method ใน SitesService",
+        "2026-05-02: เพิ่ม GET by-slug endpoints ใน PublicSitesController",
+        "2026-05-02: เพิ่ม public-site.api.ts + PublicSectionRenderer ใน features/site-renderer",
+        "2026-05-02: เพิ่ม Next.js SSR pages /s/[siteSlug] และ /s/[siteSlug]/[pageSlug] พร้อม generateMetadata"
+      ],
+      "acceptanceCriteria": [
+        "/s/:siteSlug renders published home page",
+        "/s/:siteSlug/:pageSlug renders published sub-page",
+        "draft-only sites return 404",
+        "ไม่ต้อง login เพื่อดูหน้าสาธารณะ",
+        "typecheck clean"
+      ]
+    },
+    {
       "id": "publish-validation-improvement",
       "title": "Improve publish validation and snapshot generation for sites",
       "status": "done",

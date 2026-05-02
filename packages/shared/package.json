@@ -6,6 +6,7 @@
     "./constants": "./src/constants.ts",
     "./types": "./src/types.ts",
     "./jobs": "./src/jobs.ts",
+    "./templates": "./src/templates/index.ts",
     ".": "./src/index.ts"
   },
   "scripts": {

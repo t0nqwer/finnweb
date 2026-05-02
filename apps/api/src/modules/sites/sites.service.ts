@@ -3224,10 +3224,7 @@ export class SitesService {
     };
   }
 
-  async getPublicPageBySlugAndPath(
-    siteSlug: string,
-    pageSlug?: string | null,
-  ) {
+  async getPublicPageBySlugAndPath(siteSlug: string, pageSlug?: string | null) {
     const site = await this.prisma.site.findFirst({
       where: {
         slug: siteSlug,
@@ -3310,7 +3307,7 @@ export class SitesService {
     },
   ) {
     const normalizedName = dto.name?.trim() ?? "";
-    const normalizedEmail = dto.email?.trim().toLowerCase() ?? "";
+    const normalizedEmail = dto.email?.trim().toLowerCase() || null;
     const normalizedPhone = dto.phone?.trim() || null;
 
     if (!normalizedName) {
@@ -3318,7 +3315,7 @@ export class SitesService {
     }
 
     if (
-      !normalizedEmail ||
+      normalizedEmail &&
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
     ) {
       throw new BadRequestException("PUBLIC_LEAD_INVALID_EMAIL");
