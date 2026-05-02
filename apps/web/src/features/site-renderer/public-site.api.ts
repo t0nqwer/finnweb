@@ -34,8 +34,8 @@ export async function fetchPublicPage(
   pageSlug?: string,
 ): Promise<PublicPageData | null> {
   const url = pageSlug
-    ? `${API_BASE_URL}/public/sites/by-slug/${encodeURIComponent(siteSlug)}/pages/${encodeURIComponent(pageSlug)}`
-    : `${API_BASE_URL}/public/sites/by-slug/${encodeURIComponent(siteSlug)}`;
+    ? `${API_BASE_URL}/public/sites/${encodeURIComponent(siteSlug)}/pages/${encodeURIComponent(pageSlug)}`
+    : `${API_BASE_URL}/public/sites/${encodeURIComponent(siteSlug)}`;
 
   try {
     const response = await fetch(url, {

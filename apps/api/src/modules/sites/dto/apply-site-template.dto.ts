@@ -1,6 +1,6 @@
 import { IsOptional, IsString, MaxLength } from "class-validator";
 
-export class ApplySiteTemplateDto {
+export class ApplyTemplateDto {
   @IsString()
   templateId!: string;
 
@@ -44,3 +44,5 @@ export class ApplySiteTemplateDto {
   @MaxLength(500)
   logoUrl?: string;
 }
+
+export { ApplyTemplateDto as ApplySiteTemplateDto };

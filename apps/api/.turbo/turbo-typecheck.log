@@ -1,5 +1,4 @@
 
-
-> @finnweb/api@0.0.1 typecheck /Volumes/GRIZZLY/GitHub/finnweb/apps/api
+> @finnweb/api@0.0.1 typecheck C:\Users\jirap\Documents\GitHub\finnweb\apps\api
 > tsc -p tsconfig.json --noEmit
 

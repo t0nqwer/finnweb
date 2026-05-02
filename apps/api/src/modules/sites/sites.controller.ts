@@ -22,7 +22,7 @@ import { GetSiteLeadsQueryDto } from "./dto/get-site-leads-query.dto";
 import { SitesService } from "./sites.service";
 import { SwitchSectionTemplateDto } from "./dto/switch-section-template.dto";
 import { PreviewTokenPolicyDto } from "./dto/preview-token.dto";
-import { ApplySiteTemplateDto } from "./dto/apply-site-template.dto";
+import { ApplyTemplateDto } from "./dto/apply-site-template.dto";
 
 @UseGuards(AccessJwtGuard)
 @Controller("sites")
@@ -96,7 +96,7 @@ export class SitesController {
   async applyTemplate(
     @CurrentUser("sub") userId: string,
     @Param("siteId") siteId: string,
-    @Body() dto: ApplySiteTemplateDto,
+    @Body() dto: ApplyTemplateDto,
   ) {
     const data = await this.sitesService.applyTemplate(userId, siteId, dto);
 

@@ -11,7 +11,7 @@ import { PLAN_GATING_ERROR_CODES } from "@/common/constants/plan-gating-errors.c
 import type * as runtime from "@prisma/client/runtime/client";
 import { CreatePageDto } from "./dto/create-page.dto";
 import { CreateSiteDto } from "./dto/create-site.dto";
-import { ApplySiteTemplateDto } from "./dto/apply-site-template.dto";
+import { ApplyTemplateDto } from "./dto/apply-site-template.dto";
 import { UpdatePageDto } from "./dto/update-page.dto";
 import { CreateSectionDto } from "./dto/create-section.dto";
 import { UpdateSectionDto } from "./dto/update-section.dto";
@@ -1565,11 +1565,7 @@ export class SitesService {
     });
   }
 
-  async applyTemplate(
-    userId: string,
-    siteId: string,
-    dto: ApplySiteTemplateDto,
-  ) {
+  async applyTemplate(userId: string, siteId: string, dto: ApplyTemplateDto) {
     const site = await this.getEditableSite(userId, siteId);
     const template = await this.resolveTemplateForSiteCreation(
       userId,
@@ -1641,8 +1637,8 @@ export class SitesService {
 
       return {
         site: updatedSite,
-        createdOrUpdatedPagesCount: installResult.createdPagesCount,
-        createdSectionsCount: installResult.createdSectionsCount,
+        pagesCount: installResult.createdPagesCount,
+        sectionsCount: installResult.createdSectionsCount,
       };
     });
   }

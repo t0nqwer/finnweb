@@ -94,6 +94,40 @@ export class PublicSitesController {
     };
   }
 
+  @Get(":siteSlug")
+  async getPublicSiteHomePageBySlug(@Param("siteSlug") siteSlug: string) {
+    if (!siteSlug) {
+      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
+    }
+
+    const data = await this.sitesService.getPublicPageBySlugAndPath(siteSlug);
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
+  @Get(":siteSlug/pages/:pageSlug")
+  async getPublicSitePageBySlug(
+    @Param("siteSlug") siteSlug: string,
+    @Param("pageSlug") pageSlug: string,
+  ) {
+    if (!siteSlug || !pageSlug) {
+      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
+    }
+
+    const data = await this.sitesService.getPublicPageBySlugAndPath(
+      siteSlug,
+      pageSlug,
+    );
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
   @Post(":siteId/forms/submit")
   async submitPublicLead(
     @Param("siteId") siteId: string,

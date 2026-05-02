@@ -969,14 +969,14 @@ describe("Sites API integration - section props validation", () => {
           id: string;
           themeConfig: Record<string, unknown> | null;
         };
-        createdOrUpdatedPagesCount: number;
-        createdSectionsCount: number;
+        pagesCount: number;
+        sectionsCount: number;
       };
     };
 
     assert.equal(body.data.site.id, context.siteId);
-    assert.equal(body.data.createdOrUpdatedPagesCount, 1);
-    assert.equal(body.data.createdSectionsCount, 2);
+    assert.equal(body.data.pagesCount, 1);
+    assert.equal(body.data.sectionsCount, 2);
     assert.equal((body.data.site.themeConfig ?? {})["accentColor"], "#112233");
 
     const replacedPage = await prisma.page.findFirst({
@@ -1152,6 +1152,28 @@ describe("Sites API integration - section props validation", () => {
   it("publishes snapshot and keeps public page stable until republish", async () => {
     const context = await createSiteAndPageContext("publish-snapshot-stable");
 
+    const siteRecord = await prisma.site.findUnique({
+      where: {
+        id: context.siteId,
+      },
+      select: {
+        slug: true,
+      },
+    });
+
+    assert.ok(siteRecord?.slug, "Expected site slug for public route test");
+
+    const pageRecord = await prisma.page.findUnique({
+      where: {
+        id: context.pageId,
+      },
+      select: {
+        slug: true,
+      },
+    });
+
+    assert.ok(pageRecord?.slug, "Expected page slug for public route test");
+
     await prisma.page.update({
       where: {
         id: context.pageId,
@@ -1221,6 +1243,33 @@ describe("Sites API integration - section props validation", () => {
       "First publish title",
     );
 
+    const firstPublicBySlug = await app.inject({
+      method: "GET",
+      url: `/api/public/sites/${siteRecord.slug}`,
+    });
+
+    assert.equal(firstPublicBySlug.statusCode, 200, firstPublicBySlug.body);
+    const firstPublicBySlugBody = firstPublicBySlug.json() as {
+      data: {
+        sections: Array<{ props: Record<string, unknown> }>;
+      };
+    };
+    assert.equal(
+      firstPublicBySlugBody.data.sections[0]?.props.title,
+      "First publish title",
+    );
+
+    const firstPublicSubPageBySlug = await app.inject({
+      method: "GET",
+      url: `/api/public/sites/${siteRecord.slug}/pages/${pageRecord.slug}`,
+    });
+
+    assert.equal(
+      firstPublicSubPageBySlug.statusCode,
+      200,
+      firstPublicSubPageBySlug.body,
+    );
+
     const draftUpdate = await app.inject({
       method: "PATCH",
       url: `/api/sites/${context.siteId}/pages/${context.pageId}/sections/${section.id}`,
@@ -1254,6 +1303,27 @@ describe("Sites API integration - section props validation", () => {
     };
     assert.equal(
       publicAfterDraftEditBody.data.sections[0]?.props.title,
+      "First publish title",
+    );
+
+    const publicAfterDraftEditBySlug = await app.inject({
+      method: "GET",
+      url: `/api/public/sites/${siteRecord.slug}`,
+    });
+
+    assert.equal(
+      publicAfterDraftEditBySlug.statusCode,
+      200,
+      publicAfterDraftEditBySlug.body,
+    );
+    const publicAfterDraftEditBySlugBody =
+      publicAfterDraftEditBySlug.json() as {
+        data: {
+          sections: Array<{ props: Record<string, unknown> }>;
+        };
+      };
+    assert.equal(
+      publicAfterDraftEditBySlugBody.data.sections[0]?.props.title,
       "First publish title",
     );
 
@@ -1292,5 +1362,52 @@ describe("Sites API integration - section props validation", () => {
       publicAfterRepublishBody.data.sections[0]?.props.title,
       "Draft changed but not republished",
     );
+
+    const publicAfterRepublishBySlug = await app.inject({
+      method: "GET",
+      url: `/api/public/sites/${siteRecord.slug}`,
+    });
+
+    assert.equal(
+      publicAfterRepublishBySlug.statusCode,
+      200,
+      publicAfterRepublishBySlug.body,
+    );
+    const publicAfterRepublishBySlugBody =
+      publicAfterRepublishBySlug.json() as {
+        data: {
+          sections: Array<{ props: Record<string, unknown> }>;
+        };
+      };
+    assert.equal(
+      publicAfterRepublishBySlugBody.data.sections[0]?.props.title,
+      "Draft changed but not republished",
+    );
+  });
+
+  it("returns 404 for unpublished site on slug public routes", async () => {
+    const context = await createSiteAndPageContext("public-slug-unpublished");
+
+    const siteRecord = await prisma.site.findUnique({
+      where: {
+        id: context.siteId,
+      },
+      select: {
+        slug: true,
+      },
+    });
+
+    assert.ok(
+      siteRecord?.slug,
+      "Expected site slug for unpublished route test",
+    );
+
+    const response = await app.inject({
+      method: "GET",
+      url: `/api/public/sites/${siteRecord.slug}`,
+    });
+
+    assert.equal(response.statusCode, 404, response.body);
+    assert.equal(getErrorMessage(response), "PUBLIC_PAGE_NOT_FOUND");
   });
 });
