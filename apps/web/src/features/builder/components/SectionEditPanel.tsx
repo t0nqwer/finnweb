@@ -92,11 +92,10 @@ export function SectionEditPanel({
 
           <div className="rounded-lg border border-dashed border-[#FF8C00]/35 bg-[#FF8C00]/8 p-3">
             <p className="text-sm font-medium text-[#FFD700]">
-              Local preview only
+              Autosaved draft
             </p>
             <p className="mt-1 text-xs leading-relaxed text-slate-300">
-              Changes update this builder preview, but autosave and API
-              persistence are intentionally not connected yet.
+              Changes are saved automatically after you stop typing.
             </p>
           </div>
         </div>
