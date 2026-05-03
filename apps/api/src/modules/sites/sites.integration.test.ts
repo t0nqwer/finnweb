@@ -1410,4 +1410,188 @@ describe("Sites API integration - section props validation", () => {
     assert.equal(response.statusCode, 404, response.body);
     assert.equal(getErrorMessage(response), "PUBLIC_PAGE_NOT_FOUND");
   });
+
+  it("returns 404 for unpublished site on domain public route", async () => {
+    const context = await createSiteAndPageContext("public-domain-unpublished");
+
+    await prisma.page.update({
+      where: {
+        id: context.pageId,
+      },
+      data: {
+        isHomePage: true,
+        isPublished: true,
+        path: "/",
+      },
+    });
+
+    await prisma.section.create({
+      data: {
+        pageId: context.pageId,
+        type: "HERO",
+        sortOrder: 0,
+        isVisible: true,
+        props: {
+          title: "Published before unpublish",
+          subtitle: "ทดสอบ route แบบ domain",
+        },
+      },
+    });
+
+    const domainHost = `pub-unpublished-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.example.com`;
+    await prisma.domain.create({
+      data: {
+        siteId: context.siteId,
+        host: domainHost,
+        type: "SUBDOMAIN",
+        isPrimary: true,
+      },
+    });
+
+    const publishResponse = await app.inject({
+      method: "POST",
+      url: `/api/sites/${context.siteId}/publish`,
+      headers: {
+        authorization: `Bearer ${context.accessToken}`,
+      },
+    });
+
+    assert.equal(publishResponse.statusCode, 201, publishResponse.body);
+
+    await prisma.site.update({
+      where: {
+        id: context.siteId,
+      },
+      data: {
+        status: "DRAFT",
+      },
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: `/api/public/sites/page?domain=${encodeURIComponent(domainHost)}&path=%2F`,
+    });
+
+    assert.equal(response.statusCode, 404, response.body);
+    assert.equal(getErrorMessage(response), "PUBLIC_PAGE_NOT_FOUND");
+  });
+
+  it("allows preview token to read draft page when token is valid", async () => {
+    const context = await createSiteAndPageContext("preview-token-draft");
+
+    await prisma.page.update({
+      where: {
+        id: context.pageId,
+      },
+      data: {
+        isHomePage: true,
+        isPublished: false,
+        path: "/",
+      },
+    });
+
+    await prisma.section.create({
+      data: {
+        pageId: context.pageId,
+        type: "HERO",
+        sortOrder: 0,
+        isVisible: true,
+        props: {
+          title: "Draft preview title",
+          subtitle: "เห็นได้เฉพาะผ่าน preview token",
+        },
+      },
+    });
+
+    const previewTokenResponse = await app.inject({
+      method: "POST",
+      url: `/api/sites/${context.siteId}/preview-token`,
+      headers: {
+        authorization: `Bearer ${context.accessToken}`,
+      },
+      payload: {
+        expiresInDays: 1,
+      },
+    });
+
+    assert.equal(
+      previewTokenResponse.statusCode,
+      201,
+      previewTokenResponse.body,
+    );
+    const previewTokenBody = previewTokenResponse.json() as {
+      data: {
+        token: string;
+      };
+    };
+
+    const response = await app.inject({
+      method: "GET",
+      url: `/api/public/sites/preview/${previewTokenBody.data.token}?path=%2F`,
+    });
+
+    assert.equal(response.statusCode, 200, response.body);
+    const responseBody = response.json() as {
+      data: {
+        sections: Array<{ props: Record<string, unknown> }>;
+      };
+    };
+    assert.equal(
+      responseBody.data.sections[0]?.props.title,
+      "Draft preview title",
+    );
+  });
+
+  it("returns PREVIEW_TOKEN_EXPIRED when preview token is expired", async () => {
+    const context = await createSiteAndPageContext("preview-token-expired");
+
+    await prisma.page.update({
+      where: {
+        id: context.pageId,
+      },
+      data: {
+        isHomePage: true,
+        path: "/",
+      },
+    });
+
+    const previewTokenResponse = await app.inject({
+      method: "POST",
+      url: `/api/sites/${context.siteId}/preview-token`,
+      headers: {
+        authorization: `Bearer ${context.accessToken}`,
+      },
+      payload: {
+        expiresInDays: 1,
+      },
+    });
+
+    assert.equal(
+      previewTokenResponse.statusCode,
+      201,
+      previewTokenResponse.body,
+    );
+    const previewTokenBody = previewTokenResponse.json() as {
+      data: {
+        token: string;
+      };
+    };
+
+    await prisma.previewToken.updateMany({
+      where: {
+        token: previewTokenBody.data.token,
+      },
+      data: {
+        expiresAt: new Date(Date.now() - 60_000),
+      },
+    });
+
+    const response = await app.inject({
+      method: "GET",
+      url: `/api/public/sites/preview/${previewTokenBody.data.token}?path=%2F`,
+    });
+
+    assert.equal(response.statusCode, 404, response.body);
+    assert.equal(getErrorMessage(response), "PREVIEW_TOKEN_EXPIRED");
+  });
 });

@@ -2598,7 +2598,12 @@ export class SitesService {
   private selectPageFromSnapshot(
     pages: Array<Record<string, unknown>>,
     pathOrSlug?: string,
+    options?: {
+      requirePublished?: boolean;
+    },
   ) {
+    const requirePublished = options?.requirePublished ?? true;
+
     if (pages.length === 0) {
       return null;
     }
@@ -2606,9 +2611,13 @@ export class SitesService {
     if (!pathOrSlug || !pathOrSlug.trim()) {
       return (
         pages.find(
-          (page) => page.isHomePage === true && page.isPublished !== false,
+          (page) =>
+            page.isHomePage === true &&
+            (!requirePublished || page.isPublished !== false),
         ) ??
-        pages.find((page) => page.isPublished !== false) ??
+        pages.find((page) =>
+          requirePublished ? page.isPublished !== false : true,
+        ) ??
         null
       );
     }
@@ -2628,7 +2637,8 @@ export class SitesService {
           typeof page.slug === "string" ? page.slug.toLowerCase() : "";
         const isPublished = page.isPublished !== false;
         return (
-          isPublished && (path === normalizedPath || slug === normalizedSlug)
+          (!requirePublished || isPublished) &&
+          (path === normalizedPath || slug === normalizedSlug)
         );
       }) ?? null
     );
@@ -3069,30 +3079,58 @@ export class SitesService {
       throw new NotFoundException("PREVIEW_TOKEN_EXPIRED");
     }
 
-    const latestPublish = await this.prisma.publishLog.findFirst({
+    const site = await this.prisma.site.findUnique({
       where: {
-        siteId: previewToken.siteId,
-        action: "PUBLISH",
+        id: previewToken.siteId,
       },
-      orderBy: [{ version: "desc" }, { createdAt: "desc" }],
       select: {
-        snapshot: true,
+        id: true,
+        name: true,
+        slug: true,
+        logoUrl: true,
+        faviconUrl: true,
+        defaultSeoTitle: true,
+        defaultSeoDescription: true,
+        defaultSeoKeywords: true,
+        defaultOgImageUrl: true,
+        primaryLanguage: true,
+        timezone: true,
       },
     });
 
-    if (!latestPublish) {
+    if (!site) {
       throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
     }
 
-    const snapshot = this.isPlainObject(latestPublish.snapshot)
-      ? (latestPublish.snapshot as Record<string, unknown>)
-      : null;
-    if (!snapshot) {
+    const pages = await this.prisma.page.findMany({
+      where: {
+        siteId: previewToken.siteId,
+      },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      include: {
+        sections: {
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+          select: {
+            id: true,
+            type: true,
+            name: true,
+            sortOrder: true,
+            isVisible: true,
+            props: true,
+          },
+        },
+      },
+    });
+
+    if (pages.length === 0) {
       throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
     }
 
-    const pages = this.extractPublishedPagesFromSnapshot(snapshot);
-    const page = this.selectPageFromSnapshot(pages, pathOrSlug);
+    const page = this.selectPageFromSnapshot(
+      pages as unknown as Array<Record<string, unknown>>,
+      pathOrSlug,
+      { requirePublished: false },
+    );
     if (!page) {
       throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
     }
@@ -3107,12 +3145,8 @@ export class SitesService {
           Number((b as Record<string, unknown>).sortOrder ?? 0),
       );
 
-    const siteSnapshot = this.isPlainObject(snapshot.site)
-      ? (snapshot.site as Record<string, unknown>)
-      : {};
-
     return {
-      site: siteSnapshot,
+      site,
       page: {
         id: page.id,
         title: page.title,
@@ -3143,6 +3177,7 @@ export class SitesService {
 
     const site = await this.prisma.site.findFirst({
       where: {
+        status: "PUBLISHED",
         domains: {
           some: {
             host: normalizedDomain,
