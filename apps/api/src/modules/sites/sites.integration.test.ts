@@ -557,14 +557,38 @@ describe("Sites API integration - section props validation", () => {
   it("accepts public lead submission and persists form submission with site/page context", async () => {
     const context = await createSiteAndPageContext("public-submit-success");
 
+    // Page must be set as home and published, and the site must be published (snapshot created)
+    // before submitPublicLead validates pageId against the publish log snapshot.
     await prisma.page.update({
       where: {
         id: context.pageId,
       },
       data: {
+        isHomePage: true,
         isPublished: true,
+        path: "/",
       },
     });
+
+    await prisma.section.create({
+      data: {
+        pageId: context.pageId,
+        type: "HERO",
+        sortOrder: 0,
+        isVisible: true,
+        props: { title: "Lead test page", subtitle: "Lead form test" },
+      },
+    });
+
+    const publishResponse = await app.inject({
+      method: "POST",
+      url: `/api/sites/${context.siteId}/publish`,
+      headers: {
+        authorization: `Bearer ${context.accessToken}`,
+      },
+    });
+
+    assert.equal(publishResponse.statusCode, 201, publishResponse.body);
 
     const response = await app.inject({
       method: "POST",
@@ -1476,6 +1500,63 @@ describe("Sites API integration - section props validation", () => {
     assert.equal(getErrorMessage(response), "PUBLIC_PAGE_NOT_FOUND");
   });
 
+  it("returns 404 for missing page on published slug sub-page route", async () => {
+    const context = await createSiteAndPageContext("public-missing-subpage");
+
+    const siteRecord = await prisma.site.findUnique({
+      where: {
+        id: context.siteId,
+      },
+      select: {
+        slug: true,
+      },
+    });
+
+    assert.ok(siteRecord?.slug, "Expected site slug for missing page test");
+
+    await prisma.page.update({
+      where: {
+        id: context.pageId,
+      },
+      data: {
+        isHomePage: true,
+        isPublished: true,
+        path: "/",
+      },
+    });
+
+    await prisma.section.create({
+      data: {
+        pageId: context.pageId,
+        type: "HERO",
+        sortOrder: 0,
+        isVisible: true,
+        props: {
+          title: "Published home only",
+          subtitle: "ไม่มีหน้าย่อย slug นี้",
+        },
+      },
+    });
+
+    const publishResponse = await app.inject({
+      method: "POST",
+      url: `/api/sites/${context.siteId}/publish`,
+      headers: {
+        authorization: `Bearer ${context.accessToken}`,
+      },
+    });
+
+    assert.equal(publishResponse.statusCode, 201, publishResponse.body);
+
+    const response = await app.inject({
+      method: "GET",
+      url: `/api/public/sites/${siteRecord.slug}/pages/not-found-page-slug`,
+    });
+
+    assert.equal(response.statusCode, 404, response.body);
+    assert.equal(getErrorMessage(response), "PUBLIC_PAGE_NOT_FOUND");
+  });
+
   it("allows preview token to read draft page when token is valid", async () => {
     const context = await createSiteAndPageContext("preview-token-draft");
 
@@ -1593,5 +1674,62 @@ describe("Sites API integration - section props validation", () => {
 
     assert.equal(response.statusCode, 404, response.body);
     assert.equal(getErrorMessage(response), "PREVIEW_TOKEN_EXPIRED");
+  });
+
+  it("returns PREVIEW_TOKEN_INVALID when preview token is revoked", async () => {
+    const context = await createSiteAndPageContext("preview-token-revoked");
+
+    await prisma.page.update({
+      where: {
+        id: context.pageId,
+      },
+      data: {
+        isHomePage: true,
+        isPublished: false,
+        path: "/",
+      },
+    });
+
+    const previewTokenResponse = await app.inject({
+      method: "POST",
+      url: `/api/sites/${context.siteId}/preview-token`,
+      headers: {
+        authorization: `Bearer ${context.accessToken}`,
+      },
+      payload: {
+        expiresInDays: 1,
+      },
+    });
+
+    assert.equal(
+      previewTokenResponse.statusCode,
+      201,
+      previewTokenResponse.body,
+    );
+
+    const previewTokenBody = previewTokenResponse.json() as {
+      data: {
+        id: string;
+        token: string;
+      };
+    };
+
+    const revokeResponse = await app.inject({
+      method: "DELETE",
+      url: `/api/sites/${context.siteId}/preview-tokens/${previewTokenBody.data.id}`,
+      headers: {
+        authorization: `Bearer ${context.accessToken}`,
+      },
+    });
+
+    assert.equal(revokeResponse.statusCode, 200, revokeResponse.body);
+
+    const response = await app.inject({
+      method: "GET",
+      url: `/api/public/sites/preview/${previewTokenBody.data.token}?path=%2F`,
+    });
+
+    assert.equal(response.statusCode, 404, response.body);
+    assert.equal(getErrorMessage(response), "PREVIEW_TOKEN_INVALID");
   });
 });
