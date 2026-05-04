@@ -1,6 +1,35 @@
 {
-  "updatedAt": "2026-05-02",
+  "updatedAt": "2026-05-03",
   "tasks": [
+    {
+      "id": "sites-service-focused-split",
+      "title": "Split large SitesService into focused services",
+      "status": "in-progress",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "site-builder",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "publish-validation-improvement",
+        "mvp-lead-capture-public-sites"
+      ],
+      "scope": [
+        "แยก publish flow ไป SitePublishingService",
+        "แยก public render flow ไป PublicSiteRenderService",
+        "แยก lead flow ไป SiteLeadService",
+        "แยก preview token flow ไป PreviewTokenService",
+        "คง controller routes และ response shape เดิม พร้อม typecheck/tests ผ่าน"
+      ],
+      "progressNotes": [
+        "2026-05-03: Kickoff focused refactor เพื่อลดขนาด SitesService โดยคงพฤติกรรมเดิมของ publish/public render/preview token/public lead flows"
+      ],
+      "acceptanceCriteria": [
+        "endpoint เดิมยังทำงานเหมือนเดิม",
+        "SitesService บางลงและ delegate ไป service เฉพาะด้าน",
+        "publish/public render/preview token/lead submit flows ผ่าน typecheck และ tests"
+      ]
+    },
     {
       "id": "template-factory",
       "title": "Add foundation for scalable template generation using blueprint + theme + content pack",

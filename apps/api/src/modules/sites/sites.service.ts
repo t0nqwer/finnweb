@@ -5,7 +5,6 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { randomBytes } from "node:crypto";
 import { PrismaService } from "@/prisma/prisma.service";
 import { PLAN_GATING_ERROR_CODES } from "@/common/constants/plan-gating-errors.constant";
 import type * as runtime from "@prisma/client/runtime/client";
@@ -24,6 +23,10 @@ import {
   PREVIEW_TOKEN_EXPIRY_DAYS,
   PreviewTokenPolicyDto,
 } from "./dto/preview-token.dto";
+import { SitePublishingService } from "./site-publishing.service";
+import { PublicSiteRenderService } from "./public-site-render.service";
+import { SiteLeadService } from "./site-lead.service";
+import { PreviewTokenService } from "./preview-token.service";
 
 type TemplatePlaceholderValues = Record<string, string>;
 type TemplateAnswersInput = {
@@ -40,7 +43,17 @@ type TemplateAnswersInput = {
 
 @Injectable()
 export class SitesService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(SitePublishingService)
+    private readonly sitePublishingService: SitePublishingService,
+    @Inject(PublicSiteRenderService)
+    private readonly publicSiteRenderService: PublicSiteRenderService,
+    @Inject(SiteLeadService)
+    private readonly siteLeadService: SiteLeadService,
+    @Inject(PreviewTokenService)
+    private readonly previewTokenService: PreviewTokenService,
+  ) {}
   private readonly sectionTemplateSummarySelect = {
     id: true,
     code: true,
@@ -2478,98 +2491,7 @@ export class SitesService {
   }
 
   async findLeads(userId: string, siteId: string, query: GetSiteLeadsQueryDto) {
-    const site = await this.getAccessibleSite(userId, siteId);
-
-    const fromDate = query.from ? new Date(query.from) : undefined;
-    const toDate = query.to ? new Date(query.to) : undefined;
-
-    if (fromDate && toDate && fromDate > toDate) {
-      throw new BadRequestException("LEAD_DATE_RANGE_INVALID");
-    }
-
-    const leads = await this.prisma.formSubmission.findMany({
-      where: {
-        form: {
-          siteId,
-          ...(query.pageId ? { pageId: query.pageId } : {}),
-        },
-        ...(fromDate || toDate
-          ? {
-              createdAt: {
-                ...(fromDate ? { gte: fromDate } : {}),
-                ...(toDate ? { lte: toDate } : {}),
-              },
-            }
-          : {}),
-      },
-      include: {
-        form: {
-          select: {
-            id: true,
-            name: true,
-            page: {
-              select: {
-                id: true,
-                title: true,
-                slug: true,
-                path: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: query.limit ?? 50,
-    });
-
-    const items = leads.map((lead) => {
-      const data =
-        typeof lead.data === "object" && lead.data !== null
-          ? (lead.data as Record<string, unknown>)
-          : {};
-
-      return {
-        id: lead.id,
-        createdAt: lead.createdAt.toISOString(),
-        form: {
-          id: lead.form.id,
-          name: lead.form.name,
-        },
-        page: lead.form.page
-          ? {
-              id: lead.form.page.id,
-              title: lead.form.page.title,
-              slug: lead.form.page.slug,
-              path: lead.form.page.path,
-            }
-          : null,
-        contact: {
-          name: this.pickLeadValue(data, ["name", "fullName", "fullname"]),
-          email: this.pickLeadValue(data, ["email", "emailAddress"]),
-          phone: this.pickLeadValue(data, ["phone", "phoneNumber", "tel"]),
-          message: this.pickLeadValue(data, ["message", "detail", "note"]),
-        },
-        data,
-      };
-    });
-
-    return {
-      site: {
-        id: site.id,
-        name: site.name,
-        slug: site.slug,
-      },
-      filters: {
-        pageId: query.pageId ?? null,
-        from: query.from ?? null,
-        to: query.to ?? null,
-        limit: query.limit ?? 50,
-      },
-      total: items.length,
-      items,
-    };
+    return this.siteLeadService.findLeads(userId, siteId, query);
   }
 
   private extractPublishedPagesFromSnapshot(snapshot: unknown) {
@@ -2764,150 +2686,7 @@ export class SitesService {
   }
 
   async publishSite(userId: string, siteId: string) {
-    const site = await this.getAccessibleSite(userId, siteId);
-
-    const pages = await this.prisma.page.findMany({
-      where: { siteId: site.id },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      include: {
-        sections: {
-          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-          select: {
-            id: true,
-            type: true,
-            name: true,
-            sortOrder: true,
-            isVisible: true,
-            props: true,
-          },
-        },
-      },
-    });
-
-    if (pages.length === 0) {
-      throw new BadRequestException("PUBLISH_NO_PAGES");
-    }
-
-    const homePage = pages.find((page) => page.isHomePage);
-    if (!homePage) {
-      throw new BadRequestException("PUBLISH_HOME_PAGE_REQUIRED");
-    }
-
-    const homeVisibleSections = homePage.sections.filter(
-      (section) => section.isVisible,
-    );
-    if (homeVisibleSections.length === 0) {
-      throw new BadRequestException("PUBLISH_HOME_SECTION_REQUIRED");
-    }
-
-    this.validatePublishContent(
-      pages.map((page) => ({
-        id: page.id,
-        title: page.title,
-        slug: page.slug,
-        seoTitle: page.seoTitle,
-        seoDescription: page.seoDescription,
-        seoKeywords: page.seoKeywords,
-        ogImageUrl: page.ogImageUrl,
-        sections: page.sections.map((section) => ({
-          id: section.id,
-          type: section.type,
-          name: section.name,
-          isVisible: section.isVisible,
-          props: section.props,
-        })),
-      })),
-    );
-
-    const pageSnapshots = pages.map((page) => ({
-      id: page.id,
-      title: page.title,
-      slug: page.slug,
-      path: page.path,
-      pageType: page.pageType,
-      isHomePage: page.isHomePage,
-      isPublished: page.isPublished,
-      seoTitle: page.seoTitle,
-      seoDescription: page.seoDescription,
-      seoKeywords: page.seoKeywords,
-      ogImageUrl: page.ogImageUrl,
-      sortOrder: page.sortOrder,
-      sections: page.sections.map((section) => ({
-        id: section.id,
-        type: section.type,
-        name: section.name,
-        sortOrder: section.sortOrder,
-        isVisible: section.isVisible,
-        props: section.props,
-      })),
-    }));
-
-    const latest = await this.prisma.publishLog.findFirst({
-      where: { siteId: site.id },
-      orderBy: [{ version: "desc" }],
-      select: { version: true },
-    });
-    const nextVersion = (latest?.version ?? 0) + 1;
-
-    const primaryDomain = await this.prisma.domain.findFirst({
-      where: {
-        siteId: site.id,
-        isPrimary: true,
-      },
-      select: { host: true },
-      orderBy: { createdAt: "asc" },
-    });
-
-    const publishedAt = new Date();
-    const snapshot = {
-      site: {
-        id: site.id,
-        name: site.name,
-        slug: site.slug,
-        logoUrl: site.logoUrl,
-        faviconUrl: site.faviconUrl,
-        defaultSeoTitle: site.defaultSeoTitle,
-        defaultSeoDescription: site.defaultSeoDescription,
-        defaultSeoKeywords: site.defaultSeoKeywords,
-        defaultOgImageUrl: site.defaultOgImageUrl,
-        primaryLanguage: site.primaryLanguage,
-        timezone: site.timezone,
-      },
-      pages: pageSnapshots,
-      publishedAt: publishedAt.toISOString(),
-      version: nextVersion,
-    } as runtime.InputJsonValue;
-
-    await this.prisma.$transaction([
-      this.prisma.publishLog.create({
-        data: {
-          siteId: site.id,
-          version: nextVersion,
-          action: "PUBLISH",
-          snapshot,
-          publishedById: userId,
-        },
-      }),
-      this.prisma.site.update({
-        where: { id: site.id },
-        data: {
-          status: "PUBLISHED",
-          publishedVersion: nextVersion,
-          publishedAt,
-        },
-      }),
-    ]);
-
-    return {
-      siteId: site.id,
-      version: nextVersion,
-      status: "PUBLISHED",
-      publicUrl: this.buildPublicUrlFromDomainOrSlug({
-        host: primaryDomain?.host ?? null,
-        slug: site.slug,
-      }),
-      publishedAt: publishedAt.toISOString(),
-    };
+    return this.sitePublishingService.publishSite(userId, siteId);
   }
 
   private resolvePreviewTokenExpiryDays(input?: number) {
@@ -2939,56 +2718,11 @@ export class SitesService {
     siteId: string,
     dto?: PreviewTokenPolicyDto,
   ) {
-    const site = await this.getAccessibleSite(userId, siteId);
-    const expiryDays = this.resolvePreviewTokenExpiryDays(dto?.expiresInDays);
-    const expiresAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
-    const token = randomBytes(24).toString("hex");
-
-    const created = await this.prisma.previewToken.create({
-      data: {
-        siteId: site.id,
-        token,
-        expiresAt,
-        createdById: userId,
-      },
-      select: {
-        id: true,
-        token: true,
-        expiresAt: true,
-        createdAt: true,
-      },
-    });
-
-    return {
-      ...this.buildPreviewTokenResponse(created),
-      expiryDays,
-    };
+    return this.previewTokenService.createPreviewToken(userId, siteId, dto);
   }
 
   async findPreviewTokens(userId: string, siteId: string) {
-    const site = await this.getAccessibleSite(userId, siteId);
-    const now = new Date();
-
-    const tokens = await this.prisma.previewToken.findMany({
-      where: {
-        siteId: site.id,
-        expiresAt: {
-          gt: now,
-        },
-      },
-      orderBy: [{ createdAt: "desc" }],
-      select: {
-        id: true,
-        token: true,
-        expiresAt: true,
-        createdAt: true,
-      },
-      take: 20,
-    });
-
-    return {
-      items: tokens.map((item) => this.buildPreviewTokenResponse(item)),
-    };
+    return this.previewTokenService.findPreviewTokens(userId, siteId);
   }
 
   async revokePreviewToken(
@@ -2996,32 +2730,11 @@ export class SitesService {
     siteId: string,
     previewTokenId: string,
   ) {
-    const site = await this.getAccessibleSite(userId, siteId);
-
-    const existing = await this.prisma.previewToken.findFirst({
-      where: {
-        id: previewTokenId,
-        siteId: site.id,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!existing) {
-      throw new NotFoundException("PREVIEW_TOKEN_NOT_FOUND");
-    }
-
-    await this.prisma.previewToken.delete({
-      where: {
-        id: existing.id,
-      },
-    });
-
-    return {
-      id: existing.id,
-      revoked: true,
-    };
+    return this.previewTokenService.revokePreviewToken(
+      userId,
+      siteId,
+      previewTokenId,
+    );
   }
 
   async refreshPreviewToken(
@@ -3030,302 +2743,30 @@ export class SitesService {
     previewTokenId: string,
     dto?: PreviewTokenPolicyDto,
   ) {
-    const site = await this.getAccessibleSite(userId, siteId);
-
-    const existing = await this.prisma.previewToken.findFirst({
-      where: {
-        id: previewTokenId,
-        siteId: site.id,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!existing) {
-      throw new NotFoundException("PREVIEW_TOKEN_NOT_FOUND");
-    }
-
-    await this.prisma.previewToken.delete({
-      where: {
-        id: existing.id,
-      },
-    });
-
-    return this.createPreviewToken(userId, site.id, dto);
+    return this.previewTokenService.refreshPreviewToken(
+      userId,
+      siteId,
+      previewTokenId,
+      dto,
+    );
   }
 
   async getPreviewPageByToken(token: string, pathOrSlug?: string) {
-    const normalizedToken = token.trim();
-    if (!normalizedToken) {
-      throw new NotFoundException("PREVIEW_TOKEN_INVALID");
-    }
-
-    const previewToken = await this.prisma.previewToken.findUnique({
-      where: {
-        token: normalizedToken,
-      },
-      select: {
-        siteId: true,
-        expiresAt: true,
-      },
-    });
-
-    if (!previewToken) {
-      throw new NotFoundException("PREVIEW_TOKEN_INVALID");
-    }
-
-    if (previewToken.expiresAt.getTime() < Date.now()) {
-      throw new NotFoundException("PREVIEW_TOKEN_EXPIRED");
-    }
-
-    const site = await this.prisma.site.findUnique({
-      where: {
-        id: previewToken.siteId,
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        logoUrl: true,
-        faviconUrl: true,
-        defaultSeoTitle: true,
-        defaultSeoDescription: true,
-        defaultSeoKeywords: true,
-        defaultOgImageUrl: true,
-        primaryLanguage: true,
-        timezone: true,
-      },
-    });
-
-    if (!site) {
-      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
-    }
-
-    const pages = await this.prisma.page.findMany({
-      where: {
-        siteId: previewToken.siteId,
-      },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      include: {
-        sections: {
-          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-          select: {
-            id: true,
-            type: true,
-            name: true,
-            sortOrder: true,
-            isVisible: true,
-            props: true,
-          },
-        },
-      },
-    });
-
-    if (pages.length === 0) {
-      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
-    }
-
-    const page = this.selectPageFromSnapshot(
-      pages as unknown as Array<Record<string, unknown>>,
-      pathOrSlug,
-      { requirePublished: false },
-    );
-    if (!page) {
-      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
-    }
-
-    const sectionsRaw = Array.isArray(page.sections) ? page.sections : [];
-    const sections = sectionsRaw
-      .filter((section) => this.isPlainObject(section))
-      .filter((section) => section.isVisible !== false)
-      .sort(
-        (a, b) =>
-          Number((a as Record<string, unknown>).sortOrder ?? 0) -
-          Number((b as Record<string, unknown>).sortOrder ?? 0),
-      );
-
-    return {
-      site,
-      page: {
-        id: page.id,
-        title: page.title,
-        slug: page.slug,
-        path: page.path,
-        pageType: page.pageType,
-        isHomePage: page.isHomePage,
-        seoTitle: page.seoTitle,
-        seoDescription: page.seoDescription,
-        seoKeywords: page.seoKeywords,
-        ogImageUrl: page.ogImageUrl,
-      },
-      sections,
-      preview: {
-        token: normalizedToken,
-        expiresAt: previewToken.expiresAt.toISOString(),
-      },
-    };
+    return this.previewTokenService.getPreviewPageByToken(token, pathOrSlug);
   }
 
   async getPublicPageByDomainAndPath(domain: string, pathOrSlug: string) {
-    const normalizedDomain = domain
-      .trim()
-      .toLowerCase()
-      .replace(/^https?:\/\//, "")
-      .replace(/\/$/, "")
-      .split(":")[0];
-
-    const site = await this.prisma.site.findFirst({
-      where: {
-        status: "PUBLISHED",
-        domains: {
-          some: {
-            host: normalizedDomain,
-          },
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!site) {
-      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
-    }
-
-    const latestPublish = await this.prisma.publishLog.findFirst({
-      where: {
-        siteId: site.id,
-        action: "PUBLISH",
-      },
-      orderBy: [{ version: "desc" }, { createdAt: "desc" }],
-      select: {
-        snapshot: true,
-      },
-    });
-
-    if (!latestPublish) {
-      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
-    }
-
-    const snapshot = this.isPlainObject(latestPublish.snapshot)
-      ? (latestPublish.snapshot as Record<string, unknown>)
-      : null;
-
-    if (!snapshot) {
-      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
-    }
-
-    const pages = this.extractPublishedPagesFromSnapshot(snapshot);
-    const page = this.selectPageFromSnapshot(pages, pathOrSlug);
-
-    if (!page) {
-      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
-    }
-
-    const sectionsRaw = Array.isArray(page.sections) ? page.sections : [];
-    const sections = sectionsRaw
-      .filter((section) => this.isPlainObject(section))
-      .filter((section) => section.isVisible !== false)
-      .sort(
-        (a, b) =>
-          Number((a as Record<string, unknown>).sortOrder ?? 0) -
-          Number((b as Record<string, unknown>).sortOrder ?? 0),
-      );
-
-    const siteSnapshot = this.isPlainObject(snapshot.site)
-      ? (snapshot.site as Record<string, unknown>)
-      : {};
-
-    return {
-      site: siteSnapshot,
-      page: {
-        id: page.id,
-        title: page.title,
-        slug: page.slug,
-        path: page.path,
-        pageType: page.pageType,
-        isHomePage: page.isHomePage,
-        seoTitle: page.seoTitle,
-        seoDescription: page.seoDescription,
-        seoKeywords: page.seoKeywords,
-        ogImageUrl: page.ogImageUrl,
-      },
-      sections,
-    };
+    return this.publicSiteRenderService.getPublicPageByDomainAndPath(
+      domain,
+      pathOrSlug,
+    );
   }
 
   async getPublicPageBySlugAndPath(siteSlug: string, pageSlug?: string | null) {
-    const site = await this.prisma.site.findFirst({
-      where: {
-        slug: siteSlug,
-        status: "PUBLISHED",
-      },
-      select: { id: true },
-    });
-
-    if (!site) {
-      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
-    }
-
-    const latestPublish = await this.prisma.publishLog.findFirst({
-      where: {
-        siteId: site.id,
-        action: "PUBLISH",
-      },
-      orderBy: [{ version: "desc" }, { createdAt: "desc" }],
-      select: { snapshot: true },
-    });
-
-    if (!latestPublish) {
-      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
-    }
-
-    const snapshot = this.isPlainObject(latestPublish.snapshot)
-      ? (latestPublish.snapshot as Record<string, unknown>)
-      : null;
-
-    if (!snapshot) {
-      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
-    }
-
-    const pages = this.extractPublishedPagesFromSnapshot(snapshot);
-    const page = this.selectPageFromSnapshot(pages, pageSlug ?? undefined);
-
-    if (!page) {
-      throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
-    }
-
-    const sectionsRaw = Array.isArray(page.sections) ? page.sections : [];
-    const sections = sectionsRaw
-      .filter((section) => this.isPlainObject(section))
-      .filter((section) => section.isVisible !== false)
-      .sort(
-        (a, b) =>
-          Number((a as Record<string, unknown>).sortOrder ?? 0) -
-          Number((b as Record<string, unknown>).sortOrder ?? 0),
-      );
-
-    const siteSnapshot = this.isPlainObject(snapshot.site)
-      ? (snapshot.site as Record<string, unknown>)
-      : {};
-
-    return {
-      site: siteSnapshot,
-      page: {
-        id: page.id,
-        title: page.title,
-        slug: page.slug,
-        path: page.path,
-        pageType: page.pageType,
-        isHomePage: page.isHomePage,
-        seoTitle: page.seoTitle,
-        seoDescription: page.seoDescription,
-        seoKeywords: page.seoKeywords,
-        ogImageUrl: page.ogImageUrl,
-      },
-      sections,
-    };
+    return this.publicSiteRenderService.getPublicPageBySlugAndPath(
+      siteSlug,
+      pageSlug,
+    );
   }
 
   async submitPublicLead(
@@ -3337,129 +2778,7 @@ export class SitesService {
       referrer?: string;
     },
   ) {
-    const normalizedName = dto.name?.trim() ?? "";
-    const normalizedEmail = dto.email?.trim().toLowerCase() || null;
-    const normalizedPhone = dto.phone?.trim() || null;
-
-    if (!normalizedName) {
-      throw new BadRequestException("PUBLIC_LEAD_INVALID_NAME");
-    }
-
-    if (
-      normalizedEmail &&
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)
-    ) {
-      throw new BadRequestException("PUBLIC_LEAD_INVALID_EMAIL");
-    }
-
-    if (normalizedPhone && !/^[0-9+()\-\s]{7,20}$/.test(normalizedPhone)) {
-      throw new BadRequestException("PUBLIC_LEAD_INVALID_PHONE");
-    }
-
-    const site = await this.prisma.site.findUnique({
-      where: {
-        id: siteId,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (!site) {
-      throw new NotFoundException("PUBLIC_SITE_NOT_FOUND");
-    }
-
-    const normalizedPageId = dto.pageId?.trim() || null;
-    const normalizedSectionId = dto.sectionId?.trim() || null;
-
-    if (normalizedPageId) {
-      const latestPublish = await this.prisma.publishLog.findFirst({
-        where: {
-          siteId,
-          action: "PUBLISH",
-        },
-        orderBy: [{ version: "desc" }, { createdAt: "desc" }],
-        select: { snapshot: true },
-      });
-
-      const pages = latestPublish
-        ? this.extractPublishedPagesFromSnapshot(latestPublish.snapshot)
-        : [];
-      const hasPage = pages.some(
-        (page) => page.id === normalizedPageId && page.isPublished !== false,
-      );
-
-      if (!hasPage) {
-        throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
-      }
-    }
-
-    const slugSource = normalizedSectionId || normalizedPageId || "site";
-    const formSlug = `public-${slugSource}`;
-
-    const form = await this.prisma.form.upsert({
-      where: {
-        siteId_slug: {
-          siteId,
-          slug: formSlug,
-        },
-      },
-      update: {
-        pageId: normalizedPageId,
-        status: "ACTIVE",
-      },
-      create: {
-        siteId,
-        pageId: normalizedPageId,
-        slug: formSlug,
-        name: normalizedPageId
-          ? `Public lead form (${normalizedPageId.slice(-6)})`
-          : "Public lead form",
-        status: "ACTIVE",
-        submitButtonText: "ส่งข้อมูล",
-        successMessage: "ส่งข้อมูลเรียบร้อยแล้ว",
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    const normalizedData = {
-      name: normalizedName,
-      email: normalizedEmail,
-      phone: normalizedPhone,
-      message: dto.message?.trim() || null,
-      pageId: normalizedPageId,
-      sectionId: normalizedSectionId,
-      siteId,
-    };
-
-    const utm = this.extractUtmFromReferrer(meta?.referrer);
-
-    const submission = await this.prisma.formSubmission.create({
-      data: {
-        formId: form.id,
-        data: normalizedData as runtime.InputJsonValue,
-        referrer: meta?.referrer ?? null,
-        utmSource: utm.utmSource,
-        utmMedium: utm.utmMedium,
-        utmCampaign: utm.utmCampaign,
-        ipAddress: meta?.ipAddress ?? null,
-        userAgent: meta?.userAgent ?? null,
-      },
-      select: {
-        id: true,
-        createdAt: true,
-      },
-    });
-
-    return {
-      submissionId: submission.id,
-      createdAt: submission.createdAt.toISOString(),
-      siteId,
-      pageId: normalizedPageId,
-      formId: form.id,
-    };
+    return this.siteLeadService.submitPublicLead(siteId, dto, meta);
   }
 
   private validateSectionProps(type: string, props: Record<string, unknown>) {
