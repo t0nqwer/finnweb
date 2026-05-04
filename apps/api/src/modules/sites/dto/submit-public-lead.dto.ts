@@ -38,9 +38,12 @@ export class SubmitPublicLeadDto {
   @IsString()
   sectionId?: string;
 
-  /** Honeypot — must be empty. Populated by bots filling all inputs. */
+  /**
+   * Honeypot field for bot detection.
+   * DTO intentionally accepts any short string so service can silently ignore bot submissions.
+   */
   @IsOptional()
   @IsString()
-  @MaxLength(0, { message: "Invalid submission" })
+  @MaxLength(255)
   _hp?: string;
 }

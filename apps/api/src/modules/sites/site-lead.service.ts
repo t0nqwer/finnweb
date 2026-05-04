@@ -205,6 +205,17 @@ export class SiteLeadService {
       referrer?: string;
     },
   ) {
+    // Honeypot must look like a normal success to bots while avoiding any DB writes.
+    if (typeof dto._hp === "string" && dto._hp.trim().length > 0) {
+      return {
+        submissionId: `ignored-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        createdAt: new Date().toISOString(),
+        siteId,
+        pageId: dto.pageId?.trim() || null,
+        formId: "",
+      };
+    }
+
     const normalizedName = dto.name?.trim() ?? "";
     const normalizedEmail = dto.email?.trim().toLowerCase() || null;
     const normalizedPhone = dto.phone?.trim() || null;

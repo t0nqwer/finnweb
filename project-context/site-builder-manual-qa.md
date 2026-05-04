@@ -138,7 +138,7 @@ Run against a local stack (`pnpm dev` in monorepo root) with a clean test DB unl
 - [ ] Submit form with valid `name` + `phone` (email optional) → 201, `submissionId` returned
 - [ ] Submit with empty `name` → 400 `PUBLIC_LEAD_INVALID_NAME`
 - [ ] Submit with invalid email format → 400 `PUBLIC_LEAD_INVALID_EMAIL`
-- [ ] Honeypot field `_hp` filled in → submission silently rejected (201 but no DB row)
+- [ ] Honeypot field `_hp` filled in → API still returns normal success shape (`success: true` + data object) with 201, but no `FormSubmission` row is created
 - [ ] No auth header required for any of the above requests
 
 ---

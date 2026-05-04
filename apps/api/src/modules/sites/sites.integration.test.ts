@@ -638,6 +638,85 @@ describe("Sites API integration - section props validation", () => {
     assert.equal(submission.form.pageId, context.pageId);
   });
 
+  it("silently ignores honeypot submissions without creating form submission rows", async () => {
+    const context = await createSiteAndPageContext("public-submit-honeypot");
+
+    await prisma.page.update({
+      where: {
+        id: context.pageId,
+      },
+      data: {
+        isHomePage: true,
+        isPublished: true,
+        path: "/",
+      },
+    });
+
+    await prisma.section.create({
+      data: {
+        pageId: context.pageId,
+        type: "HERO",
+        sortOrder: 0,
+        isVisible: true,
+        props: { title: "Lead honeypot page", subtitle: "Lead honeypot" },
+      },
+    });
+
+    const publishResponse = await app.inject({
+      method: "POST",
+      url: `/api/sites/${context.siteId}/publish`,
+      headers: {
+        authorization: `Bearer ${context.accessToken}`,
+      },
+    });
+
+    assert.equal(publishResponse.statusCode, 201, publishResponse.body);
+
+    const beforeCount = await prisma.formSubmission.count({
+      where: {
+        form: {
+          siteId: context.siteId,
+        },
+      },
+    });
+
+    const response = await app.inject({
+      method: "POST",
+      url: `/api/public/sites/${context.siteId}/forms/submit`,
+      payload: {
+        name: "Somchai",
+        email: "somchai@example.com",
+        phone: "0812345678",
+        message: "ขอรายละเอียดเพิ่มเติม",
+        pageId: context.pageId,
+        _hp: "i am a bot",
+      },
+    });
+
+    assert.equal(response.statusCode, 201, response.body);
+
+    const body = response.json() as {
+      success: boolean;
+      data: {
+        submissionId: string;
+      };
+    };
+
+    assert.equal(body.success, true);
+    assert.ok(typeof body.data.submissionId === "string");
+    assert.ok(body.data.submissionId.length > 0);
+
+    const afterCount = await prisma.formSubmission.count({
+      where: {
+        form: {
+          siteId: context.siteId,
+        },
+      },
+    });
+
+    assert.equal(afterCount, beforeCount, response.body);
+  });
+
   it("returns validation error when public lead payload is invalid", async () => {
     const context = await createSiteAndPageContext("public-submit-invalid");
 

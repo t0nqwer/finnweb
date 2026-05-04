@@ -1497,6 +1497,8 @@ export class SitesService {
     return theme as runtime.InputJsonValue;
   }
 
+  // ─── CRUD ─────────────────────────────────────────────────────────────────────
+
   async create(userId: string, dto: CreateSiteDto) {
     const name = dto.name.trim();
 
@@ -1577,6 +1579,8 @@ export class SitesService {
       return site;
     });
   }
+
+  // ─── Templates ────────────────────────────────────────────────────────────────
 
   async applyTemplate(userId: string, siteId: string, dto: ApplyTemplateDto) {
     const site = await this.getEditableSite(userId, siteId);
@@ -1720,6 +1724,8 @@ export class SitesService {
       deleted: true,
     };
   }
+
+  // ─── Pages ────────────────────────────────────────────────────────────────────
 
   async createPage(userId: string, siteId: string, dto: CreatePageDto) {
     const site = await this.getAccessibleSite(userId, siteId);
@@ -2016,7 +2022,7 @@ export class SitesService {
     };
   }
 
-  // Section Methods
+  // ─── Sections ──────────────────────────────────────────────────────────────
 
   private async getAccessiblePage(
     userId: string,
@@ -2490,6 +2496,8 @@ export class SitesService {
     );
   }
 
+  // ─── Leads (facade → SiteLeadService) ────────────────────────────────────────
+
   async findLeads(userId: string, siteId: string, query: GetSiteLeadsQueryDto) {
     return this.siteLeadService.findLeads(userId, siteId, query);
   }
@@ -2685,6 +2693,8 @@ export class SitesService {
     }
   }
 
+  // ─── Publishing (facade → SitePublishingService) ──────────────────────────────
+
   async publishSite(userId: string, siteId: string) {
     return this.sitePublishingService.publishSite(userId, siteId);
   }
@@ -2712,6 +2722,8 @@ export class SitesService {
       createdAt: token.createdAt.toISOString(),
     };
   }
+
+  // ─── Preview Tokens (facade → PreviewTokenService) ───────────────────────────
 
   async createPreviewToken(
     userId: string,
@@ -2755,6 +2767,8 @@ export class SitesService {
     return this.previewTokenService.getPreviewPageByToken(token, pathOrSlug);
   }
 
+  // ─── Public Site Render (facade → PublicSiteRenderService) ───────────────────
+
   async getPublicPageByDomainAndPath(domain: string, pathOrSlug: string) {
     return this.publicSiteRenderService.getPublicPageByDomainAndPath(
       domain,
@@ -2769,6 +2783,7 @@ export class SitesService {
     );
   }
 
+  // submitPublicLead — also delegates to SiteLeadService (see Leads section above)
   async submitPublicLead(
     siteId: string,
     dto: SubmitPublicLeadDto,
