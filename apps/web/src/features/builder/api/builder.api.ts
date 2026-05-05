@@ -44,6 +44,14 @@ export type UpdateSectionInput = {
   props?: Record<string, unknown>;
 };
 
+export type CreateSectionInput = {
+  sectionTemplateId?: string;
+  type?: string;
+  name?: string;
+  sortOrder?: number;
+  props?: Record<string, unknown>;
+};
+
 type BuilderApiArgs = {
   apiBaseUrl?: string;
 };
@@ -56,6 +64,14 @@ type SectionPathArgs = BuilderApiArgs & {
 type UpdateSectionArgs = SectionPathArgs & {
   sectionId: string;
   input: UpdateSectionInput;
+};
+
+type CreateSectionArgs = SectionPathArgs & {
+  input: CreateSectionInput;
+};
+
+type DeleteSectionArgs = SectionPathArgs & {
+  sectionId: string;
 };
 
 type ReorderSectionsArgs = SectionPathArgs & {
@@ -101,6 +117,40 @@ export async function updateSiteSection({
         "Content-Type": "application/json",
       },
       body: JSON.stringify(input),
+    },
+  });
+}
+
+export async function createSiteSection({
+  apiBaseUrl = DEFAULT_API_BASE_URL,
+  siteId,
+  pageId,
+  input,
+}: CreateSectionArgs) {
+  return requestBuilderApi<SiteSection>({
+    apiBaseUrl,
+    path: `/sites/${siteId}/pages/${pageId}/sections`,
+    init: {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(input),
+    },
+  });
+}
+
+export async function deleteSiteSection({
+  apiBaseUrl = DEFAULT_API_BASE_URL,
+  siteId,
+  pageId,
+  sectionId,
+}: DeleteSectionArgs) {
+  return requestBuilderApi<{ id: string; deleted: boolean }>({
+    apiBaseUrl,
+    path: `/sites/${siteId}/pages/${pageId}/sections/${sectionId}`,
+    init: {
+      method: "DELETE",
     },
   });
 }

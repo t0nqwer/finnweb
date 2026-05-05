@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-05-05
+
+- Completed the real builder section-management pass for `/sites/{siteId}/builder`: the left panel now creates sections through `POST /sites/:siteId/pages/:pageId/sections`, duplicates by creating a copied section, deletes through the section API with optimistic rollback, and keeps selection/save state synced.
+- Closed `sites-service-focused-split` against its scoped acceptance: `SitesService` delegates publishing, public rendering, public lead handling, and preview tokens to focused services while keeping existing controller routes and response shapes.
+- Completed plan-gating enforcement coverage with focused `SitesService` regression tests for FREE site/page/section limits and standardized error codes.
+- Completed LINE OA quota enforcement for LINE-enabled public forms: `SiteLeadService` blocks exhausted FREE/BASIC monthly quotas with `LINE_OA_QUOTA_REACHED`, while BUSINESS/PRO unlimited quotas continue to accept submissions.
+- Expanded regression coverage for billing usage and LINE OA quotas with focused service tests plus billing plan-usage assertions.
+
 ## 2026-04-23
 
 - Completed `section-template-library-v11`: introduced section-template domain models (`SectionTemplate`, `SectionTemplateVersion`) and linked `Section` with `sectionTemplateId`, template version, metadata, and custom-data fallback fields for canonical slot migration.

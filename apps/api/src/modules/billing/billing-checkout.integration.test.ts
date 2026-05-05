@@ -81,11 +81,21 @@ describe("Billing checkout integration", () => {
 
     await prisma.plan.update({
       where: {
+        code: PlanCode.FREE,
+      },
+      data: {
+        lineOaMonthlyQuota: 5,
+      },
+    });
+
+    await prisma.plan.update({
+      where: {
         code: PlanCode.BASIC,
       },
       data: {
         stripePriceMonthlyId: "price_basic_monthly_it",
         stripePriceYearlyId: "price_basic_yearly_it",
+        lineOaMonthlyQuota: 50,
       },
     });
 
@@ -96,6 +106,7 @@ describe("Billing checkout integration", () => {
       data: {
         stripePriceMonthlyId: "price_business_monthly_it",
         stripePriceYearlyId: "price_business_yearly_it",
+        lineOaMonthlyQuota: null,
       },
     });
 
@@ -274,5 +285,85 @@ describe("Billing checkout integration", () => {
         ),
       /CHECKOUT_CLIENT_SECRET_NOT_RETURNED/,
     );
+  });
+
+  it("reports LINE OA monthly usage and quota reached for FREE workspaces", async () => {
+    const context = await createWorkspaceContext("line-oa-free-usage");
+
+    const site = await prisma.site.create({
+      data: {
+        workspaceId: context.workspaceId,
+        name: "LINE OA Usage Site",
+        slug: `line-oa-usage-${uniqueSuffix("site")}`,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const form = await prisma.form.create({
+      data: {
+        siteId: site.id,
+        name: "Lead Form",
+        slug: "lead-form",
+        lineOaAccessToken: "line-token",
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    await prisma.formSubmission.createMany({
+      data: Array.from({ length: 5 }, (_, index) => ({
+        formId: form.id,
+        data: {
+          name: `Lead ${index + 1}`,
+          phone: "0812345678",
+        },
+      })),
+    });
+
+    const usage = await billingService.getPlanUsage(
+      context.workspaceId,
+      context.userId,
+    );
+
+    assert.equal(usage.limits.lineOaMonthlyQuota, 5);
+    assert.equal(usage.limits.lineOaUnlimited, false);
+    assert.equal(usage.usage.lineOaMonthlyUsed, 5);
+    assert.equal(usage.usage.lineOaMonthlyRemaining, 0);
+    assert.equal(usage.usage.lineOaQuotaReached, true);
+  });
+
+  it("reports unlimited LINE OA quota for BUSINESS workspaces", async () => {
+    const context = await createWorkspaceContext("line-oa-business-usage");
+    const businessPlan = await prisma.plan.findUniqueOrThrow({
+      where: {
+        code: PlanCode.BUSINESS,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    await prisma.subscription.create({
+      data: {
+        workspaceId: context.workspaceId,
+        planId: businessPlan.id,
+        status: "ACTIVE",
+        billingInterval: "MONTHLY",
+        isCurrent: true,
+      },
+    });
+
+    const usage = await billingService.getPlanUsage(
+      context.workspaceId,
+      context.userId,
+    );
+
+    assert.equal(usage.limits.lineOaMonthlyQuota, null);
+    assert.equal(usage.limits.lineOaUnlimited, true);
+    assert.equal(usage.usage.lineOaMonthlyRemaining, null);
+    assert.equal(usage.usage.lineOaQuotaReached, false);
   });
 });

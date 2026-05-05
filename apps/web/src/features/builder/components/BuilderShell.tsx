@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_API_BASE_URL } from "@/lib/api-client";
 import { normalizeApiBaseUrl, readStoredAuthState } from "@/lib/auth-storage";
 import {
+  createSiteSection,
+  deleteSiteSection,
   getSitePages,
   getSiteSections,
   reorderSiteSections,
@@ -11,7 +13,10 @@ import {
   type SitePage,
   type SiteSection,
 } from "../api/builder.api";
-import type { BuilderSection } from "../registry/section-registry";
+import {
+  getSectionRegistryEntry,
+  type BuilderSection,
+} from "../registry/section-registry";
 import { BuilderCanvas } from "./BuilderCanvas";
 import { BuilderTopbar } from "./BuilderTopbar";
 import type { BuilderPreviewDevice } from "./DevicePreviewToggle";
@@ -41,6 +46,7 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
   const [selectedSectionId, setSelectedSectionId] = useState("");
   const [isLoadingPages, setIsLoadingPages] = useState(true);
   const [isLoadingSections, setIsLoadingSections] = useState(false);
+  const [isMutatingSection, setIsMutatingSection] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatusState>("saved");
@@ -409,15 +415,136 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
     [apiBaseUrl, selectedPageId, siteId],
   );
 
-  const showDuplicatePlaceholder = useCallback((sectionId: string) => {
-    setSelectedSectionId(sectionId);
-    setActionMessage("Duplicate section will be connected in a later builder task.");
-  }, []);
+  const createSection = useCallback(
+    async ({
+      type,
+      name,
+      props,
+      selectAfterCreate = true,
+    }: {
+      type: string;
+      name?: string;
+      props?: Record<string, unknown>;
+      selectAfterCreate?: boolean;
+    }) => {
+      if (!selectedPageId || isMutatingSection) {
+        return null;
+      }
 
-  const showDeletePlaceholder = useCallback((sectionId: string) => {
-    setSelectedSectionId(sectionId);
-    setActionMessage("Delete section will be connected in a later builder task.");
-  }, []);
+      const sourceType = normalizeSourceSectionType(type);
+      const registryType = mapSourceTypeToRegistryType(sourceType);
+      const registryEntry = getSectionRegistryEntry(registryType);
+      const nextProps = props ?? registryEntry?.defaultProps ?? {};
+      const sortOrder = sectionsRef.current.length;
+
+      setIsMutatingSection(true);
+      setActionMessage(null);
+      setErrorMessage(null);
+      setSaveStatus("saving");
+
+      try {
+        const { data, authState } = await createSiteSection({
+          apiBaseUrl,
+          siteId,
+          pageId: selectedPageId,
+          input: {
+            type: sourceType,
+            name: name ?? registryEntry?.label ?? formatSectionLabel(sourceType),
+            sortOrder,
+            props: serializeSectionPropsForApi(sourceType, nextProps),
+          },
+        });
+        if (authState.apiBaseUrl) {
+          setApiBaseUrl(normalizeApiBaseUrl(authState.apiBaseUrl));
+        }
+
+        const nextSection = mapSiteSectionToBuilderSection(data, selectedPageId);
+        setSections((currentSections) =>
+          assignSectionSortOrder([...currentSections, nextSection]),
+        );
+        if (selectAfterCreate) {
+          setSelectedSectionId(nextSection.id);
+        }
+        setSaveStatus("saved");
+        return nextSection;
+      } catch (error) {
+        setSaveStatus("failed");
+        setErrorMessage(
+          error instanceof Error ? error.message : "Could not add section.",
+        );
+        return null;
+      } finally {
+        setIsMutatingSection(false);
+      }
+    },
+    [apiBaseUrl, isMutatingSection, selectedPageId, siteId],
+  );
+
+  const duplicateSection = useCallback(
+    async (sectionId: string) => {
+      const currentSection = sectionsRef.current.find(
+        (section) => section.id === sectionId,
+      );
+      if (!currentSection) {
+        return;
+      }
+
+      setSelectedSectionId(sectionId);
+      await createSection({
+        type: currentSection.sourceType ?? currentSection.type,
+        name: `${currentSection.label} copy`,
+        props: currentSection.props,
+      });
+    },
+    [createSection],
+  );
+
+  const deleteSection = useCallback(
+    async (sectionId: string) => {
+      const currentSections = sectionsRef.current;
+      const targetSection = currentSections.find(
+        (section) => section.id === sectionId,
+      );
+      if (!targetSection || isMutatingSection) {
+        return;
+      }
+
+      const nextSections = assignSectionSortOrder(
+        currentSections.filter((section) => section.id !== sectionId),
+      );
+      const nextSelectedId =
+        selectedSectionId === sectionId
+          ? nextSections[0]?.id ?? ""
+          : selectedSectionId;
+
+      setIsMutatingSection(true);
+      setActionMessage(null);
+      setErrorMessage(null);
+      setSaveStatus("saving");
+      setSections(nextSections);
+      setSelectedSectionId(nextSelectedId);
+
+      try {
+        await deleteSiteSection({
+          apiBaseUrl,
+          siteId,
+          pageId: targetSection.pageId ?? selectedPageId,
+          sectionId,
+        });
+        setSaveStatus("saved");
+      } catch (error) {
+        setSections(currentSections);
+        setSelectedSectionId(sectionId);
+        setSaveStatus("failed");
+        setErrorMessage(
+          error instanceof Error ? error.message : "Could not delete section.",
+        );
+      } finally {
+        setIsMutatingSection(false);
+      }
+    },
+    [apiBaseUrl, isMutatingSection, selectedPageId, selectedSectionId, siteId],
+  );
 
   return (
     <main className="min-h-screen bg-[#1A1C23] text-[#F9FAFB]">
@@ -453,11 +580,19 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
             <SectionListPanel
               sections={sections}
               selectedSectionId={selectedSectionId}
+              isMutatingSection={isMutatingSection}
               onSelectSection={setSelectedSectionId}
+              onAddSection={(sectionType) => {
+                void createSection({ type: sectionType });
+              }}
               onToggleVisibility={toggleSectionVisibility}
               onMoveSection={moveSection}
-              onDuplicateSection={showDuplicatePlaceholder}
-              onDeleteSection={showDeletePlaceholder}
+              onDuplicateSection={(sectionId) => {
+                void duplicateSection(sectionId);
+              }}
+              onDeleteSection={(sectionId) => {
+                void deleteSection(sectionId);
+              }}
             />
             <BuilderCanvas
               sections={sections}
@@ -551,6 +686,41 @@ function mapSectionTypeToRegistryType(section: SiteSection) {
       return "footer.simple";
     default:
       return section.type;
+  }
+}
+
+function mapSourceTypeToRegistryType(sourceType: string) {
+  switch (sourceType) {
+    case "HERO":
+    case "HEADER":
+      return "hero.splitImage";
+    case "FEATURE":
+    case "CONTENT":
+    case "ABOUT":
+      return "features.grid";
+    case "CONTACT":
+    case "CTA":
+    case "FORM":
+      return "contact.lineCta";
+    case "FOOTER":
+      return "footer.simple";
+    default:
+      return sourceType;
+  }
+}
+
+function normalizeSourceSectionType(type: string) {
+  switch (type) {
+    case "hero.splitImage":
+      return "HERO";
+    case "features.grid":
+      return "FEATURE";
+    case "contact.lineCta":
+      return "FORM";
+    case "footer.simple":
+      return "FOOTER";
+    default:
+      return type.toUpperCase().replaceAll(".", "_");
   }
 }
 

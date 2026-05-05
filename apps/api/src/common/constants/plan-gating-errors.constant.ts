@@ -49,6 +49,14 @@ export const PLAN_GATING_ERROR_CODES = {
     defaultMessage: "This feature is not available in your current plan",
     thaiMessage: "คุณสมบัตินี้ไม่พร้อมใช้งานในแผนปัจจุบันของคุณ",
   },
+
+  // LINE OA notification quota
+  LINE_OA_QUOTA_REACHED: {
+    code: "LINE_OA_QUOTA_REACHED",
+    defaultMessage:
+      "You have reached the monthly LINE OA notification quota for your plan",
+    thaiMessage: "LINE OA quota for this month has been reached",
+  },
 };
 
 /**
@@ -82,5 +90,9 @@ export const PLAN_GATING_UPGRADE_HINTS: Record<
   FEATURE_NOT_AVAILABLE: {
     suggestedPlan: "BUSINESS",
     reason: "To unlock this feature",
+  },
+  LINE_OA_QUOTA_REACHED: {
+    suggestedPlan: "BUSINESS",
+    reason: "For unlimited LINE OA notifications",
   },
 };

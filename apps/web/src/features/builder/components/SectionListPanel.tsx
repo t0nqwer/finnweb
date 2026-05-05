@@ -31,17 +31,44 @@ const SECTION_ICONS: Partial<Record<SectionType, typeof LayoutIcon>> = {
 type SectionListPanelProps = {
   sections: BuilderSection[];
   selectedSectionId: string;
+  isMutatingSection?: boolean;
   onSelectSection: (sectionId: string) => void;
+  onAddSection: (sectionType: string) => void;
   onToggleVisibility: (sectionId: string) => void;
   onMoveSection: (sectionId: string, direction: "up" | "down") => void;
   onDuplicateSection: (sectionId: string) => void;
   onDeleteSection: (sectionId: string) => void;
 };
 
+const ADDABLE_SECTIONS = [
+  {
+    type: "HERO",
+    label: "Hero",
+    description: "Headline, short pitch, primary button",
+  },
+  {
+    type: "FEATURE",
+    label: "Features",
+    description: "Three benefits or service highlights",
+  },
+  {
+    type: "FORM",
+    label: "Lead form",
+    description: "Contact capture and LINE OA CTA",
+  },
+  {
+    type: "FOOTER",
+    label: "Footer",
+    description: "Brand ending and support links",
+  },
+];
+
 export function SectionListPanel({
   sections,
   selectedSectionId,
+  isMutatingSection = false,
   onSelectSection,
+  onAddSection,
   onToggleVisibility,
   onMoveSection,
   onDuplicateSection,
@@ -61,13 +88,30 @@ export function SectionListPanel({
         </span>
       </div>
 
-      <button
-        type="button"
-        className="mb-4 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-dashed border-[#FF8C00]/45 bg-[#FF8C00]/8 text-sm font-medium text-[#FFD700] transition hover:bg-[#FF8C00]/12"
-      >
-        <PlusIcon className="size-4" />
-        Add section
-      </button>
+      <div className="mb-4 rounded-lg border border-dashed border-[#FF8C00]/35 bg-[#FF8C00]/[0.06] p-2">
+        <div className="mb-2 flex items-center gap-2 px-1 text-xs font-medium uppercase tracking-[0.12em] text-[#FFD700]">
+          <PlusIcon className="size-3.5" />
+          Add section
+        </div>
+        <div className="grid gap-1">
+          {ADDABLE_SECTIONS.map((section) => (
+            <button
+              key={section.type}
+              type="button"
+              onClick={() => onAddSection(section.type)}
+              disabled={isMutatingSection}
+              className="rounded-md px-2 py-2 text-left transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span className="block text-sm font-medium text-slate-100">
+                {section.label}
+              </span>
+              <span className="block text-xs leading-5 text-slate-500">
+                {section.description}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="space-y-2">
         {sections.map((section, index) => {
@@ -143,14 +187,16 @@ export function SectionListPanel({
                   )}
                 </SectionActionButton>
                 <SectionActionButton
-                  label="Duplicate section placeholder"
+                  label="Duplicate section"
                   onClick={() => onDuplicateSection(section.id)}
+                  disabled={isMutatingSection}
                 >
                   <CopyIcon className="size-3.5" />
                 </SectionActionButton>
                 <SectionActionButton
-                  label="Delete section placeholder"
+                  label="Delete section"
                   onClick={() => onDeleteSection(section.id)}
+                  disabled={isMutatingSection}
                   danger
                 >
                   <Trash2Icon className="size-3.5" />
