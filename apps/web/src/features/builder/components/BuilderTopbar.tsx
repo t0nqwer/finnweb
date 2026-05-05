@@ -20,9 +20,12 @@ type BuilderTopbarProps = {
   selectedPageId: string;
   device: BuilderPreviewDevice;
   saveStatus: SaveStatusState;
+  isPublishing?: boolean;
+  publicUrl?: string | null;
   onPageChange: (pageId: string) => void;
   onDeviceChange: (device: BuilderPreviewDevice) => void;
   onRetrySave?: () => void;
+  onPublish?: () => void;
 };
 
 export function BuilderTopbar({
@@ -31,9 +34,12 @@ export function BuilderTopbar({
   selectedPageId,
   device,
   saveStatus,
+  isPublishing = false,
+  publicUrl,
   onPageChange,
   onDeviceChange,
   onRetrySave,
+  onPublish,
 }: BuilderTopbarProps) {
   return (
     <header className="flex min-h-16 flex-col gap-3 border-b border-white/10 bg-[#11131A] px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
@@ -88,6 +94,12 @@ export function BuilderTopbar({
         <Button
           type="button"
           variant="outline"
+          onClick={() => {
+            if (publicUrl) {
+              window.open(publicUrl, "_blank", "noreferrer");
+            }
+          }}
+          disabled={!publicUrl}
           className="h-9 border-white/10 bg-white/[0.04] text-slate-100 hover:bg-white/[0.08]"
         >
           <EyeIcon className="size-4" />
@@ -95,10 +107,12 @@ export function BuilderTopbar({
         </Button>
         <Button
           type="button"
+          onClick={onPublish}
+          disabled={isPublishing}
           className="h-9 bg-[#FF8C00] font-semibold text-white hover:bg-[#FF9F1A]"
         >
           <RocketIcon className="size-4" />
-          Publish
+          {isPublishing ? "Publishing..." : "Publish"}
         </Button>
 
         <div className="ml-1">

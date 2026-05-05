@@ -8,6 +8,7 @@ import {
   deleteSiteSection,
   getSitePages,
   getSiteSections,
+  publishSite,
   reorderSiteSections,
   updateSiteSection,
   type SitePage,
@@ -47,6 +48,8 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
   const [isLoadingPages, setIsLoadingPages] = useState(true);
   const [isLoadingSections, setIsLoadingSections] = useState(false);
   const [isMutatingSection, setIsMutatingSection] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publicUrl, setPublicUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatusState>("saved");
@@ -546,6 +549,31 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
     [apiBaseUrl, isMutatingSection, selectedPageId, selectedSectionId, siteId],
   );
 
+  const publishCurrentSite = useCallback(async () => {
+    if (isPublishing) {
+      return;
+    }
+
+    setIsPublishing(true);
+    setActionMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const { data, authState } = await publishSite({ apiBaseUrl, siteId });
+      if (authState.apiBaseUrl) {
+        setApiBaseUrl(normalizeApiBaseUrl(authState.apiBaseUrl));
+      }
+      setPublicUrl(data.publicUrl ?? null);
+      setActionMessage(`Published version ${data.version}.`);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Could not publish site.",
+      );
+    } finally {
+      setIsPublishing(false);
+    }
+  }, [apiBaseUrl, isPublishing, siteId]);
+
   return (
     <main className="min-h-screen bg-[#1A1C23] text-[#F9FAFB]">
       <div className="flex min-h-screen flex-col">
@@ -555,9 +583,14 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
           selectedPageId={selectedPageId}
           device={device}
           saveStatus={saveStatus}
+          isPublishing={isPublishing}
+          publicUrl={publicUrl}
           onPageChange={setSelectedPageId}
           onDeviceChange={setDevice}
           onRetrySave={retryLastFailedSave}
+          onPublish={() => {
+            void publishCurrentSite();
+          }}
         />
 
         {errorMessage ? (
@@ -657,11 +690,35 @@ function mapSiteSectionToBuilderSection(
 function mapSectionTypeToRegistryType(section: SiteSection) {
   const templateCode = section.sectionTemplate?.code?.toLowerCase() ?? "";
 
+  if (templateCode.includes("navbar") || templateCode.includes("menu")) {
+    return "navbar.simple";
+  }
   if (templateCode.includes("hero")) {
     return "hero.splitImage";
   }
   if (templateCode.includes("feature")) {
     return "features.grid";
+  }
+  if (templateCode.includes("rich") || templateCode.includes("content")) {
+    return "richText.basic";
+  }
+  if (templateCode.includes("image") || templateCode.includes("gallery")) {
+    return "image.single";
+  }
+  if (templateCode.includes("form")) {
+    return "form.contact";
+  }
+  if (templateCode.includes("pricing")) {
+    return "pricing.cards";
+  }
+  if (templateCode.includes("faq")) {
+    return "faq.accordion";
+  }
+  if (
+    templateCode.includes("testimonial") ||
+    templateCode.includes("review")
+  ) {
+    return "testimonials.grid";
   }
   if (templateCode.includes("contact") || templateCode.includes("cta")) {
     return "contact.lineCta";
@@ -671,16 +728,30 @@ function mapSectionTypeToRegistryType(section: SiteSection) {
   }
 
   switch (section.type) {
+    case "NAVBAR":
+      return "navbar.simple";
     case "HERO":
     case "HEADER":
       return "hero.splitImage";
     case "FEATURE":
+      return "features.grid";
     case "CONTENT":
     case "ABOUT":
-      return "features.grid";
+    case "RICH_TEXT":
+      return "richText.basic";
+    case "IMAGE":
+    case "GALLERY":
+      return "image.single";
+    case "FORM":
+      return "form.contact";
+    case "PRICING":
+      return "pricing.cards";
+    case "FAQ":
+      return "faq.accordion";
+    case "TESTIMONIAL":
+      return "testimonials.grid";
     case "CONTACT":
     case "CTA":
-    case "FORM":
       return "contact.lineCta";
     case "FOOTER":
       return "footer.simple";
@@ -691,16 +762,30 @@ function mapSectionTypeToRegistryType(section: SiteSection) {
 
 function mapSourceTypeToRegistryType(sourceType: string) {
   switch (sourceType) {
+    case "NAVBAR":
+      return "navbar.simple";
     case "HERO":
     case "HEADER":
       return "hero.splitImage";
     case "FEATURE":
+      return "features.grid";
     case "CONTENT":
     case "ABOUT":
-      return "features.grid";
+    case "RICH_TEXT":
+      return "richText.basic";
+    case "IMAGE":
+    case "GALLERY":
+      return "image.single";
+    case "FORM":
+      return "form.contact";
+    case "PRICING":
+      return "pricing.cards";
+    case "FAQ":
+      return "faq.accordion";
+    case "TESTIMONIAL":
+      return "testimonials.grid";
     case "CONTACT":
     case "CTA":
-    case "FORM":
       return "contact.lineCta";
     case "FOOTER":
       return "footer.simple";
@@ -711,12 +796,26 @@ function mapSourceTypeToRegistryType(sourceType: string) {
 
 function normalizeSourceSectionType(type: string) {
   switch (type) {
+    case "navbar.simple":
+      return "NAVBAR";
     case "hero.splitImage":
       return "HERO";
     case "features.grid":
       return "FEATURE";
     case "contact.lineCta":
+      return "CTA";
+    case "form.contact":
       return "FORM";
+    case "richText.basic":
+      return "RICH_TEXT";
+    case "image.single":
+      return "IMAGE";
+    case "pricing.cards":
+      return "PRICING";
+    case "faq.accordion":
+      return "FAQ";
+    case "testimonials.grid":
+      return "TESTIMONIAL";
     case "footer.simple":
       return "FOOTER";
     default:
@@ -731,6 +830,19 @@ function mapSectionPropsToRegistryProps(
   const normalizedProps = normalizeSectionProps(props);
 
   switch (registryType) {
+    case "navbar.simple":
+      return compactProps({
+        ...normalizedProps,
+        brandName:
+          readStringProp(normalizedProps, "brandName") ||
+          readStringProp(normalizedProps, "logoText") ||
+          readStringProp(normalizedProps, "title") ||
+          undefined,
+        buttonText:
+          readStringProp(normalizedProps, "buttonText") ||
+          readStringProp(normalizedProps, "ctaLabel") ||
+          undefined,
+      });
     case "hero.splitImage":
       return compactProps({
         ...normalizedProps,
@@ -752,18 +864,7 @@ function mapSectionPropsToRegistryProps(
           undefined,
       });
     case "features.grid": {
-      const items = normalizedProps.items;
-      const itemTitles = Array.isArray(items)
-        ? items
-            .map((item) =>
-              typeof item === "string"
-                ? item
-                : item && typeof item === "object" && "title" in item
-                  ? (item as { title?: unknown }).title
-                  : null,
-            )
-            .filter((item): item is string => typeof item === "string")
-        : [];
+      const itemTitles = readListTitles(normalizedProps.items);
 
       return compactProps({
         ...normalizedProps,
@@ -793,6 +894,60 @@ function mapSectionPropsToRegistryProps(
           readStringProp(normalizedProps, "submitLabel") ||
           undefined,
       });
+    case "form.contact":
+      return compactProps({
+        ...normalizedProps,
+        subtitle:
+          readStringProp(normalizedProps, "subtitle") ||
+          readStringProp(normalizedProps, "description") ||
+          undefined,
+        buttonText:
+          readStringProp(normalizedProps, "buttonText") ||
+          readStringProp(normalizedProps, "submitLabel") ||
+          undefined,
+      });
+    case "richText.basic":
+      return compactProps({
+        ...normalizedProps,
+        body:
+          readStringProp(normalizedProps, "body") ||
+          readStringProp(normalizedProps, "content") ||
+          readStringProp(normalizedProps, "description") ||
+          undefined,
+      });
+    case "image.single":
+      return compactProps({
+        ...normalizedProps,
+        imageUrl:
+          readStringProp(normalizedProps, "imageUrl") ||
+          readStringProp(normalizedProps, "url") ||
+          readStringProp(normalizedProps, "src") ||
+          undefined,
+      });
+    case "pricing.cards":
+      return compactProps({
+        ...normalizedProps,
+        plans:
+          readStringProp(normalizedProps, "plans") ||
+          readListTitles(normalizedProps.items).join("\n") ||
+          undefined,
+      });
+    case "faq.accordion":
+      return compactProps({
+        ...normalizedProps,
+        questions:
+          readStringProp(normalizedProps, "questions") ||
+          readListTitles(normalizedProps.items).join("\n") ||
+          undefined,
+      });
+    case "testimonials.grid":
+      return compactProps({
+        ...normalizedProps,
+        quotes:
+          readStringProp(normalizedProps, "quotes") ||
+          readListTitles(normalizedProps.items).join("\n") ||
+          undefined,
+      });
     default:
       return normalizedProps;
   }
@@ -818,6 +973,16 @@ function serializeSectionPropsForApi(
 
   if (sourceType === "CONTACT" || sourceType === "CTA" || sourceType === "FORM") {
     copyStringProp(nextProps, "description", "subtitle");
+    copyStringProp(nextProps, "subtitle", "description");
+    copyStringProp(nextProps, "buttonText", "submitLabel");
+  }
+
+  if (sourceType === "RICH_TEXT" || sourceType === "CONTENT") {
+    copyStringProp(nextProps, "body", "description");
+  }
+
+  if (sourceType === "IMAGE" || sourceType === "GALLERY") {
+    copyStringProp(nextProps, "imageUrl", "url");
   }
 
   return nextProps;
@@ -859,6 +1024,33 @@ function normalizeSectionProps(props: SiteSection["props"]) {
 function readStringProp(props: Record<string, unknown>, key: string) {
   const value = props[key];
   return typeof value === "string" && value.trim() ? value : "";
+}
+
+function readListTitles(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => {
+      if (typeof item === "string") {
+        return item;
+      }
+      if (item && typeof item === "object" && "title" in item) {
+        const title = (item as { title?: unknown }).title;
+        return typeof title === "string" ? title : null;
+      }
+      if (item && typeof item === "object" && "question" in item) {
+        const question = (item as { question?: unknown }).question;
+        return typeof question === "string" ? question : null;
+      }
+      if (item && typeof item === "object" && "quote" in item) {
+        const quote = (item as { quote?: unknown }).quote;
+        return typeof quote === "string" ? quote : null;
+      }
+      return null;
+    })
+    .filter((item): item is string => Boolean(item?.trim()));
 }
 
 function formatSectionLabel(type: string) {

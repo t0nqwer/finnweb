@@ -1,14 +1,30 @@
 import type { ComponentType } from "react";
 import { ContactLineCtaSection } from "../sections/contact/ContactLineCtaSection";
+import {
+  ContactFormPreviewSection,
+  FaqAccordionSection,
+  ImageSingleSection,
+  NavbarSimpleSection,
+  PricingCardsSection,
+  RichTextBasicSection,
+  TestimonialsGridSection,
+} from "../sections/common/SimpleBuilderSections";
 import { FeaturesGridSection } from "../sections/features/FeaturesGridSection";
 import { FooterSimpleSection } from "../sections/footer/FooterSimpleSection";
 import { HeroSplitImageSection } from "../sections/hero/HeroSplitImageSection";
 import type { EditorSchema } from "../types/editor-schema.types";
 
 export type SectionType =
+  | "navbar.simple"
   | "hero.splitImage"
   | "features.grid"
   | "contact.lineCta"
+  | "form.contact"
+  | "richText.basic"
+  | "image.single"
+  | "pricing.cards"
+  | "faq.accordion"
+  | "testimonials.grid"
   | "footer.simple";
 
 export type BuilderSection = {
@@ -35,6 +51,36 @@ export type SectionRegistryEntry = {
 };
 
 export const sectionRegistry: Record<SectionType, SectionRegistryEntry> = {
+  "navbar.simple": {
+    label: "Simple Navbar",
+    component: NavbarSimpleSection,
+    defaultProps: {
+      brandName: "FinnWeb",
+      menuItems: "Home\nServices\nContact",
+      buttonText: "Contact",
+    },
+    editorSchema: [
+      {
+        key: "brandName",
+        label: "Brand name",
+        type: "text",
+        placeholder: "FinnWeb",
+        required: true,
+      },
+      {
+        key: "menuItems",
+        label: "Menu items",
+        type: "textarea",
+        placeholder: "Home\nServices\nContact",
+      },
+      {
+        key: "buttonText",
+        label: "Button text",
+        type: "text",
+        placeholder: "Contact",
+      },
+    ],
+  },
   "hero.splitImage": {
     label: "Hero Split Image",
     component: HeroSplitImageSection,
@@ -193,6 +239,186 @@ export const sectionRegistry: Record<SectionType, SectionRegistryEntry> = {
       },
     ],
   },
+  "form.contact": {
+    label: "Contact Form",
+    component: ContactFormPreviewSection,
+    defaultProps: {
+      title: "Let customers contact you",
+      subtitle: "Collect name, phone, email, and a short message.",
+      buttonText: "Send message",
+    },
+    editorSchema: [
+      {
+        key: "title",
+        label: "Title",
+        type: "text",
+        placeholder: "Let customers contact you",
+        required: true,
+      },
+      {
+        key: "subtitle",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Tell customers what happens after they submit.",
+      },
+      {
+        key: "buttonText",
+        label: "Button text",
+        type: "text",
+        placeholder: "Send message",
+      },
+    ],
+  },
+  "richText.basic": {
+    label: "Rich Text",
+    component: RichTextBasicSection,
+    defaultProps: {
+      title: "About this business",
+      body: "Use this section to explain your services, story, or important details for customers.",
+    },
+    editorSchema: [
+      {
+        key: "title",
+        label: "Title",
+        type: "text",
+        placeholder: "About this business",
+        required: true,
+      },
+      {
+        key: "body",
+        label: "Body",
+        type: "textarea",
+        placeholder: "Write the main content for this section.",
+      },
+    ],
+  },
+  "image.single": {
+    label: "Single Image",
+    component: ImageSingleSection,
+    defaultProps: {
+      title: "Show your work",
+      subtitle: "Add one strong image for this page.",
+      imageUrl: "",
+      altText: "Section image",
+    },
+    editorSchema: [
+      {
+        key: "title",
+        label: "Title",
+        type: "text",
+        placeholder: "Show your work",
+      },
+      {
+        key: "subtitle",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Add context for the image.",
+      },
+      {
+        key: "imageUrl",
+        label: "Image URL",
+        type: "image",
+        placeholder: "https://...",
+      },
+      {
+        key: "altText",
+        label: "Alt text",
+        type: "text",
+        placeholder: "Describe the image",
+      },
+    ],
+  },
+  "pricing.cards": {
+    label: "Pricing Cards",
+    component: PricingCardsSection,
+    defaultProps: {
+      title: "Packages",
+      subtitle: "Show simple choices so customers can decide quickly.",
+      plans: "Basic\nBusiness\nPro",
+    },
+    editorSchema: [
+      {
+        key: "title",
+        label: "Title",
+        type: "text",
+        placeholder: "Packages",
+      },
+      {
+        key: "subtitle",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Explain how customers should choose.",
+      },
+      {
+        key: "plans",
+        label: "Plan names",
+        type: "textarea",
+        placeholder: "Basic\nBusiness\nPro",
+      },
+    ],
+  },
+  "faq.accordion": {
+    label: "FAQ",
+    component: FaqAccordionSection,
+    defaultProps: {
+      title: "FAQ",
+      subtitle: "Answer common questions before customers ask.",
+      questions:
+        "How long does it take?\nHow do customers contact us?\nCan we update content later?",
+    },
+    editorSchema: [
+      {
+        key: "title",
+        label: "Title",
+        type: "text",
+        placeholder: "FAQ",
+      },
+      {
+        key: "subtitle",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Short section description",
+      },
+      {
+        key: "questions",
+        label: "Questions",
+        type: "textarea",
+        placeholder:
+          "How long does it take?\nHow do customers contact us?\nCan we update content later?",
+      },
+    ],
+  },
+  "testimonials.grid": {
+    label: "Testimonials",
+    component: TestimonialsGridSection,
+    defaultProps: {
+      title: "Customer voices",
+      subtitle: "Build trust with short testimonials.",
+      quotes:
+        "Easy to understand and fast to launch.\nCustomers can contact us more easily.\nThe page looks professional on mobile.",
+    },
+    editorSchema: [
+      {
+        key: "title",
+        label: "Title",
+        type: "text",
+        placeholder: "Customer voices",
+      },
+      {
+        key: "subtitle",
+        label: "Description",
+        type: "textarea",
+        placeholder: "Short section description",
+      },
+      {
+        key: "quotes",
+        label: "Quotes",
+        type: "textarea",
+        placeholder:
+          "Easy to understand and fast to launch.\nCustomers can contact us more easily.\nThe page looks professional on mobile.",
+      },
+    ],
+  },
   "footer.simple": {
     label: "Simple Footer",
     component: FooterSimpleSection,
@@ -245,47 +471,109 @@ export type BuilderSectionRecordLike = {
 
 export type SectionLibraryItem = {
   label: string;
+  description: string;
   type: string;
-  iconKey: "layers" | "globe" | "type" | "image" | "pointer";
+  registryType: SectionType;
+  iconKey:
+    | "layers"
+    | "globe"
+    | "type"
+    | "image"
+    | "pointer"
+    | "cards"
+    | "faq"
+    | "quotes";
   tone: string;
 };
 
 export const SECTION_LIBRARY: SectionLibraryItem[] = [
   {
-    label: "ส่วนหัว / Hero",
+    label: "Hero",
+    description: "Headline, short pitch, primary button",
     type: "HERO",
+    registryType: "hero.splitImage",
     iconKey: "layers",
-    tone: "text-primary",
+    tone: "text-[#FF8C00]",
   },
   {
-    label: "แถบนำทาง",
+    label: "Navbar",
+    description: "Brand, menu links, and a contact action",
     type: "NAVBAR",
+    registryType: "navbar.simple",
     iconKey: "globe",
     tone: "text-cyan-400",
   },
   {
-    label: "ท้ายเว็บ",
-    type: "FOOTER",
-    iconKey: "globe",
-    tone: "text-cyan-500",
+    label: "Features",
+    description: "Three benefits or service highlights",
+    type: "FEATURE",
+    registryType: "features.grid",
+    iconKey: "cards",
+    tone: "text-[#FFD700]",
   },
   {
-    label: "ข้อความ",
+    label: "Rich text",
+    description: "About copy, service details, or announcements",
     type: "RICH_TEXT",
+    registryType: "richText.basic",
     iconKey: "type",
     tone: "text-sky-400",
   },
   {
-    label: "รูปภาพ",
+    label: "Image",
+    description: "A single visual with supporting text",
     type: "IMAGE",
+    registryType: "image.single",
     iconKey: "image",
     tone: "text-emerald-400",
   },
   {
-    label: "ปุ่มหรือฟอร์ม",
+    label: "Contact form",
+    description: "Lead capture fields and submit button",
     type: "FORM",
+    registryType: "form.contact",
     iconKey: "pointer",
     tone: "text-fuchsia-400",
+  },
+  {
+    label: "Pricing",
+    description: "Simple package cards for customers",
+    type: "PRICING",
+    registryType: "pricing.cards",
+    iconKey: "cards",
+    tone: "text-amber-300",
+  },
+  {
+    label: "FAQ",
+    description: "Common questions in a compact list",
+    type: "FAQ",
+    registryType: "faq.accordion",
+    iconKey: "faq",
+    tone: "text-lime-300",
+  },
+  {
+    label: "Testimonials",
+    description: "Customer quotes or proof points",
+    type: "TESTIMONIAL",
+    registryType: "testimonials.grid",
+    iconKey: "quotes",
+    tone: "text-violet-300",
+  },
+  {
+    label: "LINE CTA",
+    description: "A focused contact call to action",
+    type: "CTA",
+    registryType: "contact.lineCta",
+    iconKey: "pointer",
+    tone: "text-green-300",
+  },
+  {
+    label: "Footer",
+    description: "Brand ending and support links",
+    type: "FOOTER",
+    registryType: "footer.simple",
+    iconKey: "globe",
+    tone: "text-cyan-500",
   },
 ];
 

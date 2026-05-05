@@ -2,6 +2,38 @@
   "updatedAt": "2026-05-06",
   "tasks": [
     {
+      "id": "site-builder-mvp-audit-completion",
+      "title": "Audit and complete existing Site Builder MVP",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "builder",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "frontend-recreate-create-landing-page",
+        "publish-public-render"
+      ],
+      "scope": [
+        "Run web/api typecheck and build",
+        "Fix builder route/API imports and exports",
+        "Expand section registry coverage for MVP section types",
+        "Improve builder add/reorder UX without architecture rewrite",
+        "Add smoke QA checklist for builder MVP"
+      ],
+      "acceptanceCriteria": [
+        "Builder route renders BuilderShell with siteId",
+        "BuilderShell imports all used builder API functions",
+        "Common backend section types map to registered frontend components or safe fallback",
+        "Builder MVP manual QA checklist exists",
+        "web/api typecheck and build pass"
+      ],
+      "progressNotes": [
+        "2026-05-06: Started audit/completion pass for existing Site Builder MVP without architecture rewrite.",
+        "2026-05-06: Completed builder MVP pass: web/api typecheck and build pass, builder route renders BuilderShell, builder API exports are complete, registry coverage now includes navbar/rich text/image/form/pricing/FAQ/testimonials, section library add selects the created section, move up/down reorder remains API-backed, publish is wired, and manual QA checklist was expanded."
+      ]
+    },
+    {
       "id": "public-lead-honeypot-silent-behavior",
       "title": "Align public lead honeypot with silent anti-spam behavior",
       "status": "done",

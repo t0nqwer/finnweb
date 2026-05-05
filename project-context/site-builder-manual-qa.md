@@ -43,6 +43,23 @@ Run against a local stack (`pnpm dev` in monorepo root) with a clean test DB unl
 
 ---
 
+## 4A. Builder MVP Smoke
+
+- [ ] Open `/sites/:siteId/builder` directly while authenticated
+- [ ] Confirm the route renders `<BuilderShell siteId={siteId} />`
+- [ ] Page selector loads the site's pages
+- [ ] Section list and canvas load sections for the selected page
+- [ ] Section library shows Navbar, Hero, Features, Rich text, Image, Contact form, Pricing, FAQ, Testimonials, LINE CTA, and Footer
+- [ ] Click a library item -> section is created and selected immediately
+- [ ] Unknown backend section type renders the canvas fallback without breaking the page
+- [ ] Top bar save status shows unsaved / saving / saved while editing
+- [ ] Duplicate a section -> new copy appears and is selected
+- [ ] Delete a section -> it disappears and another section remains selected when available
+- [ ] Publish from the builder -> success message appears
+- [ ] Open the public route from the published site URL or `/s/:siteSlug`
+
+---
+
 ## 5. Edit Section
 
 - [ ] Click a section in the left list → section is highlighted in canvas + edit panel populates

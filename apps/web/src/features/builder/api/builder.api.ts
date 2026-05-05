@@ -52,6 +52,14 @@ export type CreateSectionInput = {
   props?: Record<string, unknown>;
 };
 
+export type PublishSiteResult = {
+  siteId: string;
+  version: number;
+  status: string;
+  publicUrl?: string | null;
+  publishedAt: string;
+};
+
 type BuilderApiArgs = {
   apiBaseUrl?: string;
 };
@@ -170,6 +178,19 @@ export async function reorderSiteSections({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ sectionIds }),
+    },
+  });
+}
+
+export async function publishSite({
+  apiBaseUrl = DEFAULT_API_BASE_URL,
+  siteId,
+}: BuilderApiArgs & { siteId: string }) {
+  return requestBuilderApi<PublishSiteResult>({
+    apiBaseUrl,
+    path: `/sites/${siteId}/publish`,
+    init: {
+      method: "POST",
     },
   });
 }

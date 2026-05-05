@@ -219,6 +219,9 @@ const SECTION_LIBRARY_ICON_MAP = {
   type: TypeIcon,
   image: ImageIcon,
   pointer: MousePointerClickIcon,
+  cards: LayersIcon,
+  faq: TypeIcon,
+  quotes: TypeIcon,
 } as const;
 
 function readStringProp(props: Record<string, unknown>, ...keys: string[]) {

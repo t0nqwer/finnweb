@@ -50,7 +50,7 @@ export function BuilderCanvas({
               No sections on this page
             </p>
             <p className="mt-2 text-sm text-slate-500">
-              Add-section controls will be connected in a later builder task.
+              Use the section library on the left to add the first block.
             </p>
           </div>
         ) : null}

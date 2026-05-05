@@ -20,11 +20,19 @@ import type {
   BuilderSection,
   SectionType,
 } from "../registry/section-registry";
+import { SECTION_LIBRARY } from "../registry/section-registry";
 
 const SECTION_ICONS: Partial<Record<SectionType, typeof LayoutIcon>> = {
+  "navbar.simple": LayoutIcon,
   "hero.splitImage": LayoutIcon,
   "features.grid": Rows3Icon,
   "contact.lineCta": ContactIcon,
+  "form.contact": ContactIcon,
+  "richText.basic": MessageSquareTextIcon,
+  "image.single": LayoutIcon,
+  "pricing.cards": Rows3Icon,
+  "faq.accordion": MessageSquareTextIcon,
+  "testimonials.grid": MessageSquareTextIcon,
   "footer.simple": MessageSquareTextIcon,
 };
 
@@ -39,29 +47,6 @@ type SectionListPanelProps = {
   onDuplicateSection: (sectionId: string) => void;
   onDeleteSection: (sectionId: string) => void;
 };
-
-const ADDABLE_SECTIONS = [
-  {
-    type: "HERO",
-    label: "Hero",
-    description: "Headline, short pitch, primary button",
-  },
-  {
-    type: "FEATURE",
-    label: "Features",
-    description: "Three benefits or service highlights",
-  },
-  {
-    type: "FORM",
-    label: "Lead form",
-    description: "Contact capture and LINE OA CTA",
-  },
-  {
-    type: "FOOTER",
-    label: "Footer",
-    description: "Brand ending and support links",
-  },
-];
 
 export function SectionListPanel({
   sections,
@@ -94,22 +79,33 @@ export function SectionListPanel({
           Add section
         </div>
         <div className="grid gap-1">
-          {ADDABLE_SECTIONS.map((section) => (
-            <button
-              key={section.type}
-              type="button"
-              onClick={() => onAddSection(section.type)}
-              disabled={isMutatingSection}
-              className="rounded-md px-2 py-2 text-left transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <span className="block text-sm font-medium text-slate-100">
-                {section.label}
-              </span>
-              <span className="block text-xs leading-5 text-slate-500">
-                {section.description}
-              </span>
-            </button>
-          ))}
+          {SECTION_LIBRARY.map((section) => {
+            const Icon = SECTION_ICONS[section.registryType] ?? Layers3Icon;
+
+            return (
+              <button
+                key={section.type}
+                type="button"
+                onClick={() => onAddSection(section.type)}
+                disabled={isMutatingSection}
+                className="flex gap-2 rounded-md px-2 py-2 text-left transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span
+                  className={`mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-md bg-white/[0.06] ${section.tone}`}
+                >
+                  <Icon className="size-3.5" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-slate-100">
+                    {section.label}
+                  </span>
+                  <span className="block text-xs leading-5 text-slate-500">
+                    {section.description}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

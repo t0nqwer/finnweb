@@ -2,6 +2,7 @@
 
 ## 2026-05-06
 
+- Completed Site Builder MVP audit: confirmed `/sites/[siteId]/builder` renders `BuilderShell`, kept builder API exports intact and added publish support, expanded builder section registry/library coverage, preserved move up/down reorder, and added a focused builder smoke checklist.
 - Fixed public site frontend rendering for published `/s/:siteSlug` and `/s/:siteSlug/:pageSlug` routes by returning `PublicSectionRenderer` directly with published sections, site id, and page id.
 - Simplified public section rendering so known section types render their mapped component with props and unknown section types render the safe generic fallback.
 - Verified with `pnpm typecheck` and `pnpm build`.
