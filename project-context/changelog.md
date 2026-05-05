@@ -1,5 +1,12 @@
 # Changelog
 
+## 2026-05-06
+
+- Fixed public site frontend rendering for published `/s/:siteSlug` and `/s/:siteSlug/:pageSlug` routes by returning `PublicSectionRenderer` directly with published sections, site id, and page id.
+- Simplified public section rendering so known section types render their mapped component with props and unknown section types render the safe generic fallback.
+- Verified with `pnpm typecheck` and `pnpm build`.
+- Aligned public lead honeypot handling with silent anti-spam behavior: `_hp` is accepted as an optional string, filled honeypot submissions return a success-shaped response without creating `FormSubmission`, and the frontend submit contract now includes `_hp`.
+
 ## 2026-05-05
 
 - Completed the real builder section-management pass for `/sites/{siteId}/builder`: the left panel now creates sections through `POST /sites/:siteId/pages/:pageId/sections`, duplicates by creating a copied section, deletes through the section API with optimistic rollback, and keeps selection/save state synced.

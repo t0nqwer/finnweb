@@ -40,12 +40,6 @@ export default async function PublicSiteHomePage({ params }: Props) {
   const siteId = typeof data.site.id === "string" ? data.site.id : "";
 
   return (
-    <main className="min-h-screen bg-white text-[#1A1C23]">
-      <PublicSectionRenderer
-        sections={sections}
-        siteId={siteId}
-        pageId={page.id}
-      />
-    </main>
+    <PublicSectionRenderer sections={sections} siteId={siteId} pageId={page.id} />
   );
 }

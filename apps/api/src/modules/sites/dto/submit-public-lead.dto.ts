@@ -40,10 +40,9 @@ export class SubmitPublicLeadDto {
 
   /**
    * Honeypot field for bot detection.
-   * DTO intentionally accepts any short string so service can silently ignore bot submissions.
+   * DTO accepts any string so the service can silently ignore bot submissions.
    */
   @IsOptional()
   @IsString()
-  @MaxLength(255)
   _hp?: string;
 }

@@ -1,6 +1,64 @@
 {
-  "updatedAt": "2026-05-05",
+  "updatedAt": "2026-05-06",
   "tasks": [
+    {
+      "id": "public-lead-honeypot-silent-behavior",
+      "title": "Align public lead honeypot with silent anti-spam behavior",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "forms",
+      "estimatePoints": 1,
+      "owner": "unassigned",
+      "dependsOn": [
+        "mvp-lead-capture-public-sites"
+      ],
+      "scope": [
+        "Allow optional _hp through public lead DTO validation",
+        "Return success-shaped response without FormSubmission for honeypot hits",
+        "Keep normal public lead submissions creating FormSubmission rows",
+        "Type ContactFormSection state explicitly"
+      ],
+      "acceptanceCriteria": [
+        "Normal lead submit creates a DB row",
+        "_hp filled returns success response",
+        "_hp filled creates no DB row",
+        "pnpm typecheck passes"
+      ],
+      "progressNotes": [
+        "2026-05-06: Started public lead honeypot silent anti-spam alignment.",
+        "2026-05-06: Completed honeypot alignment: _hp is an optional unrestricted DTO string, filled honeypot submissions return success without FormSubmission writes, frontend submit type includes _hp, and pnpm typecheck passed."
+      ]
+    },
+    {
+      "id": "fix-public-site-frontend-rendering",
+      "title": "Fix public site frontend rendering for published pages",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-2",
+      "epic": "publishing",
+      "estimatePoints": 1,
+      "owner": "unassigned",
+      "dependsOn": [
+        "publish-public-render"
+      ],
+      "scope": [
+        "Render PublicSectionRenderer from /s/[siteSlug] and /s/[siteSlug]/[pageSlug]",
+        "Keep public routes unauthenticated and snapshot-backed",
+        "Render unknown section types with safe fallback"
+      ],
+      "acceptanceCriteria": [
+        "/s/:siteSlug renders published sections",
+        "/s/:siteSlug/:pageSlug renders published sections",
+        "Unknown section types render fallback safely",
+        "pnpm typecheck passes",
+        "pnpm build passes"
+      ],
+      "progressNotes": [
+        "2026-05-06: Started targeted public frontend render fix for published /s routes and section fallback behavior.",
+        "2026-05-06: Completed public frontend rendering fix: /s routes return PublicSectionRenderer for published snapshot sections, known section components render with props, and unknown section types fall back safely. pnpm typecheck and pnpm build passed."
+      ]
+    },
     {
       "id": "sites-service-focused-split",
       "title": "Split large SitesService into focused services",

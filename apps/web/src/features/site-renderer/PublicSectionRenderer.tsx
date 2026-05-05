@@ -71,13 +71,18 @@ export function PublicSectionRenderer({
           _pageId: pageId,
           _sectionId: section.id,
         };
+
+        if (Component) {
+          return (
+            <div key={section.id}>
+              <Component props={sectionProps} />
+            </div>
+          );
+        }
+
         return (
           <div key={section.id}>
-            {Component ? (
-              <Component props={sectionProps} />
-            ) : (
-              <GenericSectionFallback section={section} />
-            )}
+            <GenericSectionFallback section={section} />
           </div>
         );
       })}

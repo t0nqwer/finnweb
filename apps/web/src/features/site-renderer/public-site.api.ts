@@ -69,6 +69,7 @@ export type SubmitLeadInput = {
   message?: string;
   pageId?: string;
   sectionId?: string;
+  _hp?: string;
 };
 
 export type SubmitLeadResult =

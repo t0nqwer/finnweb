@@ -75,6 +75,7 @@ export function ContactFormSection({ props }: ContactFormSectionProps) {
       setPhone("");
       setEmail("");
       setMessage("");
+      setHp("");
     } else {
       setFormState("error");
       const msg =
