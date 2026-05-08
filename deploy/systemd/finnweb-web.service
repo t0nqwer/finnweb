@@ -1,0 +1,16 @@
+[Unit]
+Description=FinnWeb staging web
+After=network.target finnweb-api.service
+
+[Service]
+Type=simple
+User=finnweb
+Group=finnweb
+WorkingDirectory=/opt/finnweb/current/apps/web
+EnvironmentFile=/etc/finnweb/web.env
+ExecStart=/usr/bin/pnpm start -- -p 3000 -H 127.0.0.1
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

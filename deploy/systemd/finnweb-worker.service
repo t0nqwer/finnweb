@@ -1,0 +1,16 @@
+[Unit]
+Description=FinnWeb staging worker
+After=network.target postgresql.service redis-server.service finnweb-api.service
+
+[Service]
+Type=simple
+User=finnweb
+Group=finnweb
+WorkingDirectory=/opt/finnweb/current/apps/worker
+EnvironmentFile=/etc/finnweb/api.env
+ExecStart=/usr/bin/pnpm start
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

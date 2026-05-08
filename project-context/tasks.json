@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-05-06",
+  "updatedAt": "2026-05-08",
   "tasks": [
     {
       "id": "site-builder-mvp-audit-completion",
@@ -1573,7 +1573,7 @@
     {
       "id": "staging-release-pipeline",
       "title": "เตรียม pipeline release สำหรับ staging",
-      "status": "todo",
+      "status": "in-progress",
       "priority": "medium",
       "phase": "phase-3",
       "epic": "release",
@@ -1590,6 +1590,10 @@
       "acceptanceCriteria": [
         "คำสั่งเดียวหรือ pipeline เดียวสามารถ deploy staging ได้",
         "ทีมสามารถตรวจสอบ MVP end-to-end บน staging ได้"
+      ],
+      "progressNotes": [
+        "2026-05-08: Started test VPS deployment planning for existing Caddy setup, focusing on web/API runtime commands, environment checklist, and rollback notes.",
+        "2026-05-08: Added VPS/Caddy deployment docs and systemd examples for web, API, and existing worker package; fixed worker start script to match build output."
       ]
     },
     {

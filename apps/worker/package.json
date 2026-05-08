@@ -5,16 +5,23 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
+    "start": "node dist/worker/src/index.js",
     "lint": "echo 'add eslint later'",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "rm -rf dist node_modules"
   },
   "dependencies": {
     "@finnweb/shared": "workspace:*",
+    "@nestjs/common": "^11.1.17",
+    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/client": "^7.5.0",
     "bullmq": "^5.61.0",
     "dotenv": "^17.3.1",
-    "ioredis": "^5.8.0"
+    "ioredis": "^5.8.0",
+    "pg": "^8.20.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "stripe": "^21.0.1"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",
