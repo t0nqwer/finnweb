@@ -116,6 +116,30 @@ jobs:
           systemctl reload caddy || true
 
           systemctl --no-pager --full status finnweb-api finnweb-worker finnweb-web
-          curl -fsS http://127.0.0.1:4000/api/health
-          curl -fsSI http://127.0.0.1:3000
+
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:4000/api/health; then
+              break
+            fi
+
+            if [ "$attempt" -eq 30 ]; then
+              journalctl -u finnweb-api -n 120 --no-pager
+              exit 1
+            fi
+
+            sleep 2
+          done
+
+          for attempt in {1..30}; do
+            if curl -fsSI http://127.0.0.1:3000; then
+              break
+            fi
+
+            if [ "$attempt" -eq 30 ]; then
+              journalctl -u finnweb-web -n 120 --no-pager
+              exit 1
+            fi
+
+            sleep 2
+          done
           EOF
