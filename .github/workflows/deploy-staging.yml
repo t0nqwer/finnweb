@@ -74,6 +74,8 @@ jobs:
       VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
       VPS_USER: ${{ secrets.VPS_USER }}
       APP_DIR: ${{ secrets.VPS_APP_DIR || '/opt/finnweb/current' }}
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      SERVICES_TO_DEPLOY: web api worker
 
     steps:
       - name: Configure SSH
@@ -144,3 +146,23 @@ jobs:
             sleep 2
           done
           EOF
+
+      - name: Notify Discord
+        if: ${{ always() && env.DISCORD_WEBHOOK_URL != '' }}
+        env:
+          JOB_STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          STATUS_LABEL="[OK]"
+          if [ "$JOB_STATUS" != "success" ]; then STATUS_LABEL="[FAIL]"; fi
+
+          CONTENT="$STATUS_LABEL Deploy Staging: $JOB_STATUS
+          Repo: ${{ github.repository }}
+          Services: $SERVICES_TO_DEPLOY
+          Run: $RUN_URL"
+
+          PAYLOAD=$(jq -n --arg content "$CONTENT" '{content: $content}')
+
+          curl -fsS -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"

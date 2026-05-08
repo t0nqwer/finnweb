@@ -14,6 +14,7 @@ Add these in GitHub:
 - `VPS_PORT`: SSH port. Optional if `22`.
 - `VPS_APP_DIR`: app path. Optional, defaults to `/opt/finnweb/current`.
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`: Stripe publishable key for build-time web env. Can be blank only if checkout is not tested.
+- `DISCORD_WEBHOOK_URL`: optional Discord webhook URL for deploy notifications.
 
 ## VPS Requirements
 
