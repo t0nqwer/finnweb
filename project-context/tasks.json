@@ -1596,7 +1596,8 @@
         "2026-05-08: Added VPS/Caddy deployment docs and systemd examples for web, API, and existing worker package; fixed worker start script to match build output.",
         "2026-05-08: Added GitHub Actions staging deploy workflow for VPS over SSH with build verification, Prisma db push/seed, systemd restart, Caddy reload, and health checks.",
         "2026-05-08: Removed superseded manual VPS/Caddy deploy runbook, Caddyfile example, and staging env example after CI/CD path became the staging baseline.",
-        "2026-05-08: Adjusted API systemd service to run via ts-node + tsconfig-paths so staging resolves TypeScript path aliases while preserving NestJS decorator metadata."
+        "2026-05-08: Adjusted API systemd service to run via ts-node + tsconfig-paths so staging resolves TypeScript path aliases while preserving NestJS decorator metadata.",
+        "2026-05-08: Fixed publish snapshot pages to be renderable by public routes; new draft pages default isPublished=false, but a successful publish snapshot should expose its pages."
       ]
     },
     {

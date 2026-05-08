@@ -248,7 +248,7 @@ export class SitePublishingService {
       path: page.path,
       pageType: page.pageType,
       isHomePage: page.isHomePage,
-      isPublished: page.isPublished,
+      isPublished: true,
       seoTitle: page.seoTitle,
       seoDescription: page.seoDescription,
       seoKeywords: page.seoKeywords,
