@@ -39,13 +39,12 @@ export function middleware(request: NextRequest) {
   const tenantSlug = getTenantSlug(request.headers.get("host"));
 
   if (tenantSlug) {
-    const rewriteUrl = request.nextUrl.clone();
     const pagePath = pathname === "/" ? "" : pathname.replace(/^\/+/, "");
-    rewriteUrl.pathname = pagePath
+    const rewritePath = pagePath
       ? `/s/${tenantSlug}/${pagePath}`
       : `/s/${tenantSlug}`;
 
-    return NextResponse.rewrite(rewriteUrl);
+    return NextResponse.rewrite(rewritePath);
   }
 
   const accessToken = request.cookies.get(ACCESS_COOKIE_NAME)?.value;

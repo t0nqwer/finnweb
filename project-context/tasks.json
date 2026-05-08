@@ -1599,7 +1599,8 @@
         "2026-05-08: Adjusted API systemd service to run via ts-node + tsconfig-paths so staging resolves TypeScript path aliases while preserving NestJS decorator metadata.",
         "2026-05-08: Fixed publish snapshot pages to be renderable by public routes; new draft pages default isPublished=false, but a successful publish snapshot should expose its pages.",
         "2026-05-08: Added wildcard public-site routing so both finnweb.site/s/{siteSlug} and {siteSlug}.finnweb.site render through the same snapshot-backed public renderer.",
-        "2026-05-08: Made public rendering treat PUBLISH snapshots as authoritative so legacy snapshots whose pages carry isPublished=false still render after a successful site publish."
+        "2026-05-08: Made public rendering treat PUBLISH snapshots as authoritative so legacy snapshots whose pages carry isPublished=false still render after a successful site publish.",
+        "2026-05-09: Changed wildcard subdomain middleware rewrites to path-only targets so Next.js does not expose the internal localhost upstream in x-middleware-rewrite behind Caddy."
       ]
     },
     {
