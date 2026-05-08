@@ -17,6 +17,7 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/finnweb_ci?schema=public
       FRONTEND_URL: https://finnweb.site
+      NEXT_PUBLIC_ROOT_DOMAIN: finnweb.site
       NEXT_PUBLIC_API_BASE_URL: https://finnweb.site/api
       NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
       JWT_SECRET: ci-jwt-secret

@@ -28,6 +28,49 @@ The VPS must already have:
 
 The workflow pulls `origin/main`, installs dependencies, builds, runs `prisma db push`, runs seed, copies systemd files, restarts services, reloads Caddy, and checks local health endpoints.
 
+## Wildcard Public Sites
+
+FinnWeb supports both public URL styles:
+
+- `https://finnweb.site/s/<siteSlug>`
+- `https://<siteSlug>.finnweb.site`
+
+For subdomain public sites, add this DNS record in Hostinger:
+
+```text
+Type: A
+Name: *
+Value: <your-vps-ip>
+TTL: 300
+```
+
+Then make Caddy serve the wildcard host:
+
+```caddy
+finnweb.site, *.finnweb.site {
+	encode gzip zstd
+
+	handle /api/* {
+		reverse_proxy 127.0.0.1:4000
+	}
+
+	handle /docs* {
+		reverse_proxy 127.0.0.1:4000
+	}
+
+	handle {
+		reverse_proxy 127.0.0.1:3000
+	}
+}
+```
+
+In `/etc/finnweb/web.env`, set:
+
+```env
+NEXT_PUBLIC_ROOT_DOMAIN=finnweb.site
+NEXT_PUBLIC_API_BASE_URL=https://finnweb.site/api
+```
+
 ## Manual Deploy
 
 Open GitHub Actions, choose `Deploy Staging`, then click `Run workflow`.

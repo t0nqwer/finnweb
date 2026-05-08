@@ -11,9 +11,43 @@ const protectedPrefixes = [
 ];
 const guestOnlyPrefixes = ["/login", "/register"];
 const ACCESS_COOKIE_NAME = "finnweb_access_token";
+const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? "finnweb.site";
+const RESERVED_SUBDOMAINS = new Set(["www", "app", "api"]);
+
+function getTenantSlug(hostHeader: string | null) {
+  if (!hostHeader) {
+    return null;
+  }
+
+  const host = hostHeader.toLowerCase().split(":")[0] ?? "";
+
+  if (!host.endsWith(`.${ROOT_DOMAIN}`)) {
+    return null;
+  }
+
+  const subdomain = host.slice(0, -`.${ROOT_DOMAIN}`.length);
+
+  if (!subdomain || subdomain.includes(".") || RESERVED_SUBDOMAINS.has(subdomain)) {
+    return null;
+  }
+
+  return subdomain;
+}
 
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  const tenantSlug = getTenantSlug(request.headers.get("host"));
+
+  if (tenantSlug) {
+    const rewriteUrl = request.nextUrl.clone();
+    const pagePath = pathname === "/" ? "" : pathname.replace(/^\/+/, "");
+    rewriteUrl.pathname = pagePath
+      ? `/s/${tenantSlug}/${pagePath}`
+      : `/s/${tenantSlug}`;
+
+    return NextResponse.rewrite(rewriteUrl);
+  }
+
   const accessToken = request.cookies.get(ACCESS_COOKIE_NAME)?.value;
   const isProtectedRoute = protectedPrefixes.some((prefix) =>
     pathname.startsWith(prefix),
@@ -37,13 +71,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/subscription/:path*",
-    "/billing/:path*",
-    "/sites/:path*",
-    "/settings/:path*",
-    "/help/:path*",
-    "/login/:path*",
-    "/register/:path*",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)",
   ],
 };
