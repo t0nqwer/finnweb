@@ -1601,7 +1601,8 @@
         "2026-05-08: Added wildcard public-site routing so both finnweb.site/s/{siteSlug} and {siteSlug}.finnweb.site render through the same snapshot-backed public renderer.",
         "2026-05-08: Made public rendering treat PUBLISH snapshots as authoritative so legacy snapshots whose pages carry isPublished=false still render after a successful site publish.",
         "2026-05-09: Changed wildcard subdomain middleware rewrites to path-only targets so Next.js does not expose the internal localhost upstream in x-middleware-rewrite behind Caddy.",
-        "2026-05-09: Added optional Discord webhook notification to the staging deploy workflow so successful and failed deploys can post run details to a Discord channel."
+        "2026-05-09: Added optional Discord webhook notification to the staging deploy workflow so successful and failed deploys can post run details to a Discord channel.",
+        "2026-05-09: Adjusted wildcard subdomain rewrite to use the public Host and X-Forwarded-Proto headers, keeping Next.js rewrites absolute without pointing to localhost behind Caddy."
       ]
     },
     {

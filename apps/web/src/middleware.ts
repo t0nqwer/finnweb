@@ -34,6 +34,16 @@ function getTenantSlug(hostHeader: string | null) {
   return subdomain;
 }
 
+function getPublicOrigin(request: NextRequest) {
+  const host = request.headers.get("host") ?? request.nextUrl.host;
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const proto =
+    forwardedProto?.split(",")[0]?.trim() ||
+    request.nextUrl.protocol.replace(":", "");
+
+  return `${proto}://${host}`;
+}
+
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const tenantSlug = getTenantSlug(request.headers.get("host"));
@@ -43,8 +53,9 @@ export function middleware(request: NextRequest) {
     const rewritePath = pagePath
       ? `/s/${tenantSlug}/${pagePath}`
       : `/s/${tenantSlug}`;
+    const rewriteUrl = new URL(rewritePath, getPublicOrigin(request));
 
-    return NextResponse.rewrite(rewritePath);
+    return NextResponse.rewrite(rewriteUrl);
   }
 
   const accessToken = request.cookies.get(ACCESS_COOKIE_NAME)?.value;
