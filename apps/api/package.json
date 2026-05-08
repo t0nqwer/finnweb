@@ -6,7 +6,7 @@
     "dev": "nodemon --watch src --ext ts --exec \"node -r ts-node/register -r tsconfig-paths/register src/main.ts\"",
     "generate": "prisma generate",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/main.js",
+    "start": "node dist/apps/api/src/main.js",
     "lint": "echo 'add eslint later'",
     "test:auth": "pnpm exec tsx --test src/modules/auth/auth.integration.test.ts",
     "test": "pnpm exec tsx --test src/**/*.test.ts",

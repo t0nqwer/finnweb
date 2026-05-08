@@ -3,11 +3,11 @@
   "version": "0.0.1",
   "private": true,
   "exports": {
-    "./constants": "./src/constants.ts",
-    "./types": "./src/types.ts",
-    "./jobs": "./src/jobs.ts",
-    "./templates": "./src/templates/index.ts",
-    ".": "./src/index.ts"
+    "./constants": "./dist/constants.js",
+    "./types": "./dist/types.js",
+    "./jobs": "./dist/jobs.js",
+    "./templates": "./dist/templates/index.js",
+    ".": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

@@ -1593,7 +1593,8 @@
       ],
       "progressNotes": [
         "2026-05-08: Started test VPS deployment planning for existing Caddy setup, focusing on web/API runtime commands, environment checklist, and rollback notes.",
-        "2026-05-08: Added VPS/Caddy deployment docs and systemd examples for web, API, and existing worker package; fixed worker start script to match build output."
+        "2026-05-08: Added VPS/Caddy deployment docs and systemd examples for web, API, and existing worker package; fixed worker start script to match build output.",
+        "2026-05-08: Added GitHub Actions staging deploy workflow for VPS over SSH with build verification, Prisma db push/seed, systemd restart, Caddy reload, and health checks."
       ]
     },
     {

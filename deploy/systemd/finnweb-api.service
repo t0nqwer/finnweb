@@ -4,8 +4,8 @@ After=network.target postgresql.service redis-server.service
 
 [Service]
 Type=simple
-User=finnweb
-Group=finnweb
+User=root
+Group=root
 WorkingDirectory=/opt/finnweb/current/apps/api
 EnvironmentFile=/etc/finnweb/api.env
 ExecStart=/usr/bin/pnpm start
