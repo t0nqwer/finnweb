@@ -1514,6 +1514,68 @@ describe("Sites API integration - section props validation", () => {
     assert.equal(getErrorMessage(response), "PUBLIC_PAGE_NOT_FOUND");
   });
 
+  it("renders legacy publish snapshots even when page isPublished is false", async () => {
+    const context = await createSiteAndPageContext("public-legacy-snapshot");
+
+    await prisma.page.update({
+      where: {
+        id: context.pageId,
+      },
+      data: {
+        isHomePage: true,
+        isPublished: false,
+        path: "/",
+      },
+    });
+
+    await prisma.section.create({
+      data: {
+        pageId: context.pageId,
+        type: "HERO",
+        sortOrder: 0,
+        isVisible: true,
+        props: {
+          title: "Legacy snapshot title",
+          subtitle: "Snapshot came from a successful publish",
+        },
+      },
+    });
+
+    const siteRecord = await prisma.site.findUnique({
+      where: {
+        id: context.siteId,
+      },
+      select: {
+        slug: true,
+      },
+    });
+
+    assert.ok(siteRecord?.slug, "Expected site slug for legacy snapshot test");
+
+    const publishResponse = await app.inject({
+      method: "POST",
+      url: `/api/sites/${context.siteId}/publish`,
+      headers: {
+        authorization: `Bearer ${context.accessToken}`,
+      },
+    });
+
+    assert.equal(publishResponse.statusCode, 201, publishResponse.body);
+
+    const response = await app.inject({
+      method: "GET",
+      url: `/api/public/sites/${siteRecord.slug}`,
+    });
+
+    assert.equal(response.statusCode, 200, response.body);
+    const body = response.json() as {
+      data: {
+        sections: Array<{ props: Record<string, unknown> }>;
+      };
+    };
+    assert.equal(body.data.sections[0]?.props.title, "Legacy snapshot title");
+  });
+
   it("returns 404 for unpublished site on domain public route", async () => {
     const context = await createSiteAndPageContext("public-domain-unpublished");
 

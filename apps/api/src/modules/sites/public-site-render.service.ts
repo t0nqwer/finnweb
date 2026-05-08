@@ -57,7 +57,9 @@ export class PublicSiteRenderService {
 
     const snapshot = requireSnapshotObject(latestPublish.snapshot);
     const pages = extractPublishedPagesFromSnapshot(snapshot);
-    const page = selectPageFromSnapshot(pages, pathOrSlug);
+    const page = selectPageFromSnapshot(pages, pathOrSlug, {
+      requirePublished: false,
+    });
 
     if (!page) {
       throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");
@@ -103,7 +105,9 @@ export class PublicSiteRenderService {
 
     const snapshot = requireSnapshotObject(latestPublish.snapshot);
     const pages = extractPublishedPagesFromSnapshot(snapshot);
-    const page = selectPageFromSnapshot(pages, pageSlug ?? undefined);
+    const page = selectPageFromSnapshot(pages, pageSlug ?? undefined, {
+      requirePublished: false,
+    });
 
     if (!page) {
       throw new NotFoundException("PUBLIC_PAGE_NOT_FOUND");

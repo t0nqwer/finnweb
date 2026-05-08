@@ -1598,7 +1598,8 @@
         "2026-05-08: Removed superseded manual VPS/Caddy deploy runbook, Caddyfile example, and staging env example after CI/CD path became the staging baseline.",
         "2026-05-08: Adjusted API systemd service to run via ts-node + tsconfig-paths so staging resolves TypeScript path aliases while preserving NestJS decorator metadata.",
         "2026-05-08: Fixed publish snapshot pages to be renderable by public routes; new draft pages default isPublished=false, but a successful publish snapshot should expose its pages.",
-        "2026-05-08: Added wildcard public-site routing so both finnweb.site/s/{siteSlug} and {siteSlug}.finnweb.site render through the same snapshot-backed public renderer."
+        "2026-05-08: Added wildcard public-site routing so both finnweb.site/s/{siteSlug} and {siteSlug}.finnweb.site render through the same snapshot-backed public renderer.",
+        "2026-05-08: Made public rendering treat PUBLISH snapshots as authoritative so legacy snapshots whose pages carry isPublished=false still render after a successful site publish."
       ]
     },
     {
