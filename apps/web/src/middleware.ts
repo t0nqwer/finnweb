@@ -49,6 +49,13 @@ export function middleware(request: NextRequest) {
   const tenantSlug = getTenantSlug(request.headers.get("host"));
 
   if (tenantSlug) {
+    if (
+      pathname === `/s/${tenantSlug}` ||
+      pathname.startsWith(`/s/${tenantSlug}/`)
+    ) {
+      return NextResponse.next();
+    }
+
     const pagePath = pathname === "/" ? "" : pathname.replace(/^\/+/, "");
     const rewritePath = pagePath
       ? `/s/${tenantSlug}/${pagePath}`
