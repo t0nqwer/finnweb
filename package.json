@@ -4,9 +4,9 @@
   "packageManager": "pnpm@10.17.0",
   "scripts": {
     "dev": "turbo run dev --parallel",
-    "build": "turbo run build",
+    "build": "pnpm --filter @finnweb/api generate && turbo run build",
     "lint": "turbo run lint",
-    "typecheck": "turbo run typecheck",
+    "typecheck": "pnpm --filter @finnweb/api generate && turbo run typecheck",
     "clean": "turbo run clean && rm -rf node_modules",
     "sync:tasks": "tsx scripts/sync-tasks-to-gdoc.ts",
     "sync:tasks:watch": "tsx scripts/sync-tasks-to-gdoc.ts watch",
