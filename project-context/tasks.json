@@ -1,6 +1,91 @@
 {
-  "updatedAt": "2026-05-08",
+  "updatedAt": "2026-05-10",
   "tasks": [
+    {
+      "id": "ci-admin-email-promotion",
+      "title": "Pass admin promotion email through CI/CD deploy",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "admin",
+      "estimatePoints": 1,
+      "owner": "unassigned",
+      "dependsOn": [
+        "admin-auth-role-gating"
+      ],
+      "scope": [
+        "Allow GitHub Actions deploy to pass ADMIN_EMAILS into prisma seed",
+        "Document GitHub secret setup so admin promotion does not require manual server edits"
+      ],
+      "acceptanceCriteria": [
+        "Deploy workflow can promote admins from GitHub secret during seed",
+        "Docs explain how to configure ADMIN_EMAILS and rerun deploy"
+      ],
+      "progressNotes": [
+        "2026-05-10: Started CI/CD admin email promotion wiring.",
+        "2026-05-10: Completed CI/CD admin promotion wiring: deploy-staging now passes ADMIN_EMAILS GitHub secret into remote prisma seed, and staging deploy docs explain the no-SSH setup."
+      ]
+    },
+    {
+      "id": "admin-auth-role-gating",
+      "title": "Add admin role authentication for admin dashboard and APIs",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "admin",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": [
+        "admin-template-management-dashboard",
+        "auth-production-hardening"
+      ],
+      "scope": [
+        "Add durable admin role field to user model if missing",
+        "Include role in auth response and access JWT payload",
+        "Protect admin frontend route from non-admin users",
+        "Restrict admin template overview API access to admins"
+      ],
+      "acceptanceCriteria": [
+        "Normal users cannot access admin dashboard data",
+        "Admin users can load template and section-template admin overview",
+        "Frontend shows a clear forbidden state for non-admin users",
+        "Typecheck/build pass"
+      ],
+      "progressNotes": [
+        "2026-05-10: Started admin auth role-gating work after admin dashboard baseline.",
+        "2026-05-10: Completed admin auth role gating: added platform User.role, role-aware auth/JWT payloads, PlatformAdminGuard, admin-only template overview API, dashboard forbidden state, admin nav visibility, seed promotion via ADMIN_EMAIL(S), and synced DB schema."
+      ]
+    },
+    {
+      "id": "admin-template-management-dashboard",
+      "title": "Create admin dashboard for template management and app control overview",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "admin",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": [
+        "website-template-system-v1",
+        "section-template-library-v11"
+      ],
+      "scope": [
+        "Add admin-facing dashboard route for controlling app templates",
+        "Show official and custom template inventory with quality/status signals",
+        "Surface operational controls admin should know: plans, publishing, leads, LINE OA quota, system health, release tasks",
+        "Provide clear next actions for template review, publishing, seeding, and support triage"
+      ],
+      "acceptanceCriteria": [
+        "Admin can open a dedicated dashboard for template management",
+        "Dashboard shows template and section-template management overview",
+        "Dashboard summarizes app control areas and operational risks",
+        "UI follows FinnWeb brand and mobile-first dashboard conventions"
+      ],
+      "progressNotes": [
+        "2026-05-10: Started admin template-management dashboard implementation.",
+        "2026-05-10: Completed admin template-management dashboard: added /admin/templates route, sidebar entry, template inventory, section-template render overview, admin control areas, review flags, and unauthenticated fallback."
+      ]
+    },
     {
       "id": "site-builder-mvp-audit-completion",
       "title": "Audit and complete existing Site Builder MVP",
@@ -1649,6 +1734,33 @@
       "acceptanceCriteria": [
         "checklist launch ได้รับการอนุมัติ",
         "MVP พร้อมสำหรับการเปิดตัวแบบควบคุม"
+      ]
+    },
+    {
+      "id": "template-design-rules",
+      "title": "Create design rules for website templates",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "templates",
+      "estimatePoints": 1,
+      "owner": "unassigned",
+      "dependsOn": [
+        "template-factory"
+      ],
+      "scope": [
+        "Define visual quality rules for generated public websites",
+        "Document which template files to create: blueprint, theme, content pack, and tests",
+        "Add practical QA checklist to prevent ugly or empty-looking templates"
+      ],
+      "acceptanceCriteria": [
+        "Template design rules document exists",
+        "Template file creation map is documented for future website templates",
+        "Rules reference FinnWeb brand, Thai typography, responsive layout, and content completeness"
+      ],
+      "progressNotes": [
+        "2026-05-09: Started template design rules documentation after public website rendered but looked visually weak.",
+        "2026-05-09: Completed template design rules docs and template factory guide covering blueprint/theme/content-pack responsibilities and visual QA."
       ]
     }
   ]

@@ -19,6 +19,7 @@ model User {
   passwordHash    String?
   name            String?
   avatarUrl       String?
+  role            UserRole  @default(USER)
   isActive        Boolean   @default(true)
   emailVerified   Boolean   @default(false)
   lastLoginAt     DateTime?
@@ -38,7 +39,13 @@ model User {
   authAccounts            AuthAccount[]
 
   @@index([isActive])
+  @@index([role])
   @@index([createdAt])
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }
 
 model Session {

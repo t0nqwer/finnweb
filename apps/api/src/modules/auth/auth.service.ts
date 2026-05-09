@@ -42,6 +42,7 @@ export class AuthService {
       email: user.email,
       name: user.name,
       avatarUrl: user.avatarUrl,
+      role: user.role ?? "USER",
       isActive: user.isActive,
       emailVerified: user.emailVerified,
       createdAt: user.createdAt,
@@ -49,10 +50,15 @@ export class AuthService {
     };
   }
 
-  private async generateAccessToken(user: { id: string; email: string }) {
+  private async generateAccessToken(user: {
+    id: string;
+    email: string;
+    role?: "USER" | "ADMIN";
+  }) {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
+      role: user.role ?? "USER",
       type: "access",
     };
 
@@ -63,12 +69,13 @@ export class AuthService {
   }
 
   private async generateRefreshToken(
-    user: { id: string; email: string },
+    user: { id: string; email: string; role?: "USER" | "ADMIN" },
     sessionId: string,
   ) {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
+      role: user.role ?? "USER",
       sessionId,
       jti: crypto.randomUUID(),
       type: "refresh",

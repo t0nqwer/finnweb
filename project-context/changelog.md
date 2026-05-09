@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-05-10
+
+- Added platform admin role gating for the admin templates dashboard.
+- Added `User.role` with `USER`/`ADMIN`, included role in safe auth user payloads and JWTs, and protected `/api/admin/templates/overview` with `PlatformAdminGuard`.
+- Updated the admin templates dashboard to load from the admin-only overview endpoint and show a forbidden state for non-admin users.
+- Added `ADMIN_EMAIL`/`ADMIN_EMAILS` seed support to promote existing users to platform admin.
+
+## 2026-05-09
+
+- Added website template design rules in `docs/template-design-rules.md`, covering public template quality bar, required anatomy, blueprint/theme/content-pack responsibilities, and visual QA checks for Thai SME sites.
+- Added `packages/shared/src/templates/README.md` to document the exact files to create when turning a website design into a reusable template.
+
 ## 2026-05-06
 
 - Completed Site Builder MVP audit: confirmed `/sites/[siteId]/builder` renders `BuilderShell`, kept builder API exports intact and added publish support, expanded builder section registry/library coverage, preserved move up/down reorder, and added a focused builder smoke checklist.

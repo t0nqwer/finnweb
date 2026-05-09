@@ -23,6 +23,7 @@ import {
   LayoutDashboardIcon,
   SettingsIcon,
   ShieldCheckIcon,
+  SparklesIcon,
   UsersIcon,
 } from "lucide-react";
 
@@ -100,6 +101,25 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       .toUpperCase();
   }, [user.name]);
 
+  const adminNavigation = React.useMemo<SidebarNavItem[]>(() => {
+    if (user.email === defaultUser.email) {
+      return [];
+    }
+
+    const stored = readStoredAuthState();
+    if (stored.user?.role !== "ADMIN") {
+      return [];
+    }
+
+    return [
+      {
+        title: "Admin Templates",
+        url: "/admin/templates",
+        icon: SparklesIcon,
+      },
+    ];
+  }, [user.email]);
+
   function handleLogout() {
     clearAuthState();
     router.push("/login");
@@ -155,13 +175,44 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
 
+        {adminNavigation.length > 0 ? (
+          <SidebarGroup className="mt-4">
+            <SidebarGroupLabel className="px-3 text-[11px] tracking-wide text-sidebar-foreground/50 uppercase">
+              Admin
+            </SidebarGroupLabel>
+            <SidebarMenu>
+              {adminNavigation.map((item) => {
+                const isActive =
+                  pathname === item.url || pathname.startsWith(item.url);
+                const Icon = item.icon;
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      isActive={isActive}
+                      render={<a href={item.url} />}
+                      className="h-10 rounded-xl px-3 transition data-active:bg-sidebar-accent hover:translate-x-0.5"
+                    >
+                      <Icon />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroup>
+        ) : null}
+
         <SidebarGroup className="mt-4">
           <SidebarGroupLabel className="px-3 text-[11px] tracking-wide text-sidebar-foreground/50 uppercase">
             จัดการบัญชี
           </SidebarGroupLabel>
           <SidebarMenu>
             {utilityNavigation.map((item) => {
-              const isActive = pathname === item.url;
+              const isActive =
+                pathname === item.url ||
+                (item.url !== "/settings/profile" &&
+                  pathname.startsWith(item.url));
               const Icon = item.icon;
 
               return (

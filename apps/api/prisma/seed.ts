@@ -1292,6 +1292,26 @@ async function main() {
   }
 
   console.log("✅ Section templates seeded successfully");
+
+  const adminEmails = (process.env.ADMIN_EMAILS ?? process.env.ADMIN_EMAIL ?? "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (adminEmails.length > 0) {
+    const result = await prisma.user.updateMany({
+      where: {
+        email: {
+          in: adminEmails,
+        },
+      },
+      data: {
+        role: "ADMIN",
+      },
+    });
+
+    console.log(`✅ Promoted ${result.count} admin user(s)`);
+  }
 }
 
 main()

@@ -14,6 +14,7 @@ Add these in GitHub:
 - `VPS_PORT`: SSH port. Optional if `22`.
 - `VPS_APP_DIR`: app path. Optional, defaults to `/opt/finnweb/current`.
 - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`: Stripe publishable key for build-time web env. Can be blank only if checkout is not tested.
+- `ADMIN_EMAILS`: optional comma-separated list of existing FinnWeb user emails to promote to platform admin during deploy seed.
 - `DISCORD_WEBHOOK_URL`: optional Discord webhook URL for deploy notifications.
 
 ## VPS Requirements
@@ -28,6 +29,23 @@ The VPS must already have:
 - systemd available.
 
 The workflow pulls `origin/main`, installs dependencies, builds, runs `prisma db push`, runs seed, copies systemd files, restarts services, reloads Caddy, and checks local health endpoints.
+
+## Admin Access Without SSH
+
+To make an existing user a platform admin through CI/CD:
+
+1. Register the user normally in FinnWeb first.
+2. Add a GitHub Actions secret named `ADMIN_EMAILS`.
+3. Set it to one or more emails, comma-separated:
+
+```text
+you@example.com,team@example.com
+```
+
+4. Run the `Deploy Staging` workflow.
+5. Log out and log in again so the new JWT includes `role: ADMIN`.
+
+The deploy workflow passes `ADMIN_EMAILS` into `pnpm exec prisma db seed`, and the seed promotes matching existing users. No manual server env edit is required.
 
 ## Wildcard Public Sites
 

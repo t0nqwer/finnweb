@@ -13,6 +13,9 @@ export class AuthUserDto {
   @ApiPropertyOptional()
   avatarUrl!: string | null;
 
+  @ApiProperty({ enum: ["USER", "ADMIN"] })
+  role!: "USER" | "ADMIN";
+
   @ApiProperty()
   isActive!: boolean;
 

@@ -3,6 +3,7 @@ export type SafeUser = {
   email: string;
   name: string | null;
   avatarUrl: string | null;
+  role: "USER" | "ADMIN";
   isActive: boolean;
   emailVerified: boolean;
   createdAt: string;
