@@ -2,6 +2,38 @@
   "updatedAt": "2026-05-10",
   "tasks": [
     {
+      "id": "admin-template-crud-validation",
+      "title": "Add admin template add/remove/not-use workflow with validation",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "admin",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "admin-auth-role-gating",
+        "admin-template-management-dashboard"
+      ],
+      "scope": [
+        "Add admin-only template validation endpoint",
+        "Add admin-only official template creation endpoint",
+        "Add admin-only status actions for publish/not-use/archive",
+        "Expose validation result and actions in admin templates dashboard",
+        "Validate template pages, sections, metadata, and usable structure before create/use"
+      ],
+      "acceptanceCriteria": [
+        "Admin can paste/import template JSON and validate before saving",
+        "Invalid templates return actionable validation issues",
+        "Admin can save valid templates as official templates",
+        "Admin can mark templates not used or archived from dashboard",
+        "Typecheck/build pass"
+      ],
+      "progressNotes": [
+        "2026-05-10: Started admin template CRUD and validation workflow.",
+        "2026-05-10: Completed admin template CRUD/validation workflow: added admin validate/create/status APIs, validation service, dashboard JSON editor, validation results, save official flow, and Use/Not use/Archive row actions."
+      ]
+    },
+    {
       "id": "ci-admin-email-promotion",
       "title": "Pass admin promotion email through CI/CD deploy",
       "status": "done",

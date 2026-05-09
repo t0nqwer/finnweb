@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIcon,
   AlertTriangleIcon,
+  ArchiveIcon,
   BoxesIcon,
   CheckCircle2Icon,
   DatabaseIcon,
@@ -14,7 +15,11 @@ import {
   Layers3Icon,
   LockIcon,
   LineChartIcon,
+  PauseCircleIcon,
+  PlayCircleIcon,
+  PlusIcon,
   RefreshCwIcon,
+  SaveIcon,
   ShieldCheckIcon,
   SparklesIcon,
 } from "lucide-react";
@@ -92,6 +97,29 @@ type AdminOverviewResponse = {
   };
 };
 
+type TemplateValidationIssue = {
+  severity: "error" | "warning";
+  code: string;
+  path: string;
+  message: string;
+};
+
+type TemplateValidationResult = {
+  valid: boolean;
+  summary: {
+    errorCount: number;
+    warningCount: number;
+    pageCount: number;
+    sectionCount: number;
+  };
+  issues: TemplateValidationIssue[];
+};
+
+type TemplateValidationResponse = {
+  success?: boolean;
+  data?: TemplateValidationResult;
+};
+
 type DashboardStat = {
   label: string;
   value: string;
@@ -99,6 +127,61 @@ type DashboardStat = {
   icon: ComponentType<{ className?: string }>;
   toneClass: string;
 };
+
+const starterTemplateJson = JSON.stringify(
+  {
+    name: "Restaurant lead template",
+    slug: "restaurant-lead-template",
+    code: "restaurant-lead-template",
+    description: "Official lead generation template for Thai restaurants.",
+    category: "Restaurant",
+    businessTypes: ["restaurant"],
+    goals: ["lead"],
+    styles: ["modern"],
+    languages: ["th"],
+    keywords: ["restaurant", "booking", "line oa"],
+    pages: [
+      {
+        title: "Home",
+        slug: "home",
+        path: "/",
+        pageType: "LANDING",
+        isHomePage: true,
+        isPublished: true,
+        sections: [
+          {
+            type: "NAVBAR",
+            name: "Main navigation",
+            props: {
+              menuItems: [
+                { label: "หน้าแรก", href: "/" },
+                { label: "ติดต่อ", href: "#contact" },
+              ],
+            },
+          },
+          {
+            type: "HERO",
+            name: "Hero",
+            props: {
+              title: "ร้านอาหารของคุณ",
+              subtitle: "รับจองโต๊ะและเก็บลูกค้าผ่าน LINE OA",
+            },
+          },
+          {
+            type: "CONTACT",
+            name: "Contact",
+            props: {
+              title: "ติดต่อเรา",
+              lineId: "@finnweb",
+            },
+          },
+        ],
+      },
+    ],
+  },
+  null,
+  2,
+);
 
 function formatDate(value: string) {
   const date = new Date(value);
@@ -160,7 +243,16 @@ export function AdminTemplatesDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isForbidden, setIsForbidden] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
+  const [templateJson, setTemplateJson] = useState(starterTemplateJson);
+  const [validationResult, setValidationResult] =
+    useState<TemplateValidationResult | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [updatingTemplateId, setUpdatingTemplateId] = useState<string | null>(
+    null,
+  );
 
   const apiBaseUrl = useMemo(() => {
     const stored = readStoredAuthState();
@@ -226,6 +318,133 @@ export function AdminTemplatesDashboard() {
   useEffect(() => {
     void loadAdminData();
   }, []);
+
+  function parseTemplateJson() {
+    try {
+      return JSON.parse(templateJson) as Record<string, unknown>;
+    } catch {
+      throw new Error("Template JSON is not valid.");
+    }
+  }
+
+  async function validateTemplateDraft() {
+    const payload = parseTemplateJson();
+
+    setIsValidating(true);
+    setActionMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetchApiWithTokenRefresh<TemplateValidationResponse>({
+        apiBaseUrl,
+        path: "/admin/templates/validate",
+        init: {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      });
+
+      if (!response.response.ok || !response.payload.data) {
+        throw new Error("Template validation failed.");
+      }
+
+      setValidationResult(response.payload.data);
+      setActionMessage(
+        response.payload.data.valid
+          ? "Template structure is usable."
+          : "Template has validation errors.",
+      );
+      return response.payload.data;
+    } finally {
+      setIsValidating(false);
+    }
+  }
+
+  async function saveOfficialTemplate() {
+    setIsSavingTemplate(true);
+    setActionMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const validation = await validateTemplateDraft();
+      if (!validation.valid) {
+        return;
+      }
+
+      const payload = parseTemplateJson();
+      const response = await fetchApiWithTokenRefresh({
+        apiBaseUrl,
+        path: "/admin/templates",
+        init: {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      });
+
+      if (!response.response.ok) {
+        throw new Error("Could not save official template.");
+      }
+
+      setActionMessage("Official template saved and published.");
+      await loadAdminData();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Could not save template.",
+      );
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  }
+
+  async function updateTemplateStatus(
+    templateId: string,
+    status: "DRAFT" | "PUBLISHED" | "ARCHIVED",
+  ) {
+    setUpdatingTemplateId(templateId);
+    setActionMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetchApiWithTokenRefresh({
+        apiBaseUrl,
+        path: `/admin/templates/${templateId}/status`,
+        init: {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status }),
+        },
+      });
+
+      if (!response.response.ok) {
+        throw new Error("Could not update template status.");
+      }
+
+      setActionMessage(
+        status === "PUBLISHED"
+          ? "Template is now usable."
+          : status === "DRAFT"
+            ? "Template is marked not used."
+            : "Template archived.",
+      );
+      await loadAdminData();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not update template status.",
+      );
+    } finally {
+      setUpdatingTemplateId(null);
+    }
+  }
 
   const officialTemplates = templates.filter((item) => item.isOfficial);
   const customTemplates = templates.filter((item) => !item.isOfficial);
@@ -367,6 +586,15 @@ export function AdminTemplatesDashboard() {
         </Card>
       ) : null}
 
+      {actionMessage ? (
+        <Card className="border-emerald-500/35 bg-emerald-950/25">
+          <CardContent className="flex items-center gap-3 py-4 text-sm text-emerald-100">
+            <CheckCircle2Icon className="size-4 shrink-0" />
+            <span>{actionMessage}</span>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
           <Card key={stat.label} className="border-border/70 bg-card/85">
@@ -395,6 +623,156 @@ export function AdminTemplatesDashboard() {
           </Card>
         ))}
       </div>
+
+      <Card className="border-border/70 bg-card/85">
+        <CardHeader className="border-b border-border/60">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <CardTitle>Add official template</CardTitle>
+              <CardDescription>
+                Paste template JSON, validate the structure, then save it to the official library.
+              </CardDescription>
+            </div>
+            {validationResult ? (
+              <Badge
+                className={
+                  validationResult.valid
+                    ? "w-fit rounded-full bg-emerald-600 text-white"
+                    : "w-fit rounded-full bg-red-600 text-white"
+                }
+              >
+                {validationResult.valid ? "Valid" : "Needs fixes"}
+              </Badge>
+            ) : null}
+          </div>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-4 pt-4 xl:grid-cols-[1.25fr_0.75fr]">
+          <div className="space-y-3">
+            <textarea
+              value={templateJson}
+              onChange={(event) => {
+                setTemplateJson(event.target.value);
+                setValidationResult(null);
+              }}
+              spellCheck={false}
+              className="min-h-105 w-full resize-y rounded-lg border border-border/70 bg-black/20 p-4 font-mono text-xs leading-6 text-foreground outline-none transition focus:border-primary/70 focus:ring-2 focus:ring-primary/20"
+              aria-label="Template JSON"
+            />
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="outline"
+                className="border-border/70 bg-black/10"
+                disabled={isValidating || isSavingTemplate}
+                onClick={() =>
+                  void validateTemplateDraft().catch((error) =>
+                    setErrorMessage(
+                      error instanceof Error
+                        ? error.message
+                        : "Template validation failed.",
+                    ),
+                  )
+                }
+              >
+                <CheckCircle2Icon data-icon="inline-start" />
+                {isValidating ? "Validating" : "Validate"}
+              </Button>
+              <Button
+                className="bg-linear-to-r from-primary to-[#ff4500] text-primary-foreground"
+                disabled={isSavingTemplate || isValidating}
+                onClick={() => void saveOfficialTemplate()}
+              >
+                <SaveIcon data-icon="inline-start" />
+                {isSavingTemplate ? "Saving" : "Save official"}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setTemplateJson(starterTemplateJson);
+                  setValidationResult(null);
+                }}
+              >
+                <PlusIcon data-icon="inline-start" />
+                Reset example
+              </Button>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-border/70 bg-black/10 p-4">
+            <p className="font-semibold">Validation result</p>
+            {validationResult ? (
+              <div className="mt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-lg bg-black/20 p-3">
+                    <p className="text-muted-foreground">Errors</p>
+                    <p className="mt-1 text-xl font-bold text-red-200">
+                      {validationResult.summary.errorCount}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-black/20 p-3">
+                    <p className="text-muted-foreground">Warnings</p>
+                    <p className="mt-1 text-xl font-bold text-amber-200">
+                      {validationResult.summary.warningCount}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-black/20 p-3">
+                    <p className="text-muted-foreground">Pages</p>
+                    <p className="mt-1 text-xl font-bold">
+                      {validationResult.summary.pageCount}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-black/20 p-3">
+                    <p className="text-muted-foreground">Sections</p>
+                    <p className="mt-1 text-xl font-bold">
+                      {validationResult.summary.sectionCount}
+                    </p>
+                  </div>
+                </div>
+                <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+                  {validationResult.issues.length === 0 ? (
+                    <div className="rounded-lg border border-emerald-500/35 bg-emerald-950/25 p-3 text-sm text-emerald-100">
+                      Structure is valid and ready to save.
+                    </div>
+                  ) : (
+                    validationResult.issues.map((issue) => (
+                      <div
+                        key={`${issue.code}-${issue.path}-${issue.message}`}
+                        className={
+                          issue.severity === "error"
+                            ? "rounded-lg border border-red-500/35 bg-red-950/25 p-3"
+                            : "rounded-lg border border-amber-500/35 bg-amber-950/25 p-3"
+                        }
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-semibold">{issue.code}</p>
+                          <Badge
+                            className={
+                              issue.severity === "error"
+                                ? "rounded-full bg-red-600 text-white"
+                                : "rounded-full bg-amber-600 text-white"
+                            }
+                          >
+                            {issue.severity}
+                          </Badge>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {issue.path}
+                        </p>
+                        <p className="mt-2 text-sm">{issue.message}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                Validation checks metadata, one home page, duplicate slugs and
+                paths, visible sections, supported section types, and required
+                section props before the template can be used.
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.5fr_1fr]">
         <Card className="border-border/70 bg-card/85">
@@ -425,7 +803,7 @@ export function AdminTemplatesDashboard() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-210 text-left text-sm">
+                <table className="w-full min-w-250 text-left text-sm">
                   <thead className="border-b border-border/60 text-xs uppercase tracking-wider text-muted-foreground">
                     <tr>
                       <th className="px-5 py-4 font-semibold">Template</th>
@@ -433,6 +811,7 @@ export function AdminTemplatesDashboard() {
                       <th className="px-5 py-4 font-semibold">Status</th>
                       <th className="px-5 py-4 font-semibold">Usage</th>
                       <th className="px-5 py-4 font-semibold">Updated</th>
+                      <th className="px-5 py-4 font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -505,6 +884,64 @@ export function AdminTemplatesDashboard() {
                           </td>
                           <td className="px-5 py-4 text-xs text-muted-foreground">
                             {formatDate(template.updatedAt)}
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 border-emerald-500/35 bg-emerald-950/20 text-emerald-100"
+                                disabled={
+                                  updatingTemplateId === template.id ||
+                                  template.status === "PUBLISHED"
+                                }
+                                onClick={() =>
+                                  void updateTemplateStatus(
+                                    template.id,
+                                    "PUBLISHED",
+                                  )
+                                }
+                              >
+                                <PlayCircleIcon data-icon="inline-start" />
+                                Use
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 border-amber-500/35 bg-amber-950/20 text-amber-100"
+                                disabled={
+                                  updatingTemplateId === template.id ||
+                                  template.status === "DRAFT"
+                                }
+                                onClick={() =>
+                                  void updateTemplateStatus(template.id, "DRAFT")
+                                }
+                              >
+                                <PauseCircleIcon data-icon="inline-start" />
+                                Not use
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 border-red-500/35 bg-red-950/20 text-red-100"
+                                disabled={
+                                  updatingTemplateId === template.id ||
+                                  template.status === "ARCHIVED"
+                                }
+                                onClick={() =>
+                                  window.confirm(
+                                    `Archive template "${template.name}"? It will disappear from customer template selection.`,
+                                  ) &&
+                                  void updateTemplateStatus(
+                                    template.id,
+                                    "ARCHIVED",
+                                  )
+                                }
+                              >
+                                <ArchiveIcon data-icon="inline-start" />
+                                Archive
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -611,8 +1048,8 @@ export function AdminTemplatesDashboard() {
             <ShieldCheckIcon className="size-5 text-emerald-300" />
             <CardTitle>Access boundary</CardTitle>
             <CardDescription>
-              This UI is admin-facing, but backend role enforcement is still the
-              next required hardening step.
+              Admin APIs are protected by platform role checks and do not rely
+              on sidebar visibility.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -621,8 +1058,8 @@ export function AdminTemplatesDashboard() {
             <LineChartIcon className="size-5 text-sky-300" />
             <CardTitle>Operator next actions</CardTitle>
             <CardDescription>
-              Add approve/unpublish endpoints, template QA scoring, seed status,
-              and support-impact metrics.
+              Add visual preview QA, seed status, install analytics, and support
+              impact metrics.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -642,9 +1079,9 @@ export function AdminTemplatesDashboard() {
           </div>
           <Button
             className="bg-linear-to-r from-primary to-[#ff4500] text-primary-foreground"
-            onClick={() => window.location.assign("/help")}
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           >
-            Plan next admin APIs
+            Add another template
           </Button>
         </div>
       </div>
