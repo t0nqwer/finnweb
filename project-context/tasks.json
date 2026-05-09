@@ -2,6 +2,35 @@
   "updatedAt": "2026-05-10",
   "tasks": [
     {
+      "id": "admin-template-edit-preview",
+      "title": "Add admin template edit existing and preview workflow",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "admin",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "admin-template-crud-validation"
+      ],
+      "scope": [
+        "Load existing template into admin JSON editor",
+        "Validate and save edits as a new template version",
+        "Add preview/readiness panel for pages and sections",
+        "Keep publish/use action blocked by validation"
+      ],
+      "acceptanceCriteria": [
+        "Admin can select existing template and edit its JSON",
+        "Saving edits updates template rows and creates new active version",
+        "Preview panel shows page/section structure before save",
+        "Typecheck/build pass"
+      ],
+      "progressNotes": [
+        "2026-05-10: Started admin template edit and preview workflow.",
+        "2026-05-10: Completed admin template edit/preview workflow: overview now includes full editable template structure, PATCH saves validated edits as new active versions, dashboard can load existing templates into JSON editor, and structure preview shows pages/sections before validation."
+      ]
+    },
+    {
       "id": "admin-template-crud-validation",
       "title": "Add admin template add/remove/not-use workflow with validation",
       "status": "done",

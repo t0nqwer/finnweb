@@ -20,6 +20,7 @@ import {
   PlusIcon,
   RefreshCwIcon,
   SaveIcon,
+  SquarePenIcon,
   ShieldCheckIcon,
   SparklesIcon,
 } from "lucide-react";
@@ -64,10 +65,23 @@ type TemplateRecord = {
   pages: Array<{
     id: string;
     title: string;
+    slug: string;
+    path: string | null;
+    pageType: string;
+    isHomePage: boolean;
+    isPublished: boolean;
+    sortOrder: number;
+    seoTitle: string | null;
+    seoDescription: string | null;
+    seoKeywords: string | null;
+    ogImageUrl: string | null;
     sections: Array<{
       id: string;
       type: string;
+      name: string | null;
+      sortOrder: number;
       isVisible: boolean;
+      props: Record<string, unknown>;
     }>;
   }>;
   updatedAt: string;
@@ -246,6 +260,9 @@ export function AdminTemplatesDashboard() {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
   const [templateJson, setTemplateJson] = useState(starterTemplateJson);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(
+    null,
+  );
   const [validationResult, setValidationResult] =
     useState<TemplateValidationResult | null>(null);
   const [isValidating, setIsValidating] = useState(false);
@@ -327,6 +344,51 @@ export function AdminTemplatesDashboard() {
     }
   }
 
+  function loadTemplateForEdit(template: TemplateRecord) {
+    setEditingTemplateId(template.id);
+    setValidationResult(null);
+    setActionMessage(`Editing ${template.name}. Save will create a new active version.`);
+    setTemplateJson(
+      JSON.stringify(
+        {
+          name: template.name,
+          slug: template.slug,
+          code: template.code,
+          description: template.description ?? undefined,
+          category: template.category?.name,
+          businessTypes: template.businessTypes,
+          goals: template.goals,
+          styles: template.styles,
+          languages: template.languages,
+          keywords: template.keywords,
+          pages: template.pages.map((page) => ({
+            title: page.title,
+            slug: page.slug,
+            path: page.path ?? undefined,
+            pageType: page.pageType,
+            isHomePage: page.isHomePage,
+            isPublished: page.isPublished,
+            sortOrder: page.sortOrder,
+            seoTitle: page.seoTitle ?? undefined,
+            seoDescription: page.seoDescription ?? undefined,
+            seoKeywords: page.seoKeywords ?? undefined,
+            ogImageUrl: page.ogImageUrl ?? undefined,
+            sections: page.sections.map((section) => ({
+              type: section.type,
+              name: section.name ?? undefined,
+              sortOrder: section.sortOrder,
+              isVisible: section.isVisible,
+              props: section.props ?? {},
+            })),
+          })),
+        },
+        null,
+        2,
+      ),
+    );
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function validateTemplateDraft() {
     const payload = parseTemplateJson();
 
@@ -377,9 +439,11 @@ export function AdminTemplatesDashboard() {
       const payload = parseTemplateJson();
       const response = await fetchApiWithTokenRefresh({
         apiBaseUrl,
-        path: "/admin/templates",
+        path: editingTemplateId
+          ? `/admin/templates/${editingTemplateId}`
+          : "/admin/templates",
         init: {
-          method: "POST",
+          method: editingTemplateId ? "PATCH" : "POST",
           headers: {
             "Content-Type": "application/json",
           },
@@ -391,7 +455,12 @@ export function AdminTemplatesDashboard() {
         throw new Error("Could not save official template.");
       }
 
-      setActionMessage("Official template saved and published.");
+      setActionMessage(
+        editingTemplateId
+          ? "Template edits saved as a new active version."
+          : "Official template saved and published.",
+      );
+      setEditingTemplateId(null);
       await loadAdminData();
     } catch (error) {
       setErrorMessage(
@@ -401,6 +470,30 @@ export function AdminTemplatesDashboard() {
       setIsSavingTemplate(false);
     }
   }
+
+  const parsedPreview = useMemo(() => {
+    try {
+      const payload = JSON.parse(templateJson) as {
+        name?: string;
+        pages?: Array<{
+          title?: string;
+          isHomePage?: boolean;
+          sections?: Array<{
+            type?: string;
+            name?: string;
+            isVisible?: boolean;
+          }>;
+        }>;
+      };
+
+      return {
+        name: payload.name ?? "Untitled template",
+        pages: Array.isArray(payload.pages) ? payload.pages : [],
+      };
+    } catch {
+      return null;
+    }
+  }, [templateJson]);
 
   async function updateTemplateStatus(
     templateId: string,
@@ -630,7 +723,9 @@ export function AdminTemplatesDashboard() {
             <div>
               <CardTitle>Add official template</CardTitle>
               <CardDescription>
-                Paste template JSON, validate the structure, then save it to the official library.
+                {editingTemplateId
+                  ? "Edit an existing template, validate the structure, then save a new active version."
+                  : "Paste template JSON, validate the structure, then save it to the official library."}
               </CardDescription>
             </div>
             {validationResult ? (
@@ -682,12 +777,17 @@ export function AdminTemplatesDashboard() {
                 onClick={() => void saveOfficialTemplate()}
               >
                 <SaveIcon data-icon="inline-start" />
-                {isSavingTemplate ? "Saving" : "Save official"}
+                {isSavingTemplate
+                  ? "Saving"
+                  : editingTemplateId
+                    ? "Save new version"
+                    : "Save official"}
               </Button>
               <Button
                 variant="ghost"
                 onClick={() => {
                   setTemplateJson(starterTemplateJson);
+                  setEditingTemplateId(null);
                   setValidationResult(null);
                 }}
               >
@@ -698,6 +798,66 @@ export function AdminTemplatesDashboard() {
           </div>
 
           <div className="rounded-lg border border-border/70 bg-black/10 p-4">
+            <p className="font-semibold">Structure preview</p>
+            {parsedPreview ? (
+              <div className="mt-3 space-y-3">
+                <div className="rounded-lg bg-black/20 p-3">
+                  <p className="text-sm font-semibold">{parsedPreview.name}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {parsedPreview.pages.length} pages,{" "}
+                    {parsedPreview.pages.reduce(
+                      (total, page) =>
+                        total +
+                        (Array.isArray(page.sections)
+                          ? page.sections.length
+                          : 0),
+                      0,
+                    )}{" "}
+                    sections
+                  </p>
+                </div>
+                <div className="max-h-52 space-y-2 overflow-y-auto pr-1">
+                  {parsedPreview.pages.map((page, pageIndex) => (
+                    <div
+                      key={`${page.title ?? "page"}-${pageIndex}`}
+                      className="rounded-lg border border-border/70 bg-black/10 p-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold">
+                          {page.title ?? `Page ${pageIndex + 1}`}
+                        </p>
+                        {page.isHomePage ? (
+                          <Badge className="rounded-full bg-primary/18 text-primary hover:bg-primary/18">
+                            Home
+                          </Badge>
+                        ) : null}
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {(page.sections ?? []).map((section, sectionIndex) => (
+                          <Badge
+                            key={`${section.type ?? "section"}-${sectionIndex}`}
+                            variant="secondary"
+                            className={
+                              section.isVisible === false
+                                ? "rounded-full bg-black/20 text-muted-foreground"
+                                : "rounded-full bg-black/30"
+                            }
+                          >
+                            {section.type ?? "UNKNOWN"}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-red-200">
+                JSON cannot be previewed until syntax is valid.
+              </p>
+            )}
+
+            <div className="my-4 h-px bg-border/60" />
             <p className="font-semibold">Validation result</p>
             {validationResult ? (
               <div className="mt-4 space-y-4">
@@ -887,6 +1047,16 @@ export function AdminTemplatesDashboard() {
                           </td>
                           <td className="px-5 py-4">
                             <div className="flex flex-wrap gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 border-border/70 bg-black/10"
+                                disabled={updatingTemplateId === template.id}
+                                onClick={() => loadTemplateForEdit(template)}
+                              >
+                                <SquarePenIcon data-icon="inline-start" />
+                                Edit
+                              </Button>
                               <Button
                                 size="sm"
                                 variant="outline"

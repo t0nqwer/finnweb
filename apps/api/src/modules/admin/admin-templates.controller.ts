@@ -107,12 +107,17 @@ export class AdminTemplatesController {
             isHomePage: page.isHomePage,
             isPublished: page.isPublished,
             sortOrder: page.sortOrder,
+            seoTitle: page.seoTitle,
+            seoDescription: page.seoDescription,
+            seoKeywords: page.seoKeywords,
+            ogImageUrl: page.ogImageUrl,
             sections: page.sections.map((section) => ({
               id: section.id,
               type: section.type,
               name: section.name,
               sortOrder: section.sortOrder,
               isVisible: section.isVisible,
+              props: section.props,
             })),
           })),
           createdAt: template.createdAt,
@@ -219,6 +224,79 @@ export class AdminTemplatesController {
       success: true,
       data: {
         id: created.id,
+      },
+    };
+  }
+
+  @Patch(":id")
+  async updateOfficial(@Param("id") id: string, @Body() dto: CreateTemplateDto) {
+    const validation = this.validator.validateTemplate(dto);
+
+    if (!validation.valid) {
+      throw new BadRequestException({
+        code: "ADMIN_TEMPLATE_VALIDATION_FAILED",
+        validation,
+      });
+    }
+
+    const existing = await this.prisma.template.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        slug: true,
+      },
+    });
+
+    if (!existing) {
+      throw new BadRequestException("TEMPLATE_NOT_FOUND");
+    }
+
+    const slug = dto.slug
+      ? await this.ensureUniqueTemplateSlug(dto.slug, existing.id)
+      : existing.slug;
+    const category = dto.category?.trim()
+      ? await this.prisma.templateCategory.upsert({
+          where: {
+            slug: this.makeSlug(dto.category),
+          },
+          update: {
+            name: dto.category.trim(),
+            isActive: true,
+          },
+          create: {
+            name: dto.category.trim(),
+            slug: this.makeSlug(dto.category),
+            description: "หมวดหมู่เทมเพลต",
+            isActive: true,
+          },
+        })
+      : null;
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const template = await tx.template.update({
+        where: { id },
+        data: {
+          code: dto.code?.trim() || undefined,
+          name: dto.name.trim(),
+          slug,
+          description: dto.description?.trim() || null,
+          thumbnailUrl: dto.thumbnailUrl?.trim() || null,
+          categoryId: category?.id ?? null,
+          visibility: "OFFICIAL",
+          tags: this.buildMetadataTags(dto),
+        },
+      });
+
+      await this.upsertTemplatePages(tx, template.id, dto.pages);
+      await this.createTemplateVersion(tx, template.id);
+
+      return template;
+    });
+
+    return {
+      success: true,
+      data: {
+        id: updated.id,
       },
     };
   }

@@ -3,6 +3,7 @@
 ## 2026-05-10
 
 - Added admin template management workflow for validating JSON templates, saving valid templates as official, and changing template status between usable, not used, and archived.
+- Added admin edit workflow for existing templates: load template JSON into the editor, preview page/section structure, validate, and save edits as a new active template version.
 - Added admin-only template validation rules covering metadata, home page structure, duplicate slugs/paths, section visibility, supported section types, and required props.
 - Added platform admin role gating for the admin templates dashboard.
 - Added `User.role` with `USER`/`ADMIN`, included role in safe auth user payloads and JWTs, and protected `/api/admin/templates/overview` with `PlatformAdminGuard`.
