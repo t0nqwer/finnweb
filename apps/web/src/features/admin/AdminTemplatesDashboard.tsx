@@ -1050,128 +1050,31 @@ export function AdminTemplatesDashboard() {
 
       <Card className="border-border/70 bg-card/85">
         <CardHeader className="border-b border-border/60">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <CardTitle>Add official template</CardTitle>
+              <CardTitle>Template import workspace</CardTitle>
               <CardDescription>
                 {editingTemplateId
-                  ? "Edit an existing template, validate the structure, then save a new active version."
-                  : "Paste template JSON, validate the structure, then save it to the official library."}
+                  ? "Review the draft, validate it, then save a new official version."
+                  : "Import a site, review the preview, then save only when it is ready."}
               </CardDescription>
             </div>
-            {validationResult ? (
-              <Badge
-                className={
-                  validationResult.valid
-                    ? "w-fit rounded-full bg-emerald-600 text-white"
-                    : "w-fit rounded-full bg-red-600 text-white"
-                }
-              >
-                {validationResult.valid ? "Valid" : "Needs fixes"}
-              </Badge>
-            ) : null}
-          </div>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-4 pt-4 xl:grid-cols-[1.25fr_0.75fr]">
-          <div className="space-y-3">
-            <div className="rounded-lg border border-primary/25 bg-primary/10 p-3">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-sm font-semibold">Website capture import</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Import from URL or ZIP, or paste captured headings, links, images, forms, colors, and fonts.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-border/70 bg-black/10"
-                    disabled={isGeneratingDraft}
-                    onClick={() => {
-                      setCaptureJson(starterCaptureJson);
-                    }}
-                  >
-                    <FileCode2Icon data-icon="inline-start" />
-                    Example
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="bg-linear-to-r from-primary to-[#ff4500] text-primary-foreground"
-                    disabled={
-                      isGeneratingDraft ||
-                      isSavingTemplate ||
-                      isValidating ||
-                      isImportingUrl ||
-                      isImportingZip
-                    }
-                    onClick={() => void generateTemplateDraftFromCapture()}
-                  >
-                    <SparklesIcon data-icon="inline-start" />
-                    {isGeneratingDraft ? "Generating" : "Generate draft"}
-                  </Button>
-                </div>
-              </div>
-              <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
-                <input
-                  value={importUrl}
-                  onChange={(event) => setImportUrl(event.target.value)}
-                  placeholder="https://your-site.com"
-                  className="h-10 rounded-lg border border-border/70 bg-black/25 px-3 text-sm outline-none transition focus:border-primary/70 focus:ring-2 focus:ring-primary/20"
-                  aria-label="Import from website URL"
-                />
-                <Button
-                  variant="outline"
-                  className="h-10 border-border/70 bg-black/10"
-                  disabled={isImportingUrl || isGeneratingDraft || isImportingZip}
-                  onClick={() => void generateTemplateDraftFromUrl()}
+            <div className="flex flex-wrap items-center gap-2">
+              {validationResult ? (
+                <Badge
+                  className={
+                    validationResult.valid
+                      ? "rounded-full bg-emerald-600 text-white"
+                      : "rounded-full bg-red-600 text-white"
+                  }
                 >
-                  <Globe2Icon data-icon="inline-start" />
-                  {isImportingUrl ? "Importing URL" : "Import URL"}
-                </Button>
-              </div>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <label
-                  htmlFor="template-zip-input"
-                  className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-border/70 bg-black/10 px-3 text-sm transition hover:bg-black/20"
-                >
-                  <FileCode2Icon className="size-4" />
-                  {isImportingZip ? "Importing ZIP" : "Import ZIP"}
-                </label>
-                <input
-                  id="template-zip-input"
-                  type="file"
-                  accept=".zip,application/zip"
-                  className="sr-only"
-                  onChange={(event) => {
-                    void importTemplateZip(event);
-                  }}
-                />
-                <span className="text-xs text-muted-foreground">
-                  {importZipName || "ZIP can include HTML/CSS/JS/Lottie/video assets for animation-aware import."}
-                </span>
-              </div>
-              <textarea
-                value={captureJson}
-                onChange={(event) => {
-                  setCaptureJson(event.target.value);
-                }}
-                spellCheck={false}
-                className="mt-3 min-h-52 w-full resize-y rounded-lg border border-border/70 bg-black/25 p-3 font-mono text-xs leading-6 text-foreground outline-none transition focus:border-primary/70 focus:ring-2 focus:ring-primary/20"
-                aria-label="Website capture JSON"
-              />
-            </div>
-            <textarea
-              value={templateJson}
-              onChange={(event) => {
-                setTemplateJson(event.target.value);
-                setValidationResult(null);
-              }}
-              spellCheck={false}
-              className="min-h-105 w-full resize-y rounded-lg border border-border/70 bg-black/20 p-4 font-mono text-xs leading-6 text-foreground outline-none transition focus:border-primary/70 focus:ring-2 focus:ring-primary/20"
-              aria-label="Template JSON"
-            />
-            <div className="flex flex-wrap gap-3">
+                  {validationResult.valid ? "Valid" : "Needs fixes"}
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="rounded-full bg-black/20">
+                  Not validated
+                </Badge>
+              )}
               <Button
                 variant="outline"
                 className="border-border/70 bg-black/10"
@@ -1198,84 +1101,217 @@ export function AdminTemplatesDashboard() {
                 {isSavingTemplate
                   ? "Saving"
                   : editingTemplateId
-                    ? "Save new version"
+                    ? "Save version"
                     : "Save official"}
               </Button>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setTemplateJson(starterTemplateJson);
-                  setEditingTemplateId(null);
-                  setValidationResult(null);
-                }}
-              >
-                <PlusIcon data-icon="inline-start" />
-                Reset example
-              </Button>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent className="grid grid-cols-1 gap-5 pt-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+          <div className="space-y-4">
+            <div className="rounded-lg border border-border/70 bg-black/10 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">1. Import source</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    URL is the fastest path. ZIP keeps local HTML, CSS, and animation assets together.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setTemplateJson(starterTemplateJson);
+                    setEditingTemplateId(null);
+                    setValidationResult(null);
+                  }}
+                >
+                  <PlusIcon data-icon="inline-start" />
+                  Reset
+                </Button>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
+                <input
+                  value={importUrl}
+                  onChange={(event) => setImportUrl(event.target.value)}
+                  placeholder="https://your-site.com"
+                  className="h-11 rounded-lg border border-border/70 bg-background/60 px-3 text-sm outline-none transition focus:border-primary/70 focus:ring-2 focus:ring-primary/20"
+                  aria-label="Import from website URL"
+                />
+                <Button
+                  className="h-11 bg-linear-to-r from-primary to-[#ff4500] text-primary-foreground"
+                  disabled={
+                    isImportingUrl ||
+                    isGeneratingDraft ||
+                    isImportingZip ||
+                    isSavingTemplate
+                  }
+                  onClick={() => void generateTemplateDraftFromUrl()}
+                >
+                  <Globe2Icon data-icon="inline-start" />
+                  {isImportingUrl ? "Importing" : "Import URL"}
+                </Button>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <label
+                  htmlFor="template-zip-input"
+                  className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-border/70 bg-black/10 px-3 text-sm transition hover:bg-black/20"
+                >
+                  <FileCode2Icon className="size-4" />
+                  {isImportingZip ? "Importing ZIP" : "Import ZIP"}
+                </label>
+                <input
+                  id="template-zip-input"
+                  type="file"
+                  accept=".zip,application/zip"
+                  className="sr-only"
+                  onChange={(event) => {
+                    void importTemplateZip(event);
+                  }}
+                />
+                <span className="text-xs leading-5 text-muted-foreground">
+                  {importZipName || "Accepts HTML, CSS, JS, Lottie, image, and video assets."}
+                </span>
+              </div>
+
+              <details className="mt-4 rounded-lg border border-border/60 bg-background/35">
+                <summary className="cursor-pointer px-3 py-2 text-sm font-semibold">
+                  Advanced: capture JSON
+                </summary>
+                <div className="border-t border-border/60 p-3">
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-border/70 bg-black/10"
+                      disabled={isGeneratingDraft}
+                      onClick={() => {
+                        setCaptureJson(starterCaptureJson);
+                      }}
+                    >
+                      <FileCode2Icon data-icon="inline-start" />
+                      Example
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-border/70 bg-black/10"
+                      disabled={
+                        isGeneratingDraft ||
+                        isSavingTemplate ||
+                        isValidating ||
+                        isImportingUrl ||
+                        isImportingZip
+                      }
+                      onClick={() => void generateTemplateDraftFromCapture()}
+                    >
+                      <SparklesIcon data-icon="inline-start" />
+                      {isGeneratingDraft ? "Generating" : "Generate draft"}
+                    </Button>
+                  </div>
+                  <textarea
+                    value={captureJson}
+                    onChange={(event) => {
+                      setCaptureJson(event.target.value);
+                    }}
+                    spellCheck={false}
+                    className="min-h-48 w-full resize-y rounded-lg border border-border/70 bg-black/25 p-3 font-mono text-xs leading-6 text-foreground outline-none transition focus:border-primary/70 focus:ring-2 focus:ring-primary/20"
+                    aria-label="Website capture JSON"
+                  />
+                </div>
+              </details>
+            </div>
+
+            <div className="rounded-lg border border-border/70 bg-black/10 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">2. Draft controls</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    Most review happens in preview. Open JSON only for precise edits.
+                  </p>
+                </div>
+                {parsedPreview?.customCss?.trim() ? (
+                  <Badge className="rounded-full bg-primary/18 text-primary hover:bg-primary/18">
+                    Custom CSS
+                  </Badge>
+                ) : null}
+              </div>
+
+              <details className="mt-4 rounded-lg border border-border/60 bg-background/35">
+                <summary className="cursor-pointer px-3 py-2 text-sm font-semibold">
+                  Advanced: template JSON editor
+                </summary>
+                <div className="border-t border-border/60 p-3">
+                  <textarea
+                    value={templateJson}
+                    onChange={(event) => {
+                      setTemplateJson(event.target.value);
+                      setValidationResult(null);
+                    }}
+                    spellCheck={false}
+                    className="min-h-105 w-full resize-y rounded-lg border border-border/70 bg-black/20 p-4 font-mono text-xs leading-6 text-foreground outline-none transition focus:border-primary/70 focus:ring-2 focus:ring-primary/20"
+                    aria-label="Template JSON"
+                  />
+                </div>
+              </details>
             </div>
           </div>
 
           <div className="rounded-lg border border-border/70 bg-black/10 p-4">
-            <p className="font-semibold">Structure preview</p>
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="font-semibold">3. Review preview</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  This renders the generated home page with imported CSS scoped to the preview.
+                </p>
+              </div>
+              {parsedPreview ? (
+                <Badge variant="secondary" className="w-fit rounded-full bg-black/20">
+                  {parsedPreview.pages.length} pages
+                </Badge>
+              ) : null}
+            </div>
+
             {parsedPreview ? (
-              <div className="mt-3 space-y-3">
-                <div className="rounded-lg bg-black/20 p-3">
-                  <p className="text-sm font-semibold">{parsedPreview.name}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {parsedPreview.pages.length} pages,{" "}
-                    {parsedPreview.pages.reduce(
-                      (total, page) =>
-                        total +
-                        (Array.isArray(page.sections)
-                          ? page.sections.length
-                          : 0),
-                      0,
-                    )}{" "}
-                    sections
-                  </p>
+              <div className="mt-4 space-y-4">
+                <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                  <div className="rounded-lg bg-black/20 p-3">
+                    <p className="text-xs text-muted-foreground">Template</p>
+                    <p className="mt-1 truncate font-semibold">{parsedPreview.name}</p>
+                  </div>
+                  <div className="rounded-lg bg-black/20 p-3">
+                    <p className="text-xs text-muted-foreground">Pages</p>
+                    <p className="mt-1 font-semibold">{parsedPreview.pages.length}</p>
+                  </div>
+                  <div className="rounded-lg bg-black/20 p-3">
+                    <p className="text-xs text-muted-foreground">Sections</p>
+                    <p className="mt-1 font-semibold">
+                      {parsedPreview.pages.reduce(
+                        (total, page) => total + (page.sections?.length ?? 0),
+                        0,
+                      )}
+                    </p>
+                  </div>
+                  <div className="rounded-lg bg-black/20 p-3">
+                    <p className="text-xs text-muted-foreground">CSS</p>
+                    <p className="mt-1 font-semibold">
+                      {parsedPreview.customCss?.trim() ? "Imported" : "None"}
+                    </p>
+                  </div>
                 </div>
-                <div className="max-h-52 space-y-2 overflow-y-auto pr-1">
-                  {parsedPreview.pages.map((page, pageIndex) => (
-                    <div
-                      key={`${page.title ?? "page"}-${pageIndex}`}
-                      className="rounded-lg border border-border/70 bg-black/10 p-3"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold">
-                          {page.title ?? `Page ${pageIndex + 1}`}
-                        </p>
-                        {page.isHomePage ? (
-                          <Badge className="rounded-full bg-primary/18 text-primary hover:bg-primary/18">
-                            Home
-                          </Badge>
-                        ) : null}
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {(page.sections ?? []).map((section, sectionIndex) => (
-                          <Badge
-                            key={`${section.type ?? "section"}-${sectionIndex}`}
-                            variant="secondary"
-                            className={
-                              section.isVisible === false
-                                ? "rounded-full bg-black/20 text-muted-foreground"
-                                : "rounded-full bg-black/30"
-                            }
-                          >
-                            {section.type ?? "UNKNOWN"}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+
                 <div className="rounded-lg border border-border/70 bg-white">
-                  <div className="border-b border-border/70 px-3 py-2">
+                  <div className="flex items-center justify-between gap-3 border-b border-border/70 px-3 py-2">
                     <p className="text-xs font-semibold text-slate-700">
                       Live visual preview
                     </p>
+                    <span className="text-xs text-slate-500">Home page</span>
                   </div>
                   {visualPreviewSections.length > 0 ? (
-                    <div className="fw-template-preview max-h-92 overflow-y-auto">
+                    <div className="fw-template-preview max-h-140 overflow-y-auto">
                       {parsedPreview.customCss?.trim() ? (
                         <style>{scopeCssToPreview(parsedPreview.customCss)}</style>
                       ) : null}
@@ -1286,14 +1322,54 @@ export function AdminTemplatesDashboard() {
                       />
                     </div>
                   ) : (
-                    <p className="px-3 py-4 text-xs text-muted-foreground">
+                    <p className="px-3 py-8 text-sm text-muted-foreground">
                       No visible sections to render yet.
                     </p>
                   )}
                 </div>
+
+                <details className="rounded-lg border border-border/60 bg-background/35">
+                  <summary className="cursor-pointer px-3 py-2 text-sm font-semibold">
+                    Page structure
+                  </summary>
+                  <div className="max-h-52 space-y-2 overflow-y-auto border-t border-border/60 p-3">
+                    {parsedPreview.pages.map((page, pageIndex) => (
+                      <div
+                        key={`${page.title ?? "page"}-${pageIndex}`}
+                        className="rounded-lg border border-border/70 bg-black/10 p-3"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-semibold">
+                            {page.title ?? `Page ${pageIndex + 1}`}
+                          </p>
+                          {page.isHomePage ? (
+                            <Badge className="rounded-full bg-primary/18 text-primary hover:bg-primary/18">
+                              Home
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {(page.sections ?? []).map((section, sectionIndex) => (
+                            <Badge
+                              key={`${section.type ?? "section"}-${sectionIndex}`}
+                              variant="secondary"
+                              className={
+                                section.isVisible === false
+                                  ? "rounded-full bg-black/20 text-muted-foreground"
+                                  : "rounded-full bg-black/30"
+                              }
+                            >
+                              {section.type ?? "UNKNOWN"}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
               </div>
             ) : (
-              <p className="mt-3 text-sm text-red-200">
+              <p className="mt-4 rounded-lg border border-red-500/35 bg-red-950/25 p-3 text-sm text-red-100">
                 JSON cannot be previewed until syntax is valid.
               </p>
             )}
@@ -1302,7 +1378,7 @@ export function AdminTemplatesDashboard() {
             <p className="font-semibold">Validation result</p>
             {validationResult ? (
               <div className="mt-4 space-y-4">
-                <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
                   <div className="rounded-lg bg-black/20 p-3">
                     <p className="text-muted-foreground">Errors</p>
                     <p className="mt-1 text-xl font-bold text-red-200">
@@ -1328,7 +1404,7 @@ export function AdminTemplatesDashboard() {
                     </p>
                   </div>
                 </div>
-                <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
                   {validationResult.issues.length === 0 ? (
                     <div className="rounded-lg border border-emerald-500/35 bg-emerald-950/25 p-3 text-sm text-emerald-100">
                       Structure is valid and ready to save.
@@ -1366,9 +1442,7 @@ export function AdminTemplatesDashboard() {
               </div>
             ) : (
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Validation checks metadata, one home page, duplicate slugs and
-                paths, visible sections, supported section types, and required
-                section props before the template can be used.
+                Validate after importing or editing. Save stays available for admins, but invalid drafts will be rejected by the API.
               </p>
             )}
           </div>

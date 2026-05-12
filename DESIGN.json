@@ -1,0 +1,221 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-12T00:00:00.000Z",
+  "title": "Design System: FinnWeb",
+  "extensions": {
+    "colorMeta": {
+      "deep-space": {
+        "role": "neutral",
+        "displayName": "Deep Space",
+        "canonical": "#1A1C23",
+        "tonalRamp": [
+          "#111217",
+          "#171920",
+          "#1A1C23",
+          "#232632",
+          "#2D3140",
+          "#3B4155",
+          "#58607B",
+          "#7E89AA"
+        ]
+      },
+      "surface-gray": {
+        "role": "neutral",
+        "displayName": "Surface Gray",
+        "canonical": "#2D2F39",
+        "tonalRamp": [
+          "#1D1F25",
+          "#252831",
+          "#2D2F39",
+          "#383B47",
+          "#464A59",
+          "#5A6074",
+          "#79809A",
+          "#A0A7C0"
+        ]
+      },
+      "ignite-orange": {
+        "role": "primary",
+        "displayName": "Ignite Orange",
+        "canonical": "#FF8C00",
+        "tonalRamp": [
+          "#402400",
+          "#7A4300",
+          "#B86500",
+          "#E07D00",
+          "#FF8C00",
+          "#FFA733",
+          "#FFC26A",
+          "#FFE1B5"
+        ]
+      },
+      "solar-flare": {
+        "role": "secondary",
+        "displayName": "Solar Flare",
+        "canonical": "#FFD700",
+        "tonalRamp": [
+          "#4A3F00",
+          "#7A6700",
+          "#A89200",
+          "#CCB200",
+          "#FFD700",
+          "#FFE34D",
+          "#FFEDA1",
+          "#FFF7D9"
+        ]
+      },
+      "cloud-white": {
+        "role": "neutral",
+        "displayName": "Cloud White",
+        "canonical": "#F9FAFB",
+        "tonalRamp": [
+          "#4A4B4C",
+          "#7A7C7E",
+          "#A8ABAE",
+          "#C9CDD1",
+          "#E4E8EB",
+          "#F1F4F7",
+          "#F9FAFB",
+          "#FDFDFE"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headlines and major value statements."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section-level conversion headings."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Panel titles and prominent controls."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Primary reading text with Thai-first readability."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Utility labels and micro-state indicators."
+      }
+    },
+    "shadows": [
+      {
+        "name": "canvas-lift",
+        "value": "0 25px 50px -12px rgb(0 0 0 / 0.2)",
+        "purpose": "Lift large preview surfaces above shell background."
+      },
+      {
+        "name": "ambient-glow",
+        "value": "0 0 15px rgba(255,140,0,0.4)",
+        "purpose": "Primary CTA hover emphasis."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-emphasized",
+        "value": "cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Default reveal and state transition curve."
+      },
+      {
+        "name": "duration-standard",
+        "value": "620ms",
+        "purpose": "Section reveal and visibility transitions."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main conversion action button for publish and high-intent flows.",
+      "html": "<button class=\"ds-btn-primary\">เริ่มใช้งาน</button>",
+      "css": ".ds-btn-primary{background:#FF8C00;color:#F9FAFB;padding:.5rem 1rem;border:none;border-radius:.625rem;font:600 1rem/1.4 Kanit,sans-serif;transition:background-color 240ms cubic-bezier(0.22,1,0.36,1),transform 180ms cubic-bezier(0.22,1,0.36,1),box-shadow 240ms cubic-bezier(0.22,1,0.36,1);cursor:pointer}.ds-btn-primary:hover{background:#FF9F1A;box-shadow:0 0 15px rgba(255,140,0,.4)}.ds-btn-primary:focus-visible{outline:2px solid #FF8C00A6;outline-offset:2px}.ds-btn-primary:active{transform:scale(.98)}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-primary-hover",
+      "description": "Secondary utility action with dark translucent styling.",
+      "html": "<button class=\"ds-btn-ghost\">ดูตัวอย่าง</button>",
+      "css": ".ds-btn-ghost{background:rgba(255,255,255,.04);color:#F9FAFB;padding:.5rem .875rem;border:1px solid rgba(255,255,255,.1);border-radius:.625rem;font:600 .875rem/1.4 Kanit,sans-serif;transition:background-color 240ms cubic-bezier(0.22,1,0.36,1),border-color 240ms cubic-bezier(0.22,1,0.36,1),transform 180ms cubic-bezier(0.22,1,0.36,1);cursor:pointer}.ds-btn-ghost:hover{background:rgba(255,255,255,.08);border-color:rgba(255,140,0,.5)}.ds-btn-ghost:focus-visible{outline:2px solid #FF8C00A6;outline-offset:2px}.ds-btn-ghost:active{transform:scale(.98)}"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-default",
+      "description": "Default text field used across settings and builder forms.",
+      "html": "<label class=\"ds-input-wrap\"><span class=\"ds-input-label\">ชื่อเว็บไซต์</span><input class=\"ds-input\" placeholder=\"ใส่ชื่อเว็บไซต์\" /></label>",
+      "css": ".ds-input-wrap{display:grid;gap:.5rem}.ds-input-label{font:600 .875rem/1.4 Kanit,sans-serif;color:#F9FAFB}.ds-input{height:2.5rem;padding:0 .75rem;background:#1A1C23;color:#F9FAFB;border:1px solid rgba(156,163,175,.22);border-radius:.625rem;font:400 .875rem/1.6 Kanit,sans-serif;transition:border-color 240ms cubic-bezier(0.22,1,0.36,1),box-shadow 240ms cubic-bezier(0.22,1,0.36,1)}.ds-input::placeholder{color:#9CA3AF}.ds-input:hover{border-color:rgba(156,163,175,.35)}.ds-input:focus-visible{outline:none;border-color:rgba(255,140,0,.7);box-shadow:0 0 0 2px rgba(255,140,0,.2)}"
+    },
+    {
+      "name": "Surface Card",
+      "kind": "card",
+      "refersTo": "card-default",
+      "description": "Default elevated container for controls and grouped content.",
+      "html": "<article class=\"ds-card\"><h3 class=\"ds-card-title\">Section settings</h3><p class=\"ds-card-body\">ปรับเนื้อหาและเลย์เอาต์ของ section นี้ได้ที่นี่</p></article>",
+      "css": ".ds-card{background:#2D2F39;color:#F9FAFB;border:1px solid rgba(156,163,175,.22);border-radius:.625rem;padding:1rem}.ds-card-title{margin:0;font:600 1.125rem/1.4 Kanit,sans-serif}.ds-card-body{margin:.5rem 0 0;color:#9CA3AF;font:400 .875rem/1.7 Kanit,sans-serif;max-width:65ch}"
+    },
+    {
+      "name": "Top Navigation Bar",
+      "kind": "nav",
+      "refersTo": "card-default",
+      "description": "Builder topbar shell with dark-surface hierarchy and action zoning.",
+      "html": "<nav class=\"ds-nav\"><div class=\"ds-nav-title\">FinnWeb Builder</div><div class=\"ds-nav-actions\"><button class=\"ds-btn-ghost\">Preview</button><button class=\"ds-btn-primary\">Publish</button></div></nav>",
+      "css": ".ds-nav{display:flex;justify-content:space-between;align-items:center;gap:.75rem;background:#11131A;border:1px solid rgba(255,255,255,.1);border-radius:.625rem;padding:.75rem 1rem}.ds-nav-title{color:#F9FAFB;font:600 1rem/1.4 Kanit,sans-serif}.ds-nav-actions{display:flex;gap:.5rem;align-items:center}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Ignition Console",
+    "overview": "FinnWeb must feel like a launch cockpit for Thai business owners, fast to read, clear to act, and always one step away from publish. The aesthetic is dark by default and premium in texture, but never ornamental enough to slow decisions.\n\nThis system uses contrast, typography weight, and intentional motion to communicate progress and confidence. Motion is a structural language in FinnWeb, it reveals hierarchy, confirms state changes, and guides action flow from build to publish.",
+    "keyCharacteristics": [
+      "Thai-first readability with Kanit and spacious line-height.",
+      "Deep-space dark surfaces with focused Ignite Orange action cues.",
+      "Motion as hierarchy and feedback, not decorative spectacle.",
+      "Premium polish with conversion-first information density."
+    ],
+    "rules": [
+      {
+        "name": "The Controlled Flame Rule",
+        "body": "Ignite Orange is reserved for actions and decisive states. If everything is orange, nothing is important.",
+        "section": "colors"
+      },
+      {
+        "name": "The Thai Clarity Rule",
+        "body": "Thai text is never compressed. Preserve line-height and avoid dense blocks that clip legibility.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-Until-Needed Rule",
+        "body": "Default surfaces stay quiet. Elevation appears to clarify interaction priority, not to decorate.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep Deep Space (#1A1C23) as default app canvas unless a product decision changes the baseline.",
+      "Do use Kanit as primary Thai-support typography and preserve body line-height around 1.7.",
+      "Do use motion to reveal hierarchy, confirm actions, and guide progression through build and publish steps.",
+      "Do keep primary accents concentrated on conversion and decision points."
+    ],
+    "donts": [
+      "Don't use generic template-marketplace aesthetics that make FinnWeb feel interchangeable.",
+      "Don't create overloaded SaaS dashboards where visual effects compete with user tasks.",
+      "Don't ship slow or heavy animation patterns that reduce responsiveness or block comprehension.",
+      "Don't use bright-on-bright low-contrast surfaces that weaken readability on mobile."
+    ]
+  }
+}

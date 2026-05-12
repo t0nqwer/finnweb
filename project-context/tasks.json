@@ -382,7 +382,9 @@
       ],
       "progressNotes": [
         "2026-05-10: Started admin template-management dashboard implementation.",
-        "2026-05-10: Completed admin template-management dashboard: added /admin/templates route, sidebar entry, template inventory, section-template render overview, admin control areas, review flags, and unauthenticated fallback."
+        "2026-05-10: Completed admin template-management dashboard: added /admin/templates route, sidebar entry, template inventory, section-template render overview, admin control areas, review flags, and unauthenticated fallback.",
+        "2026-05-12: Reopened for usability cleanup after URL/ZIP/CSS/AI import made the page too dense.",
+        "2026-05-12: Completed admin template workspace UI cleanup: URL/ZIP import is now primary, capture/template JSON editors live in advanced foldouts, preview/validation are grouped into the review panel, and save/validate actions stay visible in the header."
       ]
     },
     {
