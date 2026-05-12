@@ -63,6 +63,58 @@ export class CapturedWebsiteFormDto {
   fields?: string[];
 }
 
+export class CapturedWebsiteStatDto {
+  @IsString()
+  @MaxLength(40)
+  value!: string;
+
+  @IsString()
+  @MaxLength(120)
+  label!: string;
+}
+
+export class CapturedWebsiteCardDto {
+  @IsString()
+  @MaxLength(180)
+  title!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(600)
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  imageUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  eyebrow?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  meta?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  price?: string;
+}
+
+export class CapturedWebsiteFaqDto {
+  @IsString()
+  @MaxLength(180)
+  question!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(600)
+  answer?: string;
+}
+
 export class CapturedWebsitePageDto {
   @IsString()
   @MaxLength(1000)
@@ -94,6 +146,30 @@ export class CapturedWebsitePageDto {
   @IsString({ each: true })
   @MaxLength(600, { each: true })
   textBlocks?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CapturedWebsiteStatDto)
+  stats?: CapturedWebsiteStatDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CapturedWebsiteCardDto)
+  cards?: CapturedWebsiteCardDto[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(80, { each: true })
+  logos?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CapturedWebsiteFaqDto)
+  faqs?: CapturedWebsiteFaqDto[];
 
   @IsOptional()
   @IsArray()

@@ -37,6 +37,11 @@ export type WebsiteSectionAnalysis = {
   kind:
     | "navbar"
     | "hero"
+    | "stats"
+    | "courses"
+    | "logos"
+    | "categories"
+    | "articles"
     | "features"
     | "about"
     | "gallery"
@@ -57,6 +62,7 @@ export type WebsiteSectionAnalysis = {
   links?: Array<{ label: string; href: string }>;
   items?: Array<Record<string, unknown>>;
   imageUrl?: string;
+  variant?: string;
   motion?: WebsiteAnimationSignal[];
 };
 
@@ -109,6 +115,17 @@ export type CapturedWebsitePage = {
   metaDescription?: string;
   headings?: string[];
   textBlocks?: string[];
+  stats?: Array<{ value: string; label: string }>;
+  cards?: Array<{
+    title: string;
+    description?: string;
+    imageUrl?: string;
+    eyebrow?: string;
+    meta?: string;
+    price?: string;
+  }>;
+  logos?: string[];
+  faqs?: Array<{ question: string; answer?: string }>;
   links?: CapturedWebsiteLink[];
   images?: CapturedWebsiteImage[];
   forms?: CapturedWebsiteForm[];

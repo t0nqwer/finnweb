@@ -91,7 +91,9 @@
         "2026-05-12: Added createWebsiteProfileFromCapture() so deterministic browser/ZIP captures can be normalized into WebsiteProfile before draft creation; shared typecheck and focused agent tests passed.",
         "2026-05-12: Completed reopened implementation pass; website-to-template agent foundation now covers documented workflow, capture/profile/draft conversion types, focused tests, and no seed writes.",
         "2026-05-12: Reopened to connect optional DeepSeek API enhancement for template draft generation quality.",
-        "2026-05-12: Connected optional DeepSeek enhancement service into admin import flows (capture JSON, URL, ZIP) with safe fallback when API key is missing or response is invalid."
+        "2026-05-12: Connected optional DeepSeek enhancement service into admin import flows (capture JSON, URL, ZIP) with safe fallback when API key is missing or response is invalid.",
+        "2026-05-12: Reopened to upgrade URL import quality against the DevOnMars Academy benchmark with richer extraction, section variants, and quality guardrails.",
+        "2026-05-12: Completed high-design URL import upgrade: capture now extracts stats, cards, logos, FAQs, and more source text; deterministic drafts map education sites to animated navbar, editorial hero, metrics, featured courses, category/insight grids, testimonials, FAQ, and large footer variants; DeepSeek prompt now receives richer source data and approved design variants."
       ]
     },
     {

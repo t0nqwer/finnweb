@@ -254,4 +254,102 @@ describe("createWebsiteProfileFromCapture", () => {
     assert.ok(home?.sections.some((section) => section.type === "HERO"));
     assert.ok(home?.sections.some((section) => section.type === "FOOTER"));
   });
+
+  it("creates high-design education sections from rich URL capture data", () => {
+    const profile = createWebsiteProfileFromCapture({
+      sourceUrl: "https://academy.test",
+      name: "DevOnMars Academy",
+      language: "thai",
+      industry: "education",
+      pages: [
+        {
+          url: "https://academy.test/",
+          title: "DevOnMars Academy",
+          metaDescription: "Online courses for growing teams.",
+          headings: [
+            "Learn clearly and grow faster",
+            "Featured courses",
+            "Course categories",
+            "Student reviews",
+          ],
+          textBlocks: [
+            "Practical online learning for entrepreneurs and small teams.",
+            "Design Systems Foundation",
+            "Build real interfaces with structure and polish.",
+            "Marketing Analytics Sprint",
+            "Learn campaign measurement and landing page conversion.",
+            "Can I learn at my own pace?",
+            "Yes, students can review lessons and continue anytime.",
+          ],
+          stats: [
+            { value: "56", label: "online courses" },
+            { value: "8,000+", label: "trusted learners" },
+            { value: "98%", label: "student satisfaction" },
+          ],
+          cards: [
+            {
+              title: "Design Systems Foundation",
+              description: "Learn visual systems for production websites.",
+              eyebrow: "Course",
+              meta: "12 lessons",
+              price: "640 baht",
+              imageUrl: "https://academy.test/course.jpg",
+            },
+          ],
+          logos: ["NOVA", "Rise", "Greenish"],
+          faqs: [
+            {
+              question: "Can I learn at my own pace?",
+              answer: "Yes, every course supports self-paced learning.",
+            },
+          ],
+          links: [
+            { label: "Home", href: "https://academy.test/" },
+            { label: "Courses", href: "https://academy.test/courses" },
+          ],
+          images: [
+            {
+              url: "https://academy.test/hero.jpg",
+              alt: "Student learning online",
+              width: 1600,
+              height: 1000,
+            },
+          ],
+        },
+      ],
+    });
+    const result = createTemplateDraftFromWebsiteProfile(profile);
+    const sections = result.template.pages[0]?.sections ?? [];
+
+    assert.equal(
+      sections.find((section) => section.type === "NAVBAR")?.props?.["variant"],
+      "stickyAnimated",
+    );
+    assert.equal(
+      sections.find((section) => section.type === "HERO")?.props?.["variant"],
+      "educationEditorial",
+    );
+    assert.ok(
+      sections.some(
+        (section) =>
+          section.type === "CONTENT" && section.props?.["variant"] === "metricStrip",
+      ),
+    );
+    assert.ok(
+      sections.some(
+        (section) =>
+          section.type === "CONTENT" && section.props?.["variant"] === "featuredGrid",
+      ),
+    );
+    assert.ok(
+      sections.some(
+        (section) =>
+          section.type === "FAQ" && section.props?.["variant"] === "splitAccordion",
+      ),
+    );
+    assert.equal(
+      sections.find((section) => section.type === "FOOTER")?.props?.["variant"],
+      "largeDark",
+    );
+  });
 });

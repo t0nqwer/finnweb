@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BookOpen,
   ChevronDown,
+  Layers3,
   Menu,
   Play,
   ShoppingCart,
@@ -52,6 +53,17 @@ function numberText(value: unknown, fallback = "") {
 
 function arrayOfObjects<T>(value: unknown, fallback: T[]): T[] {
   return Array.isArray(value) ? (value as T[]) : fallback;
+}
+
+function itemTitle(value: unknown) {
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object" && "title" in value) {
+    return text((value as { title?: unknown }).title);
+  }
+  if (value && typeof value === "object" && "label" in value) {
+    return text((value as { label?: unknown }).label);
+  }
+  return "";
 }
 
 function linksFromProps(value: unknown): LinkItem[] {
@@ -428,6 +440,165 @@ export function ELabFeaturedCourses({ props }: SectionProps) {
   );
 }
 
+export function ELabMetricStrip({ props }: SectionProps) {
+  const primaryColor = text(props.primaryColor, "#0047FF");
+  const stats = arrayOfObjects<CardItem>(props.items, [
+    { title: "56", description: "à¸„à¸­à¸£à¹Œà¸ªà¸­à¸­à¸™à¹„à¸¥à¸™à¹Œ" },
+    { title: "8,000+", description: "à¸œà¸¹à¹‰à¹€à¸£à¸µà¸¢à¸™à¸—à¸µà¹ˆà¹„à¸§à¹‰à¸§à¸²à¸‡à¹ƒà¸ˆ" },
+    { title: "24/7", description: "à¹€à¸£à¸µà¸¢à¸™à¹„à¸”à¹‰à¸—à¸¸à¸à¹€à¸§à¸¥à¸²" },
+    { title: "98%", description: "à¸„à¸§à¸²à¸¡à¸žà¸¶à¸‡à¸žà¸­à¹ƒà¸ˆ" },
+  ]);
+
+  return (
+    <section className="bg-[#FAFAFA] px-4 py-16 text-slate-950 md:px-8">
+      <Stagger className="mx-auto grid max-w-7xl gap-4 rounded-[2rem] border border-slate-200/70 bg-white p-4 shadow-xl shadow-slate-200/50 sm:grid-cols-2 lg:grid-cols-4 lg:p-6">
+        {stats.slice(0, 4).map((stat, index) => (
+          <StaggerItem
+            key={`${stat.title}-${index}`}
+            className="rounded-3xl border border-slate-100 bg-slate-50 p-6"
+          >
+            <p
+              className="text-4xl font-black tracking-normal md:text-5xl"
+              style={{ color: index === 0 ? primaryColor : undefined }}
+            >
+              {stat.title}
+            </p>
+            <p className="mt-3 text-sm font-black uppercase tracking-[0.14em] text-slate-500">
+              {stat.description}
+            </p>
+          </StaggerItem>
+        ))}
+      </Stagger>
+    </section>
+  );
+}
+
+export function ELabCategoryGrid({ props }: SectionProps) {
+  const primaryColor = text(props.primaryColor, "#0047FF");
+  const categories = arrayOfObjects<CardItem>(props.items, [
+    {
+      title: "Design",
+      description: "Interface, systems, and creative workflow courses.",
+      eyebrow: "24 courses",
+    },
+    {
+      title: "Business",
+      description: "Planning, operations, and growth skills for teams.",
+      eyebrow: "18 courses",
+    },
+    {
+      title: "Technology",
+      description: "AI, automation, and modern digital tools.",
+      eyebrow: "32 courses",
+    },
+    {
+      title: "Marketing",
+      description: "Campaigns, content, and conversion strategy.",
+      eyebrow: "21 courses",
+    },
+  ]);
+
+  return (
+    <section className="bg-[#FAFAFA] px-4 py-24 text-slate-950 md:px-8">
+      <div className="mx-auto max-w-7xl">
+        <Reveal className="mb-14 max-w-2xl">
+          <h2 className="text-4xl font-black tracking-normal md:text-6xl">
+            {text(props.title, "à¹€à¸¥à¸·à¸­à¸à¸«à¸¡à¸§à¸”à¸—à¸µà¹ˆà¹ƒà¸Šà¹ˆ")}
+          </h2>
+          <p className="mt-5 text-lg font-medium leading-8 text-slate-600">
+            {text(props.subtitle, "à¸ˆà¸±à¸”à¸à¸¥à¸¸à¹ˆà¸¡à¸„à¸­à¸£à¹Œà¸ªà¹ƒà¸«à¹‰à¸ªà¹à¸à¸™à¸‡à¹ˆà¸²à¸¢à¹à¸¥à¸°à¸”à¸¹à¸™à¹ˆà¸²à¹€à¸Šà¸·à¹ˆà¸­à¸–à¸·à¸­")}
+          </p>
+        </Reveal>
+        <Stagger className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {categories.slice(0, 8).map((category, index) => (
+            <StaggerItem
+              key={`${category.title}-${index}`}
+              className="group min-h-64 rounded-[2rem] border border-slate-200/70 bg-white p-7 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl"
+            >
+              <div
+                className="mb-8 grid h-14 w-14 place-items-center rounded-2xl text-white"
+                style={{ backgroundColor: index % 2 === 0 ? primaryColor : "#111827" }}
+              >
+                <Layers3 className="h-6 w-6" />
+              </div>
+              <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+                {category.eyebrow ?? category.meta ?? "Category"}
+              </p>
+              <h3 className="mt-3 text-2xl font-black tracking-normal">
+                {category.title}
+              </h3>
+              <p className="mt-4 text-sm font-medium leading-7 text-slate-600">
+                {category.description}
+              </p>
+            </StaggerItem>
+          ))}
+        </Stagger>
+      </div>
+    </section>
+  );
+}
+
+export function ELabInsightsGrid({ props }: SectionProps) {
+  const primaryColor = text(props.primaryColor, "#0047FF");
+  const articles = arrayOfObjects<CardItem>(props.items, [
+    {
+      title: "How to choose the right course",
+      description: "A practical guide for matching skills to career goals.",
+      meta: "8 Jan 2025",
+    },
+    {
+      title: "Build a weekly learning rhythm",
+      description: "Simple routines that keep online learning moving.",
+      meta: "12 Jan 2025",
+    },
+    {
+      title: "AI skills for modern teams",
+      description: "Where automation helps and where judgment still matters.",
+      meta: "18 Jan 2025",
+    },
+  ]);
+
+  return (
+    <section className="bg-white px-4 py-24 text-slate-950 md:px-8">
+      <div className="mx-auto max-w-7xl">
+        <Reveal className="mb-14 flex flex-col justify-between gap-6 md:flex-row md:items-end">
+          <h2 className="max-w-2xl text-4xl font-black tracking-normal md:text-6xl">
+            {text(props.title, "à¸šà¸—à¸„à¸§à¸²à¸¡à¹à¸¥à¸°à¹„à¸­à¹€à¸”à¸µà¸¢")}
+          </h2>
+          <a
+            href={text(props.buttonHref, "#")}
+            className="inline-flex w-fit items-center rounded-full border border-slate-200 bg-slate-950 px-6 py-3 text-sm font-black text-white transition-transform hover:scale-[1.03]"
+          >
+            {text(props.buttonText, "à¸­à¹ˆà¸²à¸™à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”")}
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </a>
+        </Reveal>
+        <Stagger className="grid gap-6 lg:grid-cols-3">
+          {articles.slice(0, 3).map((article, index) => (
+            <StaggerItem
+              key={`${article.title}-${index}`}
+              className="rounded-[2rem] border border-slate-200/70 bg-[#FAFAFA] p-8 shadow-sm"
+            >
+              <p
+                className="mb-8 inline-flex rounded-full px-4 py-2 text-xs font-black text-white"
+                style={{ backgroundColor: primaryColor }}
+              >
+                {article.meta ?? "Insight"}
+              </p>
+              <h3 className="text-2xl font-black tracking-normal">
+                {article.title}
+              </h3>
+              <p className="mt-4 text-sm font-medium leading-7 text-slate-600">
+                {article.description}
+              </p>
+            </StaggerItem>
+          ))}
+        </Stagger>
+      </div>
+    </section>
+  );
+}
+
 export function ELabTestimonials({ props }: SectionProps) {
   const primaryColor = text(props.primaryColor, "#0047FF");
   const quotes = arrayOfObjects<QuoteItem>(props.items, fallbackQuotes);
@@ -497,7 +668,7 @@ export function ELabTestimonials({ props }: SectionProps) {
 
 export function ELabLogoStrip({ props }: SectionProps) {
   const logos = Array.isArray(props.items)
-    ? (props.items as string[])
+    ? (props.items as unknown[]).map(itemTitle).filter(Boolean)
     : ["LINE", "Google", "Meta", "Canva", "Notion"];
 
   return (

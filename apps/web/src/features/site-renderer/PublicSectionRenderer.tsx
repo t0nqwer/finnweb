@@ -6,11 +6,14 @@ import { ContactFormSection } from "./ContactFormSection";
 import {
   ELabAnimatedNavbar,
   ELabBentoFeatures,
+  ELabCategoryGrid,
   ELabEducationHero,
   ELabFeaturedCourses,
   ELabFloatingCta,
+  ELabInsightsGrid,
   ELabLargeFooter,
   ELabLogoStrip,
+  ELabMetricStrip,
   ELabSplitFaq,
   ELabTestimonials,
 } from "./high-design/ELabSections";
@@ -48,7 +51,11 @@ const TYPE_TO_COMPONENT: Record<string, SectionComponent> = {
   "faq.splitAccordion": ELabSplitFaq,
   CONTENT: ELabFeaturedCourses,
   "content.courses": ELabFeaturedCourses,
-  "content.insightsGrid": ELabFeaturedCourses,
+  "content.metricStrip": ELabMetricStrip,
+  "content.featuredGrid": ELabFeaturedCourses,
+  "content.insightsGrid": ELabInsightsGrid,
+  "content.categoryGrid": ELabCategoryGrid,
+  "content.logoStrip": ELabLogoStrip,
   FOOTER: FooterSimpleSection,
   "footer.simple": FooterSimpleSection,
   "footer.largeDark": ELabLargeFooter,
@@ -84,6 +91,9 @@ function isHighDesignSection(section: PublicSection) {
     key.includes("bento") ||
     key.includes("featuredGrid") ||
     key.includes("logoStrip") ||
+    key.includes("metricStrip") ||
+    key.includes("categoryGrid") ||
+    key.includes("insightsGrid") ||
     key.includes("floatingAvatars") ||
     key.includes("splitAccordion") ||
     key.includes("largeDark") ||

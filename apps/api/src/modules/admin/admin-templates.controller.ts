@@ -560,6 +560,17 @@ export class AdminTemplatesController {
       metaDescription?: string;
       headings?: string[];
       textBlocks?: string[];
+      stats?: Array<{ value: string; label: string }>;
+      cards?: Array<{
+        title: string;
+        description?: string;
+        imageUrl?: string;
+        eyebrow?: string;
+        meta?: string;
+        price?: string;
+      }>;
+      logos?: string[];
+      faqs?: Array<{ question: string; answer?: string }>;
       links?: Array<{ label: string; href: string }>;
       images?: Array<{
         url: string;
@@ -623,11 +634,15 @@ export class AdminTemplatesController {
       html,
       /<meta[^>]+name=["']description["'][^>]+content=["']([\s\S]*?)["'][^>]*>/i,
     );
-    const headings = this.extractMatches(html, /<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/gi, 8);
+    const headings = this.extractMatches(html, /<h[1-4][^>]*>([\s\S]*?)<\/h[1-4]>/gi, 24);
     const links = this.extractAnchorLinks(html, url);
     const images = this.extractImages(html, url);
     const forms = this.extractForms(html, url);
-    const textBlocks = this.extractTextBlocks(html, 10);
+    const textBlocks = this.extractTextBlocks(html, 80);
+    const stats = this.extractStats(html);
+    const cards = this.extractCards(html, url);
+    const logos = this.extractLogos(html, images);
+    const faqs = this.extractFaqs(html);
     const colorSamples = Array.from(
       new Set(this.extractMatches(html, /#(?:[0-9a-fA-F]{3}){1,2}\b/g, 12)),
     );
@@ -653,6 +668,10 @@ export class AdminTemplatesController {
       metaDescription,
       headings,
       textBlocks,
+      stats,
+      cards,
+      logos,
+      faqs,
       links,
       images,
       forms,
@@ -703,6 +722,17 @@ export class AdminTemplatesController {
       metaDescription?: string;
       headings?: string[];
       textBlocks?: string[];
+      stats?: Array<{ value: string; label: string }>;
+      cards?: Array<{
+        title: string;
+        description?: string;
+        imageUrl?: string;
+        eyebrow?: string;
+        meta?: string;
+        price?: string;
+      }>;
+      logos?: string[];
+      faqs?: Array<{ question: string; answer?: string }>;
       links?: Array<{ label: string; href: string }>;
       images?: Array<{ url: string; alt?: string; width?: number; height?: number }>;
       forms?: Array<{ id?: string; title?: string; action?: string; fields?: string[] }>;
@@ -807,6 +837,148 @@ export class AdminTemplatesController {
       .replace(/javascript:/gi, "")
       .replace(/expression\s*\(/gi, "");
     return withoutUnsafe.slice(0, 50000);
+  }
+
+  private extractStats(html: string) {
+    const blocks = [
+      ...this.extractMatches(html, /<(?:p|li|span|strong|div)[^>]*>([\s\S]*?)<\/(?:p|li|span|strong|div)>/gi, 260),
+      this.cleanText(html),
+    ];
+    const stats: Array<{ value: string; label: string }> = [];
+    const seen = new Set<string>();
+    const keywordPattern =
+      /course|lesson|student|learner|review|rating|hour|year|member|download|à¸„à¸­à¸£à¹Œà¸ª|à¸šà¸—à¹€à¸£à¸µà¸¢à¸™|à¸œà¸¹à¹‰à¹€à¸£à¸µà¸¢à¸™|à¸Šà¸±à¹ˆà¸§à¹‚à¸¡à¸‡|à¸›à¸µ|à¸£à¸µà¸§à¸´à¸§|à¸„à¸™/i;
+
+    for (const block of blocks) {
+      const regex =
+        /((?:\d{1,3}(?:[,.]\d{3})*|\d+)(?:\.\d+)?\s*(?:\+|%|k|K|m|M)?|24\/7)\s+([^0-9<>]{2,90})/g;
+      let match: RegExpExecArray | null;
+      while ((match = regex.exec(block)) && stats.length < 8) {
+        const value = this.cleanText(match[1] ?? "").slice(0, 40);
+        const label = this.cleanText(match[2] ?? "")
+          .replace(/[|•]+.*$/g, "")
+          .slice(0, 120);
+        const key = `${value}:${label}`.toLowerCase();
+        if (!value || !label || seen.has(key) || !keywordPattern.test(label)) {
+          continue;
+        }
+        seen.add(key);
+        stats.push({ value, label });
+      }
+    }
+
+    return stats;
+  }
+
+  private extractCards(html: string, sourceUrl: string) {
+    const cards: Array<{
+      title: string;
+      description?: string;
+      imageUrl?: string;
+      eyebrow?: string;
+      meta?: string;
+      price?: string;
+    }> = [];
+    const seen = new Set<string>();
+    const blockRegex = /<(article|li|section|div)[^>]*>([\s\S]*?)<\/\1>/gi;
+    let match: RegExpExecArray | null;
+
+    while ((match = blockRegex.exec(html)) && cards.length < 18) {
+      const inner = match[2] ?? "";
+      if (inner.length < 80 || inner.length > 9000) {
+        continue;
+      }
+      const title =
+        this.firstMatch(inner, /<h[2-5][^>]*>([\s\S]*?)<\/h[2-5]>/i) ??
+        this.firstMatch(inner, /<a[^>]*>([\s\S]*?)<\/a>/i);
+      if (!title || title.length < 3 || title.length > 180) {
+        continue;
+      }
+
+      const description =
+        this.firstMatch(inner, /<p[^>]*>([\s\S]*?)<\/p>/i) ??
+        this.extractTextBlocks(inner, 2).find((block) => block !== title);
+      const price = this.firstMatch(
+        inner,
+        /((?:THB|฿)\s*[\d,.]+|[\d,.]+\s*(?:บาท|baht))/i,
+      );
+      const meta = this.firstMatch(
+        inner,
+        /(\d+\s*(?:lesson|lessons|hour|hours|week|weeks|บทเรียน|ชั่วโมง|สัปดาห์))/i,
+      );
+      const eyebrow =
+        this.firstMatch(inner, /<(?:small|label|span)[^>]*>([\s\S]{2,80}?)<\/(?:small|label|span)>/i) ??
+        undefined;
+      const imageUrl = (() => {
+        const src = this.firstMatch(inner, /<img[^>]+\ssrc=["']([^"']+)["'][^>]*>/i);
+        if (!src) {
+          return undefined;
+        }
+        try {
+          return new URL(src, sourceUrl).toString().slice(0, 1000);
+        } catch {
+          return undefined;
+        }
+      })();
+
+      const key = title.toLowerCase();
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      cards.push({
+        title: title.slice(0, 180),
+        description: description?.slice(0, 600),
+        imageUrl,
+        eyebrow: eyebrow?.slice(0, 120),
+        meta: meta?.slice(0, 120),
+        price: price?.slice(0, 80),
+      });
+    }
+
+    return cards;
+  }
+
+  private extractLogos(
+    html: string,
+    images: Array<{ url: string; alt?: string; width?: number; height?: number }>,
+  ) {
+    const imageAlts = images
+      .map((image) => image.alt)
+      .filter((alt): alt is string => Boolean(alt))
+      .filter((alt) => /logo|partner|client|brand/i.test(alt));
+    const textCandidates = this.extractTextBlocks(html, 120)
+      .filter((block) => block.length >= 2 && block.length <= 36)
+      .filter((block) => /^[\p{L}\p{N}\s&.-]+$/u.test(block))
+      .filter((block) => !/home|contact|course|login|สมัคร|หน้าแรก|ติดต่อ/i.test(block));
+
+    return Array.from(new Set([...imageAlts, ...textCandidates]))
+      .map((logo) => logo.replace(/\s+logo$/i, "").trim())
+      .filter(Boolean)
+      .slice(0, 10);
+  }
+
+  private extractFaqs(html: string) {
+    const blocks = this.extractTextBlocks(html, 160);
+    const faqs: Array<{ question: string; answer?: string }> = [];
+    const questionPattern =
+      /\?$|ไหม|อะไร|อย่างไร|เท่าไร|กี่|หรือไม่|can i|how|what|when|where|why/i;
+
+    for (let index = 0; index < blocks.length && faqs.length < 8; index += 1) {
+      const question = blocks[index] ?? "";
+      if (!questionPattern.test(question) || question.length > 180) {
+        continue;
+      }
+      const answer = blocks
+        .slice(index + 1, index + 4)
+        .find((block) => block.length >= 32 && !questionPattern.test(block));
+      faqs.push({
+        question: question.slice(0, 180),
+        answer: answer?.slice(0, 600),
+      });
+    }
+
+    return faqs;
   }
 
   private extractAnchorLinks(html: string, sourceUrl: string) {

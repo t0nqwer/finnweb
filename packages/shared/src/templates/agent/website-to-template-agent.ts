@@ -20,6 +20,11 @@ const DEFAULT_MENU_ITEMS = [
 const SECTION_TYPE_BY_KIND: Record<WebsiteSectionAnalysis["kind"], SectionType> = {
   navbar: "NAVBAR",
   hero: "HERO",
+  stats: "CONTENT",
+  courses: "CONTENT",
+  logos: "CONTENT",
+  categories: "CONTENT",
+  articles: "CONTENT",
   features: "FEATURE",
   about: "ABOUT",
   gallery: "GALLERY",
@@ -150,12 +155,14 @@ function normalizeCapturedPage(
   const headings = uniqueNonEmpty(page.headings ?? []);
   const links = normalizeLinks(page.links);
   const sections: WebsiteSectionAnalysis[] = [];
+  const isEducation = isEducationCapture(page);
 
   if (pageIndex === 0 || links.length > 0) {
     sections.push({
       id: `nav-${pageIndex + 1}`,
       kind: "navbar",
       links,
+      variant: isEducation ? "stickyAnimated" : undefined,
     });
   }
 
@@ -167,7 +174,32 @@ function normalizeCapturedPage(
     ctaLabel: inferCta(links)?.label,
     ctaHref: inferCta(links)?.href,
     imageUrl: inferHeroImage(page)?.url,
+    variant: isEducation ? "educationEditorial" : undefined,
+    items: toStatItems(page.stats),
   });
+
+  if (page.stats?.length) {
+    sections.push({
+      id: `stats-${pageIndex + 1}`,
+      kind: "stats",
+      heading: "Key metrics",
+      items: toStatItems(page.stats),
+      variant: "metricStrip",
+    });
+  }
+
+  const courseCards = inferCourseCards(page);
+  if (courseCards.length > 0) {
+    sections.push({
+      id: `courses-${pageIndex + 1}`,
+      kind: "courses",
+      heading: findHeadingMatching(headings, /คอร์ส|course/i) ?? "คอร์สแนะนำ",
+      ctaLabel: "ดูคอร์สทั้งหมด",
+      ctaHref: inferCourseHref(links),
+      items: courseCards,
+      variant: "featuredGrid",
+    });
+  }
 
   const featureItems = buildFeatureItems(page);
   if (featureItems.length > 0) {
@@ -176,6 +208,63 @@ function normalizeCapturedPage(
       kind: "features",
       heading: headings[1] ?? "Highlights",
       items: featureItems,
+      variant: isEducation ? "bentoLearning" : undefined,
+    });
+  }
+
+  const testimonials = inferTestimonials(page);
+  if (testimonials.length > 0) {
+    sections.push({
+      id: `testimonials-${pageIndex + 1}`,
+      kind: "testimonials",
+      heading: findHeadingMatching(headings, /รีวิว|เสียง|testimonial/i) ?? "เสียงจากผู้เรียนของเรา",
+      items: testimonials,
+      variant: "bentoProof",
+    });
+  }
+
+  const logos = page.logos?.length ? page.logos : inferLogos(page);
+  if (logos.length > 0) {
+    sections.push({
+      id: `logos-${pageIndex + 1}`,
+      kind: "logos",
+      heading: "ได้รับความไว้วางใจจากทีมชั้นนำ",
+      items: logos.map((title) => ({ title })),
+      variant: "logoStrip",
+    });
+  }
+
+  const categoryCards = inferCategoryCards(page);
+  if (categoryCards.length > 0) {
+    sections.push({
+      id: `categories-${pageIndex + 1}`,
+      kind: "categories",
+      heading: findHeadingMatching(headings, /หมวดหมู่|category/i) ?? "หมวดหมู่คอร์สเรียน",
+      body: page.textBlocks?.find((block) => /เลือกคอร์ส|ยกระดับทักษะ|career/i.test(block)),
+      items: categoryCards,
+      variant: "categoryGrid",
+    });
+  }
+
+  const articleCards = inferArticleCards(page);
+  if (articleCards.length > 0) {
+    sections.push({
+      id: `articles-${pageIndex + 1}`,
+      kind: "articles",
+      heading: findHeadingMatching(headings, /บทความ|ideas|article/i) ?? "บทความและไอเดีย",
+      items: articleCards,
+      variant: "insightsGrid",
+    });
+  }
+
+  const faqs = page.faqs?.length ? page.faqs : inferFaqs(page);
+  if (faqs.length > 0) {
+    sections.push({
+      id: `faq-${pageIndex + 1}`,
+      kind: "faq",
+      heading: findHeadingMatching(headings, /คำถาม|faq/i) ?? "คำถามที่พบบ่อย",
+      items: faqs,
+      variant: "splitAccordion",
     });
   }
 
@@ -205,6 +294,7 @@ function normalizeCapturedPage(
     id: `footer-${pageIndex + 1}`,
     kind: "footer",
     links: links.slice(0, 6),
+    variant: isEducation ? "largeDark" : undefined,
   });
 
   return {
@@ -301,6 +391,7 @@ function buildSectionProps(
   const base = withDesignTokens(
     {
       title: section.heading ?? fallbackTitle(type, profile),
+      variant: section.variant,
       eyebrow: section.eyebrow,
       subtitle: section.body,
       body: section.body,
@@ -320,6 +411,7 @@ function buildSectionProps(
           logo: findFirstAsset(profile, "logo")?.url,
           brandName: profile.name ?? hostnameFromUrl(profile.sourceUrl),
           menuItems: section.links?.length ? section.links : DEFAULT_MENU_ITEMS,
+          variant: section.variant,
           cta: {
             label: section.ctaLabel ?? "ติดต่อเรา",
             href: section.ctaHref ?? "#contact",
@@ -339,6 +431,8 @@ function buildSectionProps(
         buttonText: section.ctaLabel ?? "เริ่มต้น",
         buttonHref: section.ctaHref ?? "#contact",
         backgroundImage: section.imageUrl ?? findFirstAsset(profile, "hero")?.url,
+        imageUrl: section.imageUrl ?? findFirstAsset(profile, "hero")?.url,
+        stats: section.items,
       };
     case "CTA":
     case "FORM":
@@ -363,7 +457,11 @@ function buildSectionProps(
         itemLimit: Array.isArray(section.items) ? section.items.length : 3,
       };
     default:
-      return base;
+      return {
+        ...base,
+        buttonText: section.ctaLabel,
+        buttonHref: section.ctaHref,
+      };
   }
 }
 
@@ -547,7 +645,136 @@ function buildFeatureItems(page: CapturedWebsitePage) {
   return candidates.slice(0, 6).map((text) => ({
     title: text.length > 54 ? `${text.slice(0, 51).trim()}...` : text,
     body: text,
+    description: text,
   }));
+}
+
+function toStatItems(stats: CapturedWebsitePage["stats"]) {
+  return stats?.map((stat) => ({
+    title: stat.value,
+    description: stat.label,
+    value: stat.value,
+    label: stat.label,
+  }));
+}
+
+function isEducationCapture(page: CapturedWebsitePage) {
+  const text = [
+    page.title,
+    page.metaDescription,
+    ...(page.headings ?? []),
+    ...(page.textBlocks ?? []),
+    ...(page.links?.map((link) => link.label) ?? []),
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  return /academy|course|คอร์ส|เรียน|ผู้เรียน|บทเรียน/.test(text);
+}
+
+function findHeadingMatching(headings: string[], pattern: RegExp) {
+  return headings.find((heading) => pattern.test(heading));
+}
+
+function inferCourseHref(links: Array<{ label: string; href: string }>) {
+  return links.find((link) => /คอร์ส|course/i.test(link.label))?.href ?? "#courses";
+}
+
+function inferCourseCards(page: CapturedWebsitePage) {
+  const explicit = (page.cards ?? []).filter((card) =>
+    /คอร์ส|course|บทเรียน|ชั่วโมง|บาท/i.test(
+      `${card.eyebrow ?? ""} ${card.meta ?? ""} ${card.price ?? ""} ${card.title}`,
+    ),
+  );
+  if (explicit.length > 0) {
+    return explicit.slice(0, 6);
+  }
+
+  const blocks = page.textBlocks ?? [];
+  const titles = blocks.filter((block) =>
+    /ออกแบบ|AI|Machine|Design Systems|การตลาด|เทคโนโลยี|พื้นฐาน/i.test(block),
+  );
+  const images = page.images ?? [];
+
+  return titles.slice(0, 3).map((title, index) => ({
+    title,
+    description:
+      blocks.find(
+        (block) =>
+          block !== title &&
+          block.length > 48 &&
+          !/บาท|บทเรียน|ชั่วโมง/.test(block),
+      ) ?? title,
+    imageUrl: images[index + 1]?.url ?? images[index]?.url,
+    eyebrow: "คอร์สเรียน",
+    meta: blocks.find((block) => /บทเรียน|ชั่วโมง/.test(block)),
+    price: blocks.find((block) => /บาท|THB|฿/.test(block)) ?? "640 บาท",
+  }));
+}
+
+function inferTestimonials(page: CapturedWebsitePage) {
+  const blocks = page.textBlocks ?? [];
+  const quotes = blocks.filter((block) => /"|"|“|”/.test(block) || block.length > 70);
+  const images = (page.images ?? []).filter((image) =>
+    /avatar|person|ผู้เรียน|emma|daniel|maria|sarah|ปรียา/i.test(
+      `${image.url} ${image.alt ?? ""}`,
+    ),
+  );
+
+  return quotes.slice(0, 5).map((quote, index) => ({
+    quote: quote.replace(/^["“]|["”]$/g, ""),
+    author: blocks.find((block) => block.length < 36 && index > 0) ?? undefined,
+    role: blocks.find((block) => /manager|analyst|engineer|designer|specialist/i.test(block)),
+    imageUrl: images[index]?.url,
+  }));
+}
+
+function inferLogos(page: CapturedWebsitePage) {
+  const known = ["NOVA", "Rise", "Greenish", "Bristol", "Italic", "Phoenix"];
+  const text = [...(page.headings ?? []), ...(page.textBlocks ?? [])].join(" ");
+  return known.filter((logo) => text.includes(logo));
+}
+
+function inferCategoryCards(page: CapturedWebsitePage) {
+  const labels = ["ดีไซน์", "การจัดการ", "เทคโนโลยี", "การตลาด"];
+  const blocks = page.textBlocks ?? [];
+  const found = labels.filter((label) => blocks.some((block) => block.includes(label)));
+  return found.map((title) => ({
+    title,
+    description:
+      blocks.find((block) => block.includes(title) && block.length > title.length) ??
+      "เลือกคอร์สที่เหมาะกับเป้าหมายและเส้นทางอาชีพของคุณ",
+    eyebrow: "24 คอร์ส",
+  }));
+}
+
+function inferArticleCards(page: CapturedWebsitePage) {
+  const blocks = page.textBlocks ?? [];
+  return blocks
+    .filter((block) => /บทความ|เทรนด์|เส้นทาง|วิธีเลือก/.test(block))
+    .slice(0, 3)
+    .map((title) => ({
+      title,
+      description: "บทความ",
+      meta: "8 มกราคม 2025",
+    }));
+}
+
+function inferFaqs(page: CapturedWebsitePage) {
+  const blocks = page.textBlocks ?? [];
+  return blocks
+    .filter((block) => /\?$|ไหม|หรือเดโม|self-paced|รับประกัน/.test(block))
+    .slice(0, 6)
+    .map((question) => ({
+      question,
+      answer:
+        blocks.find(
+          (block) =>
+            block !== question &&
+            block.length > 60 &&
+            !/\?$/.test(block),
+        ) ?? undefined,
+    }));
 }
 
 function inferGoals(pages: CapturedWebsitePage[]) {
