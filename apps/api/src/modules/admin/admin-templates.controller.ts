@@ -9,6 +9,7 @@ import {
   Post,
   UseGuards,
 } from "@nestjs/common";
+import AdmZip from "adm-zip";
 import {
   createTemplateDraftFromWebsiteProfile,
   createWebsiteProfileFromCapture,
@@ -21,7 +22,10 @@ import { CurrentUser } from "@/common/decorators/current-user.decorator";
 import { CreateTemplateDto } from "../templates/dto/create-template.dto";
 import { AdminTemplateValidationService } from "./admin-template-validation.service";
 import { ImportTemplateDraftDto } from "./dto/import-template-draft.dto";
+import { ImportTemplateFromZipDto } from "./dto/import-template-zip.dto";
+import { ImportTemplateFromUrlDto } from "./dto/import-template-url.dto";
 import { UpdateAdminTemplateStatusDto } from "./dto/update-admin-template-status.dto";
+import { AdminTemplateAiService } from "./admin-template-ai.service";
 
 @UseGuards(AccessJwtGuard, PlatformAdminGuard)
 @Controller("admin/templates")
@@ -31,6 +35,8 @@ export class AdminTemplatesController {
     private readonly prisma: PrismaService,
     @Inject(AdminTemplateValidationService)
     private readonly validator: AdminTemplateValidationService,
+    @Inject(AdminTemplateAiService)
+    private readonly templateAi: AdminTemplateAiService,
   ) {}
 
   @Get("overview")
@@ -172,16 +178,95 @@ export class AdminTemplatesController {
   async importDraft(@Body() dto: ImportTemplateDraftDto) {
     const profile = createWebsiteProfileFromCapture(dto);
     const draftResult = createTemplateDraftFromWebsiteProfile(profile);
-    const validation = this.validator.validateTemplate(draftResult.template);
+    const enhanced = await this.templateAi.enhanceTemplateDraft(
+      dto,
+      draftResult.template as Record<string, unknown>,
+    );
+    const validation = this.validator.validateTemplate(enhanced.template as any);
 
     return {
       success: true,
       data: {
-        template: draftResult.template,
+        template: enhanced.template,
         validation,
         confidence: draftResult.confidence,
         warnings: draftResult.warnings,
         source: draftResult.source,
+        aiEnhanced: enhanced.usedAi,
+      },
+    };
+  }
+
+  @Post("import-from-url")
+  async importFromUrl(@Body() dto: ImportTemplateFromUrlDto) {
+    const sourceUrl = this.normalizeUrl(dto.url);
+    const pages = await this.captureFromUrl(sourceUrl);
+
+    if (pages.length === 0) {
+      throw new BadRequestException("IMPORT_URL_CAPTURE_EMPTY");
+    }
+
+    const capture: ImportTemplateDraftDto = {
+      sourceUrl,
+      name: dto.name,
+      language: dto.language,
+      industry: dto.industry,
+      pages,
+    };
+    const profile = createWebsiteProfileFromCapture(capture);
+    const draftResult = createTemplateDraftFromWebsiteProfile(profile);
+    const enhanced = await this.templateAi.enhanceTemplateDraft(
+      capture,
+      draftResult.template as Record<string, unknown>,
+    );
+    const validation = this.validator.validateTemplate(enhanced.template as any);
+
+    return {
+      success: true,
+      data: {
+        template: enhanced.template,
+        validation,
+        confidence: draftResult.confidence,
+        warnings: draftResult.warnings,
+        source: draftResult.source,
+        aiEnhanced: enhanced.usedAi,
+      },
+    };
+  }
+
+  @Post("import-from-zip")
+  async importFromZip(@Body() dto: ImportTemplateFromZipDto) {
+    const pages = this.captureFromZipBase64(dto.zipBase64);
+
+    if (pages.length === 0) {
+      throw new BadRequestException("IMPORT_ZIP_CAPTURE_EMPTY");
+    }
+
+    const sourceUrl = `zip://${dto.fileName}`;
+    const capture: ImportTemplateDraftDto = {
+      sourceUrl,
+      name: dto.name || dto.fileName.replace(/\.zip$/i, ""),
+      language: dto.language,
+      industry: dto.industry,
+      pages,
+    };
+    const profile = createWebsiteProfileFromCapture(capture);
+    const draftResult = createTemplateDraftFromWebsiteProfile(profile);
+    const enhanced = await this.templateAi.enhanceTemplateDraft(
+      capture,
+      draftResult.template as Record<string, unknown>,
+    );
+    const validation = this.validator.validateTemplate(enhanced.template as any);
+
+    return {
+      success: true,
+      data: {
+        template: enhanced.template,
+        validation,
+        confidence: draftResult.confidence,
+        warnings: draftResult.warnings,
+        source: draftResult.source,
+        aiEnhanced: enhanced.usedAi,
       },
     };
   }
@@ -417,6 +502,349 @@ export class AdminTemplatesController {
     }
 
     return rawValue.filter((item): item is string => typeof item === "string");
+  }
+
+  private normalizeUrl(value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      throw new BadRequestException("IMPORT_URL_REQUIRED");
+    }
+
+    const normalized = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    try {
+      const url = new URL(normalized);
+      if (!["http:", "https:"].includes(url.protocol)) {
+        throw new BadRequestException("IMPORT_URL_PROTOCOL_INVALID");
+      }
+      return url.toString();
+    } catch {
+      throw new BadRequestException("IMPORT_URL_INVALID");
+    }
+  }
+
+  private async captureFromUrl(sourceUrl: string) {
+    const rootUrl = new URL(sourceUrl);
+    const firstHtml = await this.fetchHtml(sourceUrl);
+    const discovered = this.extractLinks(firstHtml, rootUrl).slice(0, 2);
+    const targets = [sourceUrl, ...discovered];
+    const pages: Array<{
+      url: string;
+      path: string;
+      title?: string;
+      metaDescription?: string;
+      headings?: string[];
+      textBlocks?: string[];
+      links?: Array<{ label: string; href: string }>;
+      images?: Array<{
+        url: string;
+        alt?: string;
+        width?: number;
+        height?: number;
+      }>;
+      forms?: Array<{
+        id?: string;
+        title?: string;
+        action?: string;
+        fields?: string[];
+      }>;
+      colorSamples?: string[];
+      fontFamilies?: string[];
+    }> = [];
+
+    for (const target of targets) {
+      try {
+        const html = target === sourceUrl ? firstHtml : await this.fetchHtml(target);
+        const parsed = this.parseHtmlCapture(html, target);
+        pages.push(parsed);
+      } catch {
+        // best-effort crawl; keep going with successful pages
+      }
+    }
+
+    return pages;
+  }
+
+  private async fetchHtml(url: string) {
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "FinnWeb Template Importer/1.0",
+        Accept: "text/html,application/xhtml+xml",
+      },
+    });
+
+    if (!response.ok) {
+      throw new BadRequestException("IMPORT_URL_FETCH_FAILED");
+    }
+
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.includes("text/html")) {
+      throw new BadRequestException("IMPORT_URL_NOT_HTML");
+    }
+
+    return response.text();
+  }
+
+  private parseHtmlCapture(html: string, url: string) {
+    const path = (() => {
+      try {
+        return new URL(url).pathname || "/";
+      } catch {
+        return "/";
+      }
+    })();
+    const title = this.firstMatch(html, /<title[^>]*>([\s\S]*?)<\/title>/i);
+    const metaDescription = this.firstMatch(
+      html,
+      /<meta[^>]+name=["']description["'][^>]+content=["']([\s\S]*?)["'][^>]*>/i,
+    );
+    const headings = this.extractMatches(html, /<h[1-3][^>]*>([\s\S]*?)<\/h[1-3]>/gi, 8);
+    const links = this.extractAnchorLinks(html, url);
+    const images = this.extractImages(html, url);
+    const forms = this.extractForms(html, url);
+    const textBlocks = this.extractTextBlocks(html, 10);
+    const colorSamples = Array.from(
+      new Set(this.extractMatches(html, /#(?:[0-9a-fA-F]{3}){1,2}\b/g, 12)),
+    );
+    const fontFamilies = Array.from(
+      new Set(
+        this.extractMatches(
+          html,
+          /font-family\s*:\s*([^;}{]+)/gi,
+          6,
+          (value) =>
+            value
+              .split(",")
+              .map((item) => item.replace(/["']/g, "").trim())
+              .filter(Boolean)[0] ?? "",
+        ).filter(Boolean),
+      ),
+    );
+
+    return {
+      url,
+      path,
+      title,
+      metaDescription,
+      headings,
+      textBlocks,
+      links,
+      images,
+      forms,
+      colorSamples,
+      fontFamilies,
+    };
+  }
+
+  private extractLinks(html: string, base: URL) {
+    const hrefs = this.extractMatches(
+      html,
+      /<a[^>]+href=["']([^"']+)["'][^>]*>/gi,
+      30,
+    )
+      .map((href) => {
+        try {
+          return new URL(href, base).toString();
+        } catch {
+          return null;
+        }
+      })
+      .filter((value): value is string => Boolean(value))
+      .filter((value) => value.startsWith(`${base.protocol}//${base.host}`))
+      .filter((value) => !/[#?](.*)$/.test(value) || value.includes(base.pathname));
+
+    return Array.from(new Set(hrefs));
+  }
+
+  private captureFromZipBase64(base64: string) {
+    let zip: any;
+    try {
+      const buffer = Buffer.from(base64, "base64");
+      zip = new AdmZip(buffer);
+    } catch {
+      throw new BadRequestException("IMPORT_ZIP_INVALID");
+    }
+
+    const entries = zip
+      .getEntries()
+      .filter((entry: any) => !entry.isDirectory)
+      .filter((entry: any) => /\.html?$/i.test(entry.entryName))
+      .slice(0, 8);
+
+    const pages: Array<{
+      url: string;
+      path: string;
+      title?: string;
+      metaDescription?: string;
+      headings?: string[];
+      textBlocks?: string[];
+      links?: Array<{ label: string; href: string }>;
+      images?: Array<{ url: string; alt?: string; width?: number; height?: number }>;
+      forms?: Array<{ id?: string; title?: string; action?: string; fields?: string[] }>;
+      colorSamples?: string[];
+      fontFamilies?: string[];
+    }> = [];
+
+    for (const entry of entries) {
+      const html = zip.readAsText(entry, "utf8");
+      const path = entry.entryName.replace(/\\/g, "/");
+      pages.push(this.parseHtmlCapture(html, `https://zip.local/${path}`));
+    }
+
+    if (pages.length === 0) {
+      return pages;
+    }
+
+    const assetEntries = zip
+      .getEntries()
+      .filter((entry: any) => !entry.isDirectory)
+      .filter((entry: any) =>
+        /\.(gif|jpe?g|png|svg|webp|avif|mp4|webm|json|lottie|css|js)$/i.test(
+          entry.entryName,
+        ),
+      )
+      .slice(0, 60);
+
+    const pageZero = pages[0]!;
+    const assetLinks = assetEntries.map((entry: any) => {
+      const name = entry.entryName.split("/").pop() || entry.entryName;
+      return { label: name, href: `zip://${entry.entryName.replace(/\\/g, "/")}` };
+    });
+    pageZero.links = [...(pageZero.links ?? []), ...assetLinks].slice(0, 40);
+
+    return pages;
+  }
+
+  private extractAnchorLinks(html: string, sourceUrl: string) {
+    const links: Array<{ label: string; href: string }> = [];
+    const regex = /<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(html)) && links.length < 20) {
+      const hrefRaw = (match[1] ?? "").trim();
+      const label = this.cleanText(match[2] ?? "");
+      if (!hrefRaw || !label) {
+        continue;
+      }
+
+      try {
+        const href = new URL(hrefRaw, sourceUrl).toString();
+        links.push({ label: label.slice(0, 160), href: href.slice(0, 1000) });
+      } catch {
+        continue;
+      }
+    }
+    return links;
+  }
+
+  private extractImages(html: string, sourceUrl: string) {
+    const images: Array<{ url: string; alt?: string; width?: number; height?: number }> = [];
+    const regex = /<img[^>]*>/gi;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(html)) && images.length < 20) {
+      const tag = match[0] ?? "";
+      const src = this.firstMatch(tag, /\ssrc=["']([^"']+)["']/i);
+      if (!src) {
+        continue;
+      }
+
+      try {
+        const url = new URL(src, sourceUrl).toString();
+        const alt = this.firstMatch(tag, /\salt=["']([^"']*)["']/i);
+        const width = Number(this.firstMatch(tag, /\swidth=["'](\d+)["']/i) ?? "");
+        const height = Number(this.firstMatch(tag, /\sheight=["'](\d+)["']/i) ?? "");
+        images.push({
+          url: url.slice(0, 1000),
+          alt: alt?.slice(0, 200),
+          width: Number.isFinite(width) && width > 0 ? width : undefined,
+          height: Number.isFinite(height) && height > 0 ? height : undefined,
+        });
+      } catch {
+        continue;
+      }
+    }
+    return images;
+  }
+
+  private extractForms(html: string, sourceUrl: string) {
+    const forms: Array<{ id?: string; title?: string; action?: string; fields?: string[] }> = [];
+    const regex = /<form[^>]*>([\s\S]*?)<\/form>/gi;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(html)) && forms.length < 6) {
+      const full = match[0] ?? "";
+      const inner = match[1] ?? "";
+      const id = this.firstMatch(full, /\sid=["']([^"']+)["']/i);
+      const actionRaw = this.firstMatch(full, /\saction=["']([^"']+)["']/i);
+      const action = (() => {
+        if (!actionRaw) {
+          return undefined;
+        }
+        try {
+          return new URL(actionRaw, sourceUrl).toString();
+        } catch {
+          return undefined;
+        }
+      })();
+      const fields = Array.from(
+        new Set(
+          this.extractMatches(
+            inner,
+            /<(?:input|textarea|select)[^>]+name=["']([^"']+)["'][^>]*>/gi,
+            12,
+          ),
+        ),
+      );
+      forms.push({
+        id: id?.slice(0, 120),
+        title: id ? `Form ${id}` : "Contact form",
+        action: action?.slice(0, 1000),
+        fields: fields.map((field) => field.slice(0, 80)),
+      });
+    }
+    return forms;
+  }
+
+  private extractTextBlocks(html: string, limit: number) {
+    const candidates = this.extractMatches(
+      html,
+      /<(?:p|li|span|div)[^>]*>([\s\S]*?)<\/(?:p|li|span|div)>/gi,
+      200,
+    )
+      .map((item) => this.cleanText(item))
+      .filter((item) => item.length >= 24 && item.length <= 240);
+    return Array.from(new Set(candidates)).slice(0, limit);
+  }
+
+  private firstMatch(value: string, pattern: RegExp) {
+    const match = value.match(pattern);
+    return match?.[1] ? this.cleanText(match[1]) : undefined;
+  }
+
+  private extractMatches(
+    value: string,
+    pattern: RegExp,
+    limit: number,
+    transform?: (input: string) => string,
+  ) {
+    const items: string[] = [];
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(value)) && items.length < limit) {
+      const raw = (match[1] ?? match[0] ?? "").trim();
+      const next = transform ? transform(raw) : this.cleanText(raw);
+      if (next) {
+        items.push(next);
+      }
+    }
+    return items;
+  }
+
+  private cleanText(value: string) {
+    return value
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   private makeSlug(value: string): string {

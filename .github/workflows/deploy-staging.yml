@@ -76,6 +76,9 @@ jobs:
       APP_DIR: ${{ secrets.VPS_APP_DIR || '/opt/finnweb/current' }}
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
       ADMIN_EMAILS: ${{ secrets.ADMIN_EMAILS }}
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      DEEPSEEK_BASE_URL: ${{ secrets.DEEPSEEK_BASE_URL }}
+      DEEPSEEK_MODEL: ${{ secrets.DEEPSEEK_MODEL }}
       SERVICES_TO_DEPLOY: web api worker
 
     steps:
@@ -89,7 +92,7 @@ jobs:
 
       - name: Deploy
         run: |
-          ssh -i ~/.ssh/finnweb_deploy_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "APP_DIR='$APP_DIR' ADMIN_EMAILS='$ADMIN_EMAILS' bash -s" <<'EOF'
+          ssh -i ~/.ssh/finnweb_deploy_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" "APP_DIR='$APP_DIR' ADMIN_EMAILS='$ADMIN_EMAILS' DEEPSEEK_API_KEY='$DEEPSEEK_API_KEY' DEEPSEEK_BASE_URL='$DEEPSEEK_BASE_URL' DEEPSEEK_MODEL='$DEEPSEEK_MODEL' bash -s" <<'EOF'
           set -euo pipefail
 
           cd "$APP_DIR"
@@ -105,6 +108,15 @@ jobs:
           pnpm build
 
           cd "$APP_DIR/apps/api"
+          if [ -n "${DEEPSEEK_API_KEY:-}" ]; then
+            sudo touch /etc/finnweb/api.env
+            sudo sed -i '/^DEEPSEEK_API_KEY=/d' /etc/finnweb/api.env
+            sudo sed -i '/^DEEPSEEK_BASE_URL=/d' /etc/finnweb/api.env
+            sudo sed -i '/^DEEPSEEK_MODEL=/d' /etc/finnweb/api.env
+            printf 'DEEPSEEK_API_KEY=%s\n' "$DEEPSEEK_API_KEY" | sudo tee -a /etc/finnweb/api.env >/dev/null
+            printf 'DEEPSEEK_BASE_URL=%s\n' "${DEEPSEEK_BASE_URL:-https://api.deepseek.com/chat/completions}" | sudo tee -a /etc/finnweb/api.env >/dev/null
+            printf 'DEEPSEEK_MODEL=%s\n' "${DEEPSEEK_MODEL:-deepseek-chat}" | sudo tee -a /etc/finnweb/api.env >/dev/null
+          fi
           set -a
           source /etc/finnweb/api.env
           set +a

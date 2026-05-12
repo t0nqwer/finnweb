@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-05-12
+
+- Extended website-to-template admin import beyond JSON paste: added `POST /api/admin/templates/import-from-url` (best-effort HTML capture) and `POST /api/admin/templates/import-from-zip` (ZIP HTML/CSS/JS/asset extraction), plus admin dashboard controls for URL input and ZIP upload that generate editable template drafts with validation and no DB writes until explicit save.
+- Connected optional DeepSeek API enhancement into admin template import pipeline (`import-draft`, `import-from-url`, `import-from-zip`) so drafts can be AI-polished when `DEEPSEEK_API_KEY` is configured, with deterministic fallback when unavailable.
+
 ## 2026-05-11
 
 - Recorded the template/import-template pipeline direction: imported ZIP/URL designs become editable FinnWeb template drafts first, then user site drafts, then publish-worker artifacts with isolated CSS/assets at publish time.

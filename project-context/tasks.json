@@ -89,7 +89,9 @@
         "2026-05-11: Added docs/website-to-template-agent.md plus shared WebsiteProfile types and createTemplateDraftFromWebsiteProfile() to convert extracted websites into reviewable FinnWeb template drafts with safe motion metadata. Shared package typecheck and focused agent tests passed.",
         "2026-05-12: Reopened for implementation continuation by request.",
         "2026-05-12: Added createWebsiteProfileFromCapture() so deterministic browser/ZIP captures can be normalized into WebsiteProfile before draft creation; shared typecheck and focused agent tests passed.",
-        "2026-05-12: Completed reopened implementation pass; website-to-template agent foundation now covers documented workflow, capture/profile/draft conversion types, focused tests, and no seed writes."
+        "2026-05-12: Completed reopened implementation pass; website-to-template agent foundation now covers documented workflow, capture/profile/draft conversion types, focused tests, and no seed writes.",
+        "2026-05-12: Reopened to connect optional DeepSeek API enhancement for template draft generation quality.",
+        "2026-05-12: Connected optional DeepSeek enhancement service into admin import flows (capture JSON, URL, ZIP) with safe fallback when API key is missing or response is invalid."
       ]
     },
     {
@@ -118,7 +120,9 @@
       ],
       "progressNotes": [
         "2026-05-12: Started admin dry-run API implementation to make website-to-template agent usable from tools/UI.",
-        "2026-05-12: Completed admin dry-run import flow: added POST /api/admin/templates/import-draft, capture DTO validation, dashboard capture JSON generator, docs, and passing API/shared/web typechecks."
+        "2026-05-12: Completed admin dry-run import flow: added POST /api/admin/templates/import-draft, capture DTO validation, dashboard capture JSON generator, docs, and passing API/shared/web typechecks.",
+        "2026-05-12: Reopened to extend import UX from JSON-only to URL and ZIP flows for admin template creation.",
+        "2026-05-12: Completed URL/ZIP import extension: added POST /api/admin/templates/import-from-url and POST /api/admin/templates/import-from-zip, added dashboard URL input and ZIP upload flow, and preserved no-write dry-run behavior before official save."
       ]
     },
     {

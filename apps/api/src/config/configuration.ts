@@ -14,6 +14,12 @@ export default () => ({
     resendApiKey: process.env.RESEND_API_KEY,
     from: process.env.EMAIL_FROM || "FinnWeb <no-reply@finnweb.site>",
   },
+  ai: {
+    deepseekApiKey: process.env.DEEPSEEK_API_KEY,
+    deepseekBaseUrl:
+      process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com/chat/completions",
+    deepseekModel: process.env.DEEPSEEK_MODEL || "deepseek-chat",
+  },
   queue: {
     redisUrl: process.env.REDIS_URL,
     prefix: process.env.QUEUE_PREFIX || "finnweb",

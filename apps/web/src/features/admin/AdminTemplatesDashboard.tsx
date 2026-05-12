@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentType } from "react";
+import type { ChangeEvent, ComponentType } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIcon,
@@ -324,6 +324,10 @@ export function AdminTemplatesDashboard() {
   const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
   const [templateJson, setTemplateJson] = useState(starterTemplateJson);
   const [captureJson, setCaptureJson] = useState(starterCaptureJson);
+  const [importUrl, setImportUrl] = useState("");
+  const [importZipName, setImportZipName] = useState("");
+  const [isImportingUrl, setIsImportingUrl] = useState(false);
+  const [isImportingZip, setIsImportingZip] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(
     null,
   );
@@ -538,6 +542,108 @@ export function AdminTemplatesDashboard() {
       );
     } finally {
       setIsGeneratingDraft(false);
+    }
+  }
+
+  async function generateTemplateDraftFromUrl() {
+    const url = importUrl.trim();
+    if (!url) {
+      setErrorMessage("Please enter a website URL.");
+      return;
+    }
+
+    setIsImportingUrl(true);
+    setActionMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetchApiWithTokenRefresh<TemplateImportDraftResponse>({
+        apiBaseUrl,
+        path: "/admin/templates/import-from-url",
+        init: {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ url }),
+        },
+      });
+
+      const data = response.payload.data;
+      if (!response.response.ok || !data?.template || !data.validation) {
+        throw new Error("Could not import from URL.");
+      }
+
+      setEditingTemplateId(null);
+      setTemplateJson(JSON.stringify(data.template, null, 2));
+      setValidationResult(data.validation);
+      setActionMessage(
+        `Imported from URL with ${Math.round((data.confidence ?? 0) * 100)}% confidence.`,
+      );
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Could not import from URL.",
+      );
+    } finally {
+      setIsImportingUrl(false);
+    }
+  }
+
+  async function importTemplateZip(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    setIsImportingZip(true);
+    setActionMessage(null);
+    setErrorMessage(null);
+    setImportZipName(file.name);
+
+    try {
+      const raw = await file.arrayBuffer();
+      const bytes = new Uint8Array(raw);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i += 1) {
+        binary += String.fromCharCode(bytes[i] ?? 0);
+      }
+      const zipBase64 = window.btoa(binary);
+
+      const response = await fetchApiWithTokenRefresh<TemplateImportDraftResponse>({
+        apiBaseUrl,
+        path: "/admin/templates/import-from-zip",
+        init: {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fileName: file.name,
+            zipBase64,
+          }),
+        },
+      });
+
+      const data = response.payload.data;
+      if (!response.response.ok || !data?.template || !data.validation) {
+        throw new Error("Could not import ZIP.");
+      }
+
+      setEditingTemplateId(null);
+      setTemplateJson(JSON.stringify(data.template, null, 2));
+      setValidationResult(data.validation);
+      setActionMessage(
+        `Imported ZIP with ${Math.round((data.confidence ?? 0) * 100)}% confidence.`,
+      );
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Could not import ZIP.",
+      );
+    } finally {
+      event.target.value = "";
+      setIsImportingZip(false);
     }
   }
 
@@ -864,7 +970,7 @@ export function AdminTemplatesDashboard() {
                 <div>
                   <p className="text-sm font-semibold">Website capture import</p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Paste captured headings, links, images, forms, colors, and fonts.
+                    Import from URL or ZIP, or paste captured headings, links, images, forms, colors, and fonts.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -883,13 +989,58 @@ export function AdminTemplatesDashboard() {
                   <Button
                     size="sm"
                     className="bg-linear-to-r from-primary to-[#ff4500] text-primary-foreground"
-                    disabled={isGeneratingDraft || isSavingTemplate || isValidating}
+                    disabled={
+                      isGeneratingDraft ||
+                      isSavingTemplate ||
+                      isValidating ||
+                      isImportingUrl ||
+                      isImportingZip
+                    }
                     onClick={() => void generateTemplateDraftFromCapture()}
                   >
                     <SparklesIcon data-icon="inline-start" />
                     {isGeneratingDraft ? "Generating" : "Generate draft"}
                   </Button>
                 </div>
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto]">
+                <input
+                  value={importUrl}
+                  onChange={(event) => setImportUrl(event.target.value)}
+                  placeholder="https://your-site.com"
+                  className="h-10 rounded-lg border border-border/70 bg-black/25 px-3 text-sm outline-none transition focus:border-primary/70 focus:ring-2 focus:ring-primary/20"
+                  aria-label="Import from website URL"
+                />
+                <Button
+                  variant="outline"
+                  className="h-10 border-border/70 bg-black/10"
+                  disabled={isImportingUrl || isGeneratingDraft || isImportingZip}
+                  onClick={() => void generateTemplateDraftFromUrl()}
+                >
+                  <Globe2Icon data-icon="inline-start" />
+                  {isImportingUrl ? "Importing URL" : "Import URL"}
+                </Button>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <label
+                  htmlFor="template-zip-input"
+                  className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-md border border-border/70 bg-black/10 px-3 text-sm transition hover:bg-black/20"
+                >
+                  <FileCode2Icon className="size-4" />
+                  {isImportingZip ? "Importing ZIP" : "Import ZIP"}
+                </label>
+                <input
+                  id="template-zip-input"
+                  type="file"
+                  accept=".zip,application/zip"
+                  className="sr-only"
+                  onChange={(event) => {
+                    void importTemplateZip(event);
+                  }}
+                />
+                <span className="text-xs text-muted-foreground">
+                  {importZipName || "ZIP can include HTML/CSS/JS/Lottie/video assets for animation-aware import."}
+                </span>
               </div>
               <textarea
                 value={captureJson}
