@@ -6,6 +6,7 @@
 - Connected optional DeepSeek API enhancement into admin template import pipeline (`import-draft`, `import-from-url`, `import-from-zip`) so drafts can be AI-polished when `DEEPSEEK_API_KEY` is configured, with deterministic fallback when unavailable.
 - Added custom CSS import pipeline for template drafts: ZIP `.css` files are merged into template `customCss`, validation blocks unsafe CSS patterns, admin save persists customCss in template metadata tags, and admin live visual preview now scopes customCss under `.fw-template-preview` to prevent conflict with dashboard styles.
 - Cleaned up the admin template workspace UI so URL/ZIP import is the primary path, raw capture JSON and template JSON are tucked into advanced foldouts, and the visual preview plus validation results are grouped into a clearer review panel.
+- Expanded the admin template live preview into a full-width 1280px desktop canvas so imported templates can be reviewed at realistic desktop size instead of a narrow side panel.
 
 ## 2026-05-11
 

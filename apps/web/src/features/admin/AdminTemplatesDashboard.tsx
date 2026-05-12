@@ -1108,8 +1108,9 @@ export function AdminTemplatesDashboard() {
           </div>
         </CardHeader>
 
-        <CardContent className="grid grid-cols-1 gap-5 pt-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          <div className="space-y-4">
+        <CardContent className="space-y-5 pt-5">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.55fr)]">
+            <div className="space-y-4">
             <div className="rounded-lg border border-border/70 bg-black/10 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
@@ -1258,20 +1259,99 @@ export function AdminTemplatesDashboard() {
                 </div>
               </details>
             </div>
+            </div>
+
+            <div className="rounded-lg border border-border/70 bg-black/10 p-4">
+              <p className="font-semibold">Validation result</p>
+              {validationResult ? (
+                <div className="mt-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-lg bg-black/20 p-3">
+                      <p className="text-muted-foreground">Errors</p>
+                      <p className="mt-1 text-xl font-bold text-red-200">
+                        {validationResult.summary.errorCount}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-black/20 p-3">
+                      <p className="text-muted-foreground">Warnings</p>
+                      <p className="mt-1 text-xl font-bold text-amber-200">
+                        {validationResult.summary.warningCount}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-black/20 p-3">
+                      <p className="text-muted-foreground">Pages</p>
+                      <p className="mt-1 text-xl font-bold">
+                        {validationResult.summary.pageCount}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-black/20 p-3">
+                      <p className="text-muted-foreground">Sections</p>
+                      <p className="mt-1 text-xl font-bold">
+                        {validationResult.summary.sectionCount}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="max-h-86 space-y-2 overflow-y-auto pr-1">
+                    {validationResult.issues.length === 0 ? (
+                      <div className="rounded-lg border border-emerald-500/35 bg-emerald-950/25 p-3 text-sm text-emerald-100">
+                        Structure is valid and ready to save.
+                      </div>
+                    ) : (
+                      validationResult.issues.map((issue) => (
+                        <div
+                          key={`${issue.code}-${issue.path}-${issue.message}`}
+                          className={
+                            issue.severity === "error"
+                              ? "rounded-lg border border-red-500/35 bg-red-950/25 p-3"
+                              : "rounded-lg border border-amber-500/35 bg-amber-950/25 p-3"
+                          }
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="text-sm font-semibold">{issue.code}</p>
+                            <Badge
+                              className={
+                                issue.severity === "error"
+                                  ? "rounded-full bg-red-600 text-white"
+                                  : "rounded-full bg-amber-600 text-white"
+                              }
+                            >
+                              {issue.severity}
+                            </Badge>
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {issue.path}
+                          </p>
+                          <p className="mt-2 text-sm">{issue.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  Validate after importing or editing. Save stays available for admins, but invalid drafts will be rejected by the API.
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="rounded-lg border border-border/70 bg-black/10 p-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <p className="font-semibold">3. Review preview</p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  This renders the generated home page with imported CSS scoped to the preview.
+                  Desktop-size canvas for checking layout, imported CSS, and the generated home page.
                 </p>
               </div>
               {parsedPreview ? (
-                <Badge variant="secondary" className="w-fit rounded-full bg-black/20">
-                  {parsedPreview.pages.length} pages
-                </Badge>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant="secondary" className="w-fit rounded-full bg-black/20">
+                    {parsedPreview.pages.length} pages
+                  </Badge>
+                  <Badge variant="secondary" className="w-fit rounded-full bg-black/20">
+                    1280px desktop
+                  </Badge>
+                </div>
               ) : null}
             </div>
 
@@ -1303,15 +1383,24 @@ export function AdminTemplatesDashboard() {
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-border/70 bg-white">
+                <div className="overflow-x-auto rounded-lg border border-border/70 bg-[#11131a] p-3">
                   <div className="flex items-center justify-between gap-3 border-b border-border/70 px-3 py-2">
-                    <p className="text-xs font-semibold text-slate-700">
+                    <p className="text-xs font-semibold text-slate-200">
                       Live visual preview
                     </p>
-                    <span className="text-xs text-slate-500">Home page</span>
+                    <span className="text-xs text-slate-400">Home page</span>
                   </div>
                   {visualPreviewSections.length > 0 ? (
-                    <div className="fw-template-preview max-h-140 overflow-y-auto">
+                    <div className="mx-auto mt-3 w-[1280px] max-w-none overflow-hidden rounded-md bg-white shadow-2xl shadow-black/35">
+                      <div className="flex h-8 items-center gap-2 border-b border-slate-200 bg-slate-100 px-3">
+                        <span className="size-2.5 rounded-full bg-red-400" />
+                        <span className="size-2.5 rounded-full bg-amber-400" />
+                        <span className="size-2.5 rounded-full bg-emerald-400" />
+                        <span className="ml-3 truncate text-xs text-slate-500">
+                          {parsedPreview.name}
+                        </span>
+                      </div>
+                      <div className="fw-template-preview max-h-[720px] overflow-y-auto">
                       {parsedPreview.customCss?.trim() ? (
                         <style>{scopeCssToPreview(parsedPreview.customCss)}</style>
                       ) : null}
@@ -1320,6 +1409,7 @@ export function AdminTemplatesDashboard() {
                         siteId="template-preview"
                         pageId="template-preview-home"
                       />
+                      </div>
                     </div>
                   ) : (
                     <p className="px-3 py-8 text-sm text-muted-foreground">
@@ -1374,77 +1464,6 @@ export function AdminTemplatesDashboard() {
               </p>
             )}
 
-            <div className="my-4 h-px bg-border/60" />
-            <p className="font-semibold">Validation result</p>
-            {validationResult ? (
-              <div className="mt-4 space-y-4">
-                <div className="grid grid-cols-2 gap-3 text-sm md:grid-cols-4">
-                  <div className="rounded-lg bg-black/20 p-3">
-                    <p className="text-muted-foreground">Errors</p>
-                    <p className="mt-1 text-xl font-bold text-red-200">
-                      {validationResult.summary.errorCount}
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-black/20 p-3">
-                    <p className="text-muted-foreground">Warnings</p>
-                    <p className="mt-1 text-xl font-bold text-amber-200">
-                      {validationResult.summary.warningCount}
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-black/20 p-3">
-                    <p className="text-muted-foreground">Pages</p>
-                    <p className="mt-1 text-xl font-bold">
-                      {validationResult.summary.pageCount}
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-black/20 p-3">
-                    <p className="text-muted-foreground">Sections</p>
-                    <p className="mt-1 text-xl font-bold">
-                      {validationResult.summary.sectionCount}
-                    </p>
-                  </div>
-                </div>
-                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                  {validationResult.issues.length === 0 ? (
-                    <div className="rounded-lg border border-emerald-500/35 bg-emerald-950/25 p-3 text-sm text-emerald-100">
-                      Structure is valid and ready to save.
-                    </div>
-                  ) : (
-                    validationResult.issues.map((issue) => (
-                      <div
-                        key={`${issue.code}-${issue.path}-${issue.message}`}
-                        className={
-                          issue.severity === "error"
-                            ? "rounded-lg border border-red-500/35 bg-red-950/25 p-3"
-                            : "rounded-lg border border-amber-500/35 bg-amber-950/25 p-3"
-                        }
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="text-sm font-semibold">{issue.code}</p>
-                          <Badge
-                            className={
-                              issue.severity === "error"
-                                ? "rounded-full bg-red-600 text-white"
-                                : "rounded-full bg-amber-600 text-white"
-                            }
-                          >
-                            {issue.severity}
-                          </Badge>
-                        </div>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {issue.path}
-                        </p>
-                        <p className="mt-2 text-sm">{issue.message}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            ) : (
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                Validate after importing or editing. Save stays available for admins, but invalid drafts will be rejected by the API.
-              </p>
-            )}
           </div>
         </CardContent>
       </Card>
