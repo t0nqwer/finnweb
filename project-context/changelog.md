@@ -2,6 +2,7 @@
 
 ## 2026-05-12
 
+- Fixed underfilled hero metrics after duplicate-section removal: high-design hero/metric renderers now preserve extracted stats but complete partial stat sets to four cards so the DevOnMars-style layout does not leave an empty column.
 - Removed duplicate stats in high-design education imports: deterministic drafts now keep metrics inside the hero instead of also adding a separate metric strip, and the DeepSeek prompt explicitly blocks duplicating hero stats as a second section.
 - Fixed remaining high-design import preview gaps: image capture now reads `srcset`, lazy image attributes, and CSS background URLs; education cards can reuse generic captured cards with images; metrics/features/cards render `value`/`label` data without blank placeholders; feature bento layout is balanced when only three cards are available.
 - Upgraded URL/ZIP website-to-template import quality for high-design education sites: HTML capture now extracts richer source text plus stats, cards, logos, and FAQs; deterministic drafts map education captures to animated/high-design public section variants; DeepSeek enhancement receives the richer capture and approved variant list.

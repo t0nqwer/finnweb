@@ -97,7 +97,9 @@
         "2026-05-13: Reopened to fix remaining high-design preview issues from user screenshots: missing/blank skeleton-looking sections, low-image layouts, and awkward feature grid balance.",
         "2026-05-13: Completed visual fidelity pass: URL import now captures srcset/data-src/lazy/background images, education course cards can reuse generic captured cards with attached images, metrics/features/cards render value/label shapes without blank placeholders, image cards fall back when remote images fail, and bento features balance correctly when only three cards exist.",
         "2026-05-13: Reopened to remove duplicated metrics/stats sections after user compared real site vs generated result.",
-        "2026-05-13: Completed duplicate stats fix: education captures keep metrics inside the high-design hero and no longer generate an additional CONTENT metricStrip; DeepSeek prompt now explicitly forbids duplicating HERO stats as a separate metric strip."
+        "2026-05-13: Completed duplicate stats fix: education captures keep metrics inside the high-design hero and no longer generate an additional CONTENT metricStrip; DeepSeek prompt now explicitly forbids duplicating HERO stats as a separate metric strip.",
+        "2026-05-13: Reopened to fix hero metric underfill after removing duplicate metric strip; renderer should keep four-card visual balance even when extraction returns only three stats.",
+        "2026-05-13: Completed hero metric balance fix: high-design hero and metric strip renderers now fill partial imported stats to four cards using non-destructive fallback completion, preserving extracted stats while avoiding empty layout space."
       ]
     },
     {

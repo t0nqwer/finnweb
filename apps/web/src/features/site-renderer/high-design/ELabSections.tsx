@@ -57,6 +57,33 @@ function arrayOfObjects<T>(value: unknown, fallback: T[]): T[] {
   return Array.isArray(value) && value.length > 0 ? (value as T[]) : fallback;
 }
 
+function arrayWithFallback<T>(
+  value: unknown,
+  fallback: T[],
+  minimumCount = fallback.length,
+): T[] {
+  const base = Array.isArray(value) ? (value as T[]) : [];
+  if (base.length >= minimumCount) {
+    return base;
+  }
+
+  const merged = [...base];
+  for (const item of fallback) {
+    const nextKey = JSON.stringify(item).toLowerCase();
+    const alreadyExists = merged.some(
+      (current) => JSON.stringify(current).toLowerCase() === nextKey,
+    );
+    if (!alreadyExists) {
+      merged.push(item);
+    }
+    if (merged.length >= minimumCount) {
+      break;
+    }
+  }
+
+  return merged.slice(0, Math.max(minimumCount, base.length));
+}
+
 function itemTitle(value: unknown) {
   if (typeof value === "string") return value;
   if (value && typeof value === "object" && "title" in value) {
@@ -150,6 +177,20 @@ const fallbackFeatures: CardItem[] = [
   },
 ];
 
+const fallbackHeroStats: CardItem[] = [
+  { title: "56", description: "คอร์สออนไลน์" },
+  { title: "8,000+", description: "ผู้เรียนที่ไว้วางใจ" },
+  { title: "24/7", description: "เข้าเรียนได้ทุกเวลา" },
+  { title: "98%", description: "ความพึงพอใจ" },
+];
+
+const completionHeroStats: CardItem[] = [
+  fallbackHeroStats[2]!,
+  fallbackHeroStats[1]!,
+  fallbackHeroStats[0]!,
+  fallbackHeroStats[3]!,
+];
+
 const fallbackQuotes: QuoteItem[] = [
   {
     quote: "เนื้อหาเข้าใจง่าย ใช้กับงานจริงได้ทันที",
@@ -235,12 +276,13 @@ export function ELabAnimatedNavbar({ props }: SectionProps) {
 
 export function ELabEducationHero({ props }: SectionProps) {
   const primaryColor = text(props.primaryColor, "#0047FF");
-  const stats = arrayOfObjects<CardItem>(props.stats, [
-    { title: "56", description: "คอร์สออนไลน์" },
-    { title: "8,000+", description: "ผู้เรียนที่ไว้วางใจ" },
-    { title: "24/7", description: "เข้าเรียนได้ทุกเวลา" },
-    { title: "98%", description: "ความพึงพอใจ" },
-  ]);
+  const stats = arrayWithFallback<CardItem>(
+    props.stats,
+    Array.isArray(props.stats) && props.stats.length > 0
+      ? completionHeroStats
+      : fallbackHeroStats,
+    4,
+  );
 
   return (
     <section className="bg-[#FAFAFA] px-4 pb-20 pt-8 text-slate-950 md:px-8">
@@ -472,12 +514,13 @@ export function ELabFeaturedCourses({ props }: SectionProps) {
 
 export function ELabMetricStrip({ props }: SectionProps) {
   const primaryColor = text(props.primaryColor, "#0047FF");
-  const stats = arrayOfObjects<CardItem>(props.items, [
-    { title: "56", description: "à¸„à¸­à¸£à¹Œà¸ªà¸­à¸­à¸™à¹„à¸¥à¸™à¹Œ" },
-    { title: "8,000+", description: "à¸œà¸¹à¹‰à¹€à¸£à¸µà¸¢à¸™à¸—à¸µà¹ˆà¹„à¸§à¹‰à¸§à¸²à¸‡à¹ƒà¸ˆ" },
-    { title: "24/7", description: "à¹€à¸£à¸µà¸¢à¸™à¹„à¸”à¹‰à¸—à¸¸à¸à¹€à¸§à¸¥à¸²" },
-    { title: "98%", description: "à¸„à¸§à¸²à¸¡à¸žà¸¶à¸‡à¸žà¸­à¹ƒà¸ˆ" },
-  ]);
+  const stats = arrayWithFallback<CardItem>(
+    props.items,
+    Array.isArray(props.items) && props.items.length > 0
+      ? completionHeroStats
+      : fallbackHeroStats,
+    4,
+  );
 
   return (
     <section className="bg-[#FAFAFA] px-4 py-16 text-slate-950 md:px-8">
