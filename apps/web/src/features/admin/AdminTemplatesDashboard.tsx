@@ -39,6 +39,7 @@ import {
   fetchApiWithTokenRefresh,
 } from "@/lib/api-client";
 import { normalizeApiBaseUrl, readStoredAuthState } from "@/lib/auth-storage";
+import { PublicSectionRenderer } from "@/features/site-renderer/PublicSectionRenderer";
 
 type TemplateRecord = {
   id: string;
@@ -155,6 +156,21 @@ type DashboardStat = {
   detail: string;
   icon: ComponentType<{ className?: string }>;
   toneClass: string;
+};
+
+type PreviewTemplate = {
+  name: string;
+  pages: Array<{
+    title?: string;
+    slug?: string;
+    isHomePage?: boolean;
+    sections?: Array<{
+      type?: string;
+      name?: string;
+      isVisible?: boolean;
+      props?: Record<string, unknown>;
+    }>;
+  }>;
 };
 
 const starterTemplateJson = JSON.stringify(
@@ -695,27 +711,72 @@ export function AdminTemplatesDashboard() {
 
   const parsedPreview = useMemo(() => {
     try {
-      const payload = JSON.parse(templateJson) as {
-        name?: string;
-        pages?: Array<{
-          title?: string;
-          isHomePage?: boolean;
-          sections?: Array<{
-            type?: string;
-            name?: string;
-            isVisible?: boolean;
-          }>;
-        }>;
-      };
+      const payload = JSON.parse(templateJson) as Record<string, unknown>;
+      const rawPages = Array.isArray(payload.pages) ? payload.pages : [];
+      const pages = rawPages
+        .filter((page): page is Record<string, unknown> => Boolean(page) && typeof page === "object")
+        .map((page) => {
+          const rawSections = Array.isArray(page.sections) ? page.sections : [];
+          const sections = rawSections
+            .filter(
+              (section): section is Record<string, unknown> =>
+                Boolean(section) && typeof section === "object",
+            )
+            .map((section) => ({
+              type: typeof section.type === "string" ? section.type : "CONTENT",
+              name: typeof section.name === "string" ? section.name : undefined,
+              isVisible:
+                typeof section.isVisible === "boolean"
+                  ? section.isVisible
+                  : undefined,
+              props:
+                section.props && typeof section.props === "object"
+                  ? (section.props as Record<string, unknown>)
+                  : {},
+            }));
+
+          return {
+            title: typeof page.title === "string" ? page.title : undefined,
+            slug: typeof page.slug === "string" ? page.slug : undefined,
+            isHomePage:
+              typeof page.isHomePage === "boolean" ? page.isHomePage : false,
+            sections,
+          };
+        });
 
       return {
-        name: payload.name ?? "Untitled template",
-        pages: Array.isArray(payload.pages) ? payload.pages : [],
-      };
+        name:
+          typeof payload.name === "string" ? payload.name : "Untitled template",
+        pages,
+      } satisfies PreviewTemplate;
     } catch {
       return null;
     }
   }, [templateJson]);
+
+  const visualPreviewSections = useMemo(() => {
+    if (!parsedPreview) {
+      return [];
+    }
+
+    const targetPage =
+      parsedPreview.pages.find((page) => page.isHomePage) ??
+      parsedPreview.pages[0];
+
+    if (!targetPage?.sections?.length) {
+      return [];
+    }
+
+    return targetPage.sections
+      .filter((section) => section.isVisible !== false)
+      .map((section, index) => ({
+        id: `preview-${index + 1}`,
+        type: section.type ?? "CONTENT",
+        name: section.name ?? null,
+        isVisible: true,
+        props: section.props ?? {},
+      }));
+  }, [parsedPreview]);
 
   async function updateTemplateStatus(
     templateId: string,
@@ -1158,6 +1219,26 @@ export function AdminTemplatesDashboard() {
                       </div>
                     </div>
                   ))}
+                </div>
+                <div className="rounded-lg border border-border/70 bg-white">
+                  <div className="border-b border-border/70 px-3 py-2">
+                    <p className="text-xs font-semibold text-slate-700">
+                      Live visual preview
+                    </p>
+                  </div>
+                  {visualPreviewSections.length > 0 ? (
+                    <div className="max-h-92 overflow-y-auto">
+                      <PublicSectionRenderer
+                        sections={visualPreviewSections}
+                        siteId="template-preview"
+                        pageId="template-preview-home"
+                      />
+                    </div>
+                  ) : (
+                    <p className="px-3 py-4 text-xs text-muted-foreground">
+                      No visible sections to render yet.
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
