@@ -178,7 +178,7 @@ function normalizeCapturedPage(
     items: toStatItems(page.stats),
   });
 
-  if (page.stats?.length) {
+  if (page.stats?.length && !isEducation) {
     sections.push({
       id: `stats-${pageIndex + 1}`,
       kind: "stats",

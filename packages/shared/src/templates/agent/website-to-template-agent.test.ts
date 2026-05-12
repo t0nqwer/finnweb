@@ -329,10 +329,16 @@ describe("createWebsiteProfileFromCapture", () => {
       sections.find((section) => section.type === "HERO")?.props?.["variant"],
       "educationEditorial",
     );
-    assert.ok(
-      sections.some(
+    assert.equal(
+      sections.filter(
         (section) =>
           section.type === "CONTENT" && section.props?.["variant"] === "metricStrip",
+      ).length,
+      0,
+    );
+    assert.ok(
+      Array.isArray(
+        sections.find((section) => section.type === "HERO")?.props?.["stats"],
       ),
     );
     assert.ok(
