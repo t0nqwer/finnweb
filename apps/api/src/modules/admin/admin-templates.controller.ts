@@ -910,15 +910,12 @@ export class AdminTemplatesController {
         this.firstMatch(inner, /<(?:small|label|span)[^>]*>([\s\S]{2,80}?)<\/(?:small|label|span)>/i) ??
         undefined;
       const imageUrl = (() => {
-        const src = this.firstMatch(inner, /<img[^>]+\ssrc=["']([^"']+)["'][^>]*>/i);
+        const img = this.extractImageFromTag(inner.match(/<img[^>]*>/i)?.[0] ?? "", sourceUrl);
+        const src = img?.url;
         if (!src) {
           return undefined;
         }
-        try {
-          return new URL(src, sourceUrl).toString().slice(0, 1000);
-        } catch {
-          return undefined;
-        }
+        return src;
       })();
 
       const key = title.toLowerCase();
@@ -1008,27 +1005,60 @@ export class AdminTemplatesController {
     let match: RegExpExecArray | null;
     while ((match = regex.exec(html)) && images.length < 20) {
       const tag = match[0] ?? "";
-      const src = this.firstMatch(tag, /\ssrc=["']([^"']+)["']/i);
-      if (!src) {
+      const image = this.extractImageFromTag(tag, sourceUrl);
+      if (image) {
+        images.push(image);
+      }
+    }
+
+    const backgroundRegex = /background(?:-image)?\s*:\s*url\((["']?)([^"')]+)\1\)/gi;
+    let backgroundMatch: RegExpExecArray | null;
+    while ((backgroundMatch = backgroundRegex.exec(html)) && images.length < 24) {
+      const src = (backgroundMatch[2] ?? "").trim();
+      if (!src || src.startsWith("data:")) {
         continue;
       }
-
       try {
-        const url = new URL(src, sourceUrl).toString();
-        const alt = this.firstMatch(tag, /\salt=["']([^"']*)["']/i);
-        const width = Number(this.firstMatch(tag, /\swidth=["'](\d+)["']/i) ?? "");
-        const height = Number(this.firstMatch(tag, /\sheight=["'](\d+)["']/i) ?? "");
         images.push({
-          url: url.slice(0, 1000),
-          alt: alt?.slice(0, 200),
-          width: Number.isFinite(width) && width > 0 ? width : undefined,
-          height: Number.isFinite(height) && height > 0 ? height : undefined,
+          url: new URL(src, sourceUrl).toString().slice(0, 1000),
         });
       } catch {
         continue;
       }
     }
-    return images;
+
+    return Array.from(
+      new Map(images.map((image) => [image.url, image])).values(),
+    ).slice(0, 24);
+  }
+
+  private extractImageFromTag(tag: string, sourceUrl: string) {
+    const src =
+      this.firstMatch(tag, /\ssrc=["']([^"']+)["']/i) ??
+      this.firstMatch(tag, /\sdata-src=["']([^"']+)["']/i) ??
+      this.firstMatch(tag, /\sdata-lazy-src=["']([^"']+)["']/i) ??
+      this.firstMatch(tag, /\ssrcset=["']([^"']+)["']/i)
+        ?.split(",")
+        .map((candidate) => candidate.trim().split(/\s+/)[0])
+        .find(Boolean);
+    if (!src || src.startsWith("data:")) {
+      return undefined;
+    }
+
+    try {
+      const url = new URL(src, sourceUrl).toString();
+      const alt = this.firstMatch(tag, /\salt=["']([^"']*)["']/i);
+      const width = Number(this.firstMatch(tag, /\swidth=["'](\d+)["']/i) ?? "");
+      const height = Number(this.firstMatch(tag, /\sheight=["'](\d+)["']/i) ?? "");
+      return {
+        url: url.slice(0, 1000),
+        alt: alt?.slice(0, 200),
+        width: Number.isFinite(width) && width > 0 ? width : undefined,
+        height: Number.isFinite(height) && height > 0 ? height : undefined,
+      };
+    } catch {
+      return undefined;
+    }
   }
 
   private extractForms(html: string, sourceUrl: string) {

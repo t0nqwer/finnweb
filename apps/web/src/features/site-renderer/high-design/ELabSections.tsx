@@ -11,7 +11,7 @@ import {
   Sparkles,
   Star,
 } from "lucide-react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, SyntheticEvent } from "react";
 import { Reveal, Stagger, StaggerItem } from "./HighDesignMotion";
 
 type SectionProps = {
@@ -27,6 +27,8 @@ type LinkItem = {
 type CardItem = {
   title: string;
   description?: string;
+  value?: string;
+  label?: string;
   imageUrl?: string;
   eyebrow?: string;
   price?: string;
@@ -52,7 +54,7 @@ function numberText(value: unknown, fallback = "") {
 }
 
 function arrayOfObjects<T>(value: unknown, fallback: T[]): T[] {
-  return Array.isArray(value) ? (value as T[]) : fallback;
+  return Array.isArray(value) && value.length > 0 ? (value as T[]) : fallback;
 }
 
 function itemTitle(value: unknown) {
@@ -64,6 +66,24 @@ function itemTitle(value: unknown) {
     return text((value as { label?: unknown }).label);
   }
   return "";
+}
+
+function cardTitle(item: CardItem, fallback = "") {
+  return text(item.title, text(item.value, text(item.label, fallback)));
+}
+
+function cardDescription(item: CardItem, fallback = "") {
+  return text(item.description, text(item.label, fallback));
+}
+
+function imageFallback(seed: string, index: number) {
+  return `https://picsum.photos/seed/${seed}-${index}/900/700`;
+}
+
+function handleImageError(event: SyntheticEvent<HTMLImageElement>, fallbackSrc: string) {
+  if (event.currentTarget.src !== fallbackSrc) {
+    event.currentTarget.src = fallbackSrc;
+  }
 }
 
 function linksFromProps(value: unknown): LinkItem[] {
@@ -293,7 +313,7 @@ export function ELabEducationHero({ props }: SectionProps) {
         <Stagger className="mx-auto mt-24 grid max-w-7xl grid-cols-2 items-center gap-6 rounded-[2rem] border border-slate-200/70 bg-white p-6 shadow-xl shadow-slate-200/50 lg:grid-cols-4">
           {stats.slice(0, 4).map((stat, index) => (
             <StaggerItem
-              key={`${stat.title}-${index}`}
+              key={`${cardTitle(stat, "metric")}-${index}`}
               className={`space-y-1 rounded-2xl p-4 ${index === 3 ? "text-white lg:-translate-y-4 lg:scale-110 lg:p-8 lg:shadow-2xl" : "lg:border-l lg:border-slate-200"}`}
               style={
                 index === 3
@@ -305,12 +325,12 @@ export function ELabEducationHero({ props }: SectionProps) {
               }
             >
               <p className="text-4xl font-black tracking-normal lg:text-5xl">
-                {stat.title}
+                {cardTitle(stat)}
               </p>
               <p
                 className={`text-xs font-black uppercase tracking-[0.16em] ${index === 3 ? "text-white/80" : "text-slate-500"}`}
               >
-                {stat.description}
+                {cardDescription(stat)}
               </p>
             </StaggerItem>
           ))}
@@ -323,6 +343,7 @@ export function ELabEducationHero({ props }: SectionProps) {
 export function ELabBentoFeatures({ props }: SectionProps) {
   const primaryColor = text(props.primaryColor, "#0047FF");
   const items = arrayOfObjects<CardItem>(props.items, fallbackFeatures);
+  const useCompactGrid = items.length <= 3;
 
   return (
     <section className="bg-[#FAFAFA] px-4 py-24 text-slate-950 md:px-8">
@@ -341,8 +362,8 @@ export function ELabBentoFeatures({ props }: SectionProps) {
         <Stagger className="grid gap-6 md:grid-cols-3">
           {items.slice(0, 6).map((item, index) => (
             <StaggerItem
-              key={`${item.title}-${index}`}
-              className={`group rounded-[2rem] border border-slate-200/70 bg-white p-8 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl ${index === 0 ? "md:col-span-2" : ""}`}
+              key={`${cardTitle(item, "feature")}-${index}`}
+              className={`group rounded-[2rem] border border-slate-200/70 bg-white p-8 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl ${!useCompactGrid && index === 0 ? "md:col-span-2" : ""}`}
             >
               <div
                 className="mb-8 grid h-16 w-16 place-items-center rounded-2xl text-white transition-transform duration-300 group-hover:scale-110"
@@ -357,10 +378,10 @@ export function ELabBentoFeatures({ props }: SectionProps) {
                 )}
               </div>
               <h3 className="text-2xl font-black tracking-normal">
-                {item.title}
+                {cardTitle(item)}
               </h3>
               <p className="mt-4 text-base font-medium leading-7 text-slate-600">
-                {item.description}
+                {cardDescription(item)}
               </p>
             </StaggerItem>
           ))}
@@ -373,6 +394,12 @@ export function ELabBentoFeatures({ props }: SectionProps) {
 export function ELabFeaturedCourses({ props }: SectionProps) {
   const primaryColor = text(props.primaryColor, "#0047FF");
   const courses = arrayOfObjects<CardItem>(props.items, fallbackCourses);
+  const gridClass =
+    courses.length <= 1
+      ? "md:grid-cols-1"
+      : courses.length === 2
+        ? "md:grid-cols-2"
+        : "md:grid-cols-3";
 
   return (
     <section
@@ -393,21 +420,24 @@ export function ELabFeaturedCourses({ props }: SectionProps) {
             <ArrowRight className="ml-2 h-4 w-4" />
           </a>
         </Reveal>
-        <Stagger className="grid gap-8 md:grid-cols-3">
+        <Stagger className={`grid gap-8 ${gridClass}`}>
           {courses.slice(0, 6).map((course, index) => (
             <StaggerItem
-              key={`${course.title}-${index}`}
+              key={`${cardTitle(course, "course")}-${index}`}
               className="group overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white shadow-sm transition-shadow hover:shadow-xl"
             >
               <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
                 <img
                   src={text(
                     course.imageUrl,
-                    `https://picsum.photos/seed/elab-course-${index}/900/700`,
+                    imageFallback("elab-course", index),
                   )}
-                  alt={course.title}
+                  alt={cardTitle(course, "Course")}
                   className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                   referrerPolicy="no-referrer"
+                  onError={(event) =>
+                    handleImageError(event, imageFallback("elab-course", index))
+                  }
                 />
                 <span
                   className="absolute left-5 top-5 rounded-full px-4 py-2 text-xs font-black text-white"
@@ -418,10 +448,10 @@ export function ELabFeaturedCourses({ props }: SectionProps) {
               </div>
               <div className="p-7">
                 <h3 className="text-2xl font-black tracking-normal">
-                  {course.title}
+                  {cardTitle(course)}
                 </h3>
                 <p className="mt-3 min-h-14 text-sm font-medium leading-6 text-slate-600">
-                  {course.description}
+                  {cardDescription(course)}
                 </p>
                 <div className="mt-7 flex items-center justify-between">
                   <span className="text-lg font-black">
@@ -454,17 +484,17 @@ export function ELabMetricStrip({ props }: SectionProps) {
       <Stagger className="mx-auto grid max-w-7xl gap-4 rounded-[2rem] border border-slate-200/70 bg-white p-4 shadow-xl shadow-slate-200/50 sm:grid-cols-2 lg:grid-cols-4 lg:p-6">
         {stats.slice(0, 4).map((stat, index) => (
           <StaggerItem
-            key={`${stat.title}-${index}`}
+            key={`${cardTitle(stat, "metric")}-${index}`}
             className="rounded-3xl border border-slate-100 bg-slate-50 p-6"
           >
             <p
               className="text-4xl font-black tracking-normal md:text-5xl"
               style={{ color: index === 0 ? primaryColor : undefined }}
             >
-              {stat.title}
+              {cardTitle(stat)}
             </p>
             <p className="mt-3 text-sm font-black uppercase tracking-[0.14em] text-slate-500">
-              {stat.description}
+              {cardDescription(stat)}
             </p>
           </StaggerItem>
         ))}
@@ -512,7 +542,7 @@ export function ELabCategoryGrid({ props }: SectionProps) {
         <Stagger className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {categories.slice(0, 8).map((category, index) => (
             <StaggerItem
-              key={`${category.title}-${index}`}
+              key={`${cardTitle(category, "category")}-${index}`}
               className="group min-h-64 rounded-[2rem] border border-slate-200/70 bg-white p-7 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl"
             >
               <div
@@ -525,10 +555,10 @@ export function ELabCategoryGrid({ props }: SectionProps) {
                 {category.eyebrow ?? category.meta ?? "Category"}
               </p>
               <h3 className="mt-3 text-2xl font-black tracking-normal">
-                {category.title}
+                {cardTitle(category)}
               </h3>
               <p className="mt-4 text-sm font-medium leading-7 text-slate-600">
-                {category.description}
+                {cardDescription(category)}
               </p>
             </StaggerItem>
           ))}
@@ -576,7 +606,7 @@ export function ELabInsightsGrid({ props }: SectionProps) {
         <Stagger className="grid gap-6 lg:grid-cols-3">
           {articles.slice(0, 3).map((article, index) => (
             <StaggerItem
-              key={`${article.title}-${index}`}
+              key={`${cardTitle(article, "article")}-${index}`}
               className="rounded-[2rem] border border-slate-200/70 bg-[#FAFAFA] p-8 shadow-sm"
             >
               <p
@@ -586,10 +616,10 @@ export function ELabInsightsGrid({ props }: SectionProps) {
                 {article.meta ?? "Insight"}
               </p>
               <h3 className="text-2xl font-black tracking-normal">
-                {article.title}
+                {cardTitle(article)}
               </h3>
               <p className="mt-4 text-sm font-medium leading-7 text-slate-600">
-                {article.description}
+                {cardDescription(article)}
               </p>
             </StaggerItem>
           ))}
@@ -667,8 +697,11 @@ export function ELabTestimonials({ props }: SectionProps) {
 }
 
 export function ELabLogoStrip({ props }: SectionProps) {
-  const logos = Array.isArray(props.items)
+  const parsedLogos = Array.isArray(props.items)
     ? (props.items as unknown[]).map(itemTitle).filter(Boolean)
+    : ["LINE", "Google", "Meta", "Canva", "Notion"];
+  const logos = parsedLogos.length > 0
+    ? parsedLogos
     : ["LINE", "Google", "Meta", "Canva", "Notion"];
 
   return (

@@ -687,7 +687,14 @@ function inferCourseCards(page: CapturedWebsitePage) {
     ),
   );
   if (explicit.length > 0) {
-    return explicit.slice(0, 6);
+    return attachCardImages(explicit, page).slice(0, 6);
+  }
+
+  const reusableCards = (page.cards ?? []).filter(
+    (card) => card.title && (card.description || card.imageUrl),
+  );
+  if (reusableCards.length > 0 && isEducationCapture(page)) {
+    return attachCardImages(reusableCards, page).slice(0, 6);
   }
 
   const blocks = page.textBlocks ?? [];
@@ -709,6 +716,17 @@ function inferCourseCards(page: CapturedWebsitePage) {
     eyebrow: "คอร์สเรียน",
     meta: blocks.find((block) => /บทเรียน|ชั่วโมง/.test(block)),
     price: blocks.find((block) => /บาท|THB|฿/.test(block)) ?? "640 บาท",
+  }));
+}
+
+function attachCardImages(
+  cards: NonNullable<CapturedWebsitePage["cards"]>,
+  page: CapturedWebsitePage,
+) {
+  const images = page.images ?? [];
+  return cards.map((card, index) => ({
+    ...card,
+    imageUrl: card.imageUrl ?? images[index + 1]?.url ?? images[index]?.url,
   }));
 }
 
