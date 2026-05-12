@@ -158,6 +158,11 @@ export class ImportTemplateDraftDto {
   @MaxLength(80, { each: true })
   styleKeywords?: string[];
 
+  @IsOptional()
+  @IsString()
+  @MaxLength(50000)
+  customCss?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CapturedWebsitePageDto)

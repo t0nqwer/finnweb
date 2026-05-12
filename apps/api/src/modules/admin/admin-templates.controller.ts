@@ -101,6 +101,7 @@ export class AdminTemplatesController {
           styles: this.normalizeTagArray(template.tags, "styles"),
           languages: this.normalizeTagArray(template.tags, "languages"),
           keywords: this.normalizeTagArray(template.tags, "keywords"),
+          customCss: this.normalizeOptionalTagString(template.tags, "customCss"),
           category: template.category
             ? {
                 id: template.category.id,
@@ -177,10 +178,14 @@ export class AdminTemplatesController {
   @Post("import-draft")
   async importDraft(@Body() dto: ImportTemplateDraftDto) {
     const profile = createWebsiteProfileFromCapture(dto);
-    const draftResult = createTemplateDraftFromWebsiteProfile(profile);
+      const draftResult = createTemplateDraftFromWebsiteProfile(profile);
+    const templateWithCss = this.attachCustomCssToTemplate(
+      draftResult.template as Record<string, unknown>,
+      dto.customCss,
+    );
     const enhanced = await this.templateAi.enhanceTemplateDraft(
       dto,
-      draftResult.template as Record<string, unknown>,
+      templateWithCss,
     );
     const validation = this.validator.validateTemplate(enhanced.template as any);
 
@@ -215,9 +220,13 @@ export class AdminTemplatesController {
     };
     const profile = createWebsiteProfileFromCapture(capture);
     const draftResult = createTemplateDraftFromWebsiteProfile(profile);
+    const templateWithCss = this.attachCustomCssToTemplate(
+      draftResult.template as Record<string, unknown>,
+      undefined,
+    );
     const enhanced = await this.templateAi.enhanceTemplateDraft(
       capture,
-      draftResult.template as Record<string, unknown>,
+      templateWithCss,
     );
     const validation = this.validator.validateTemplate(enhanced.template as any);
 
@@ -252,9 +261,14 @@ export class AdminTemplatesController {
     };
     const profile = createWebsiteProfileFromCapture(capture);
     const draftResult = createTemplateDraftFromWebsiteProfile(profile);
+    const zipCss = this.extractZipCss(dto.zipBase64);
+    const templateWithCss = this.attachCustomCssToTemplate(
+      draftResult.template as Record<string, unknown>,
+      zipCss,
+    );
     const enhanced = await this.templateAi.enhanceTemplateDraft(
       capture,
-      draftResult.template as Record<string, unknown>,
+      templateWithCss,
     );
     const validation = this.validator.validateTemplate(enhanced.template as any);
 
@@ -504,6 +518,18 @@ export class AdminTemplatesController {
     return rawValue.filter((item): item is string => typeof item === "string");
   }
 
+  private normalizeOptionalTagString(value: unknown, key: string) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      return null;
+    }
+    const rawValue = (value as Record<string, unknown>)[key];
+    if (typeof rawValue !== "string") {
+      return null;
+    }
+    const trimmed = rawValue.trim();
+    return trimmed ? trimmed : null;
+  }
+
   private normalizeUrl(value: string) {
     const trimmed = value.trim();
     if (!trimmed) {
@@ -714,6 +740,75 @@ export class AdminTemplatesController {
     return pages;
   }
 
+  private extractZipCss(base64: string) {
+    let zip: any;
+    try {
+      zip = new AdmZip(Buffer.from(base64, "base64"));
+    } catch {
+      return undefined;
+    }
+
+    const cssEntries = zip
+      .getEntries()
+      .filter((entry: any) => !entry.isDirectory)
+      .filter((entry: any) => /\.css$/i.test(entry.entryName))
+      .slice(0, 8);
+
+    if (cssEntries.length === 0) {
+      return undefined;
+    }
+
+    const chunks: string[] = [];
+    let totalLength = 0;
+    for (const entry of cssEntries) {
+      const css = String(zip.readAsText(entry, "utf8") ?? "").trim();
+      if (!css) {
+        continue;
+      }
+      const next = `/* ${entry.entryName} */\n${css}`;
+      if (totalLength + next.length > 45000) {
+        break;
+      }
+      chunks.push(next);
+      totalLength += next.length;
+    }
+
+    if (chunks.length === 0) {
+      return undefined;
+    }
+
+    return chunks.join("\n\n");
+  }
+
+  private attachCustomCssToTemplate(
+    template: Record<string, unknown>,
+    css: string | undefined,
+  ) {
+    const cleanCss = this.sanitizeCustomCss(css);
+    if (!cleanCss) {
+      return template;
+    }
+    return {
+      ...template,
+      customCss: cleanCss,
+    };
+  }
+
+  private sanitizeCustomCss(css: string | undefined) {
+    if (!css) {
+      return undefined;
+    }
+    const trimmed = css.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+    const withoutUnsafe = trimmed
+      .replace(/<\/?script/gi, "")
+      .replace(/javascript:/gi, "")
+      .replace(/expression\s*\(/gi, "");
+    return withoutUnsafe.slice(0, 50000);
+  }
+
   private extractAnchorLinks(html: string, sourceUrl: string) {
     const links: Array<{ label: string; href: string }> = [];
     const regex = /<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
@@ -885,6 +980,7 @@ export class AdminTemplatesController {
       styles: this.normalizeStringArray(dto.styles),
       languages: this.normalizeStringArray(dto.languages),
       keywords: this.normalizeStringArray(dto.keywords),
+      customCss: this.sanitizeCustomCss(dto.customCss),
     };
   }
 
@@ -895,6 +991,7 @@ export class AdminTemplatesController {
       styles: this.normalizeTagArray(value, "styles"),
       languages: this.normalizeTagArray(value, "languages"),
       keywords: this.normalizeTagArray(value, "keywords"),
+      customCss: this.normalizeOptionalTagString(value, "customCss") ?? undefined,
     };
   }
 

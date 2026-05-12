@@ -64,6 +64,28 @@ export class AdminTemplateValidationService {
         });
       }
     }
+
+    if (dto.customCss?.trim()) {
+      const css = dto.customCss;
+      if (/@import\s+/i.test(css)) {
+        issues.push({
+          severity: "warning",
+          code: "TEMPLATE_CUSTOM_CSS_IMPORT_FOUND",
+          path: "customCss",
+          message:
+            "customCss contains @import. Prefer bundling CSS directly for stable rendering.",
+        });
+      }
+
+      if (/<\/?script|expression\s*\(|javascript:/i.test(css)) {
+        issues.push({
+          severity: "error",
+          code: "TEMPLATE_CUSTOM_CSS_UNSAFE_PATTERN",
+          path: "customCss",
+          message: "customCss contains unsafe patterns.",
+        });
+      }
+    }
   }
 
   private validatePages(dto: CreateTemplateDto, issues: TemplateValidationIssue[]) {

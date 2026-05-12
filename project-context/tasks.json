@@ -122,7 +122,9 @@
         "2026-05-12: Started admin dry-run API implementation to make website-to-template agent usable from tools/UI.",
         "2026-05-12: Completed admin dry-run import flow: added POST /api/admin/templates/import-draft, capture DTO validation, dashboard capture JSON generator, docs, and passing API/shared/web typechecks.",
         "2026-05-12: Reopened to extend import UX from JSON-only to URL and ZIP flows for admin template creation.",
-        "2026-05-12: Completed URL/ZIP import extension: added POST /api/admin/templates/import-from-url and POST /api/admin/templates/import-from-zip, added dashboard URL input and ZIP upload flow, and preserved no-write dry-run behavior before official save."
+        "2026-05-12: Completed URL/ZIP import extension: added POST /api/admin/templates/import-from-url and POST /api/admin/templates/import-from-zip, added dashboard URL input and ZIP upload flow, and preserved no-write dry-run behavior before official save.",
+        "2026-05-12: Reopened to implement custom CSS import and scoped preview support.",
+        "2026-05-12: Completed custom CSS support in import flow: ZIP CSS is captured into template draft customCss, admin validation checks unsafe CSS patterns, customCss persists via template metadata tags, and admin live preview applies scoped customCss to avoid app-wide style conflicts."
       ]
     },
     {

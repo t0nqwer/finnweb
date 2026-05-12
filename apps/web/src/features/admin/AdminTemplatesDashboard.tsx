@@ -47,6 +47,7 @@ type TemplateRecord = {
   name: string;
   slug: string;
   description: string | null;
+  customCss?: string | null;
   status: string;
   visibility: string;
   isOfficial: boolean;
@@ -160,6 +161,7 @@ type DashboardStat = {
 
 type PreviewTemplate = {
   name: string;
+  customCss?: string;
   pages: Array<{
     title?: string;
     slug?: string;
@@ -172,6 +174,49 @@ type PreviewTemplate = {
     }>;
   }>;
 };
+
+function scopeCssToPreview(css: string) {
+  const source = css.trim();
+  if (!source) {
+    return "";
+  }
+
+  const scopedBlocks = source
+    .split("}")
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block) => {
+      const [selectorsPart, ...bodyParts] = block.split("{");
+      if (!selectorsPart || bodyParts.length === 0) {
+        return null;
+      }
+      const selectors = selectorsPart.trim();
+      const body = bodyParts.join("{").trim();
+      if (!body) {
+        return null;
+      }
+
+      if (selectors.startsWith("@")) {
+        return `${selectors}{${body}}`;
+      }
+
+      const scopedSelectors = selectors
+        .split(",")
+        .map((selector) => selector.trim())
+        .filter(Boolean)
+        .map((selector) =>
+          selector.startsWith(".fw-template-preview")
+            ? selector
+            : `.fw-template-preview ${selector}`,
+        )
+        .join(", ");
+
+      return `${scopedSelectors}{${body}}`;
+    })
+    .filter((item): item is string => Boolean(item));
+
+  return scopedBlocks.join("\n");
+}
 
 const starterTemplateJson = JSON.stringify(
   {
@@ -454,6 +499,7 @@ export function AdminTemplatesDashboard() {
           styles: template.styles,
           languages: template.languages,
           keywords: template.keywords,
+          customCss: template.customCss ?? undefined,
           pages: template.pages.map((page) => ({
             title: page.title,
             slug: page.slug,
@@ -747,6 +793,8 @@ export function AdminTemplatesDashboard() {
       return {
         name:
           typeof payload.name === "string" ? payload.name : "Untitled template",
+        customCss:
+          typeof payload.customCss === "string" ? payload.customCss : undefined,
         pages,
       } satisfies PreviewTemplate;
     } catch {
@@ -1227,7 +1275,10 @@ export function AdminTemplatesDashboard() {
                     </p>
                   </div>
                   {visualPreviewSections.length > 0 ? (
-                    <div className="max-h-92 overflow-y-auto">
+                    <div className="fw-template-preview max-h-92 overflow-y-auto">
+                      {parsedPreview.customCss?.trim() ? (
+                        <style>{scopeCssToPreview(parsedPreview.customCss)}</style>
+                      ) : null}
                       <PublicSectionRenderer
                         sections={visualPreviewSections}
                         siteId="template-preview"

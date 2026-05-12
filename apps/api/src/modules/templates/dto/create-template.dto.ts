@@ -131,6 +131,11 @@ export class CreateTemplateDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(50000)
+  customCss?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(80)
   category?: string;
 
