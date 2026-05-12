@@ -609,7 +609,7 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
         ) : pages.length === 0 ? (
           <BuilderEmptyState label="This site does not have pages yet." />
         ) : (
-          <section className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_340px]">
+          <section className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)_360px]">
             <SectionListPanel
               sections={sections}
               selectedSectionId={selectedSectionId}
@@ -630,6 +630,7 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
             <BuilderCanvas
               sections={sections}
               selectedSectionId={selectedSectionId}
+              selectedSectionLabel={selectedSection?.label}
               device={device}
               onSelectSection={setSelectedSectionId}
               isLoading={isLoadingSections}

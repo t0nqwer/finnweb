@@ -42,7 +42,7 @@ export function SectionEditPanel({
   }
 
   return (
-    <aside className="min-h-0 border-t border-white/10 bg-[#20232C] p-4 lg:border-l lg:border-t-0 lg:border-white/10">
+    <aside className="min-h-0 overflow-y-auto border-t border-white/10 bg-[#20232C] p-4 lg:border-l lg:border-t-0 lg:border-white/10">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -62,13 +62,27 @@ export function SectionEditPanel({
               <span className="inline-flex size-9 items-center justify-center rounded-lg bg-[#FF8C00]/15 text-[#FFD700]">
                 <SlidersHorizontalIcon className="size-4" />
               </span>
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="font-kanit text-lg font-semibold">
                   {section.label}
                 </p>
                 <p className="mt-1 text-xs leading-relaxed text-slate-500">
                   {registryEntry?.label ?? "Unregistered section"}
                 </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="rounded-md bg-white/[0.06] px-2 py-1 text-[11px] font-medium text-slate-400">
+                    {section.sourceType ?? section.type}
+                  </span>
+                  {section.isVisible === false ? (
+                    <span className="rounded-md bg-red-400/10 px-2 py-1 text-[11px] font-medium text-red-200">
+                      Hidden
+                    </span>
+                  ) : (
+                    <span className="rounded-md bg-emerald-400/10 px-2 py-1 text-[11px] font-medium text-emerald-200">
+                      Visible
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -85,8 +99,14 @@ export function SectionEditPanel({
               ))}
             </div>
           ) : (
-            <div className="rounded-lg border border-white/10 bg-[#1A1C23] p-4 text-sm text-slate-400">
-              This section does not have editable fields yet.
+            <div className="rounded-lg border border-white/10 bg-[#1A1C23] p-4">
+              <p className="text-sm font-semibold text-slate-200">
+                Preview-only section
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">
+                This imported section renders in the canvas, but it does not
+                have focused editing controls yet.
+              </p>
             </div>
           )}
 
@@ -100,8 +120,14 @@ export function SectionEditPanel({
           </div>
         </div>
       ) : (
-        <div className="rounded-lg border border-white/10 bg-[#1A1C23] p-4 text-sm text-slate-400">
-          Select a section to edit its settings.
+        <div className="rounded-lg border border-white/10 bg-[#1A1C23] p-4">
+          <p className="text-sm font-semibold text-slate-200">
+            Pick a section
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-400">
+            Select a block from the canvas or section list to edit copy,
+            images, links, and visibility.
+          </p>
         </div>
       )}
     </aside>

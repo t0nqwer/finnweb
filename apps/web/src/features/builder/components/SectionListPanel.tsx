@@ -59,8 +59,11 @@ export function SectionListPanel({
   onDuplicateSection,
   onDeleteSection,
 }: SectionListPanelProps) {
+  const visibleCount = sections.filter((section) => section.isVisible !== false)
+    .length;
+
   return (
-    <aside className="min-h-0 border-b border-white/10 bg-[#20232C] p-4 lg:border-b-0 lg:border-r lg:border-white/10">
+    <aside className="min-h-0 overflow-y-auto border-b border-white/10 bg-[#20232C] p-4 lg:border-b-0 lg:border-r lg:border-white/10">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -68,8 +71,9 @@ export function SectionListPanel({
           </p>
           <h2 className="font-kanit text-lg font-semibold">Page sections</h2>
         </div>
-        <span className="inline-flex size-9 items-center justify-center rounded-lg bg-white/[0.06] text-[#FFD700]">
+        <span className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-white/[0.06] px-2.5 py-2 text-xs font-semibold text-slate-300">
           <Layers3Icon className="size-5" />
+          {visibleCount}/{sections.length}
         </span>
       </div>
 
@@ -78,7 +82,7 @@ export function SectionListPanel({
           <PlusIcon className="size-3.5" />
           Add section
         </div>
-        <div className="grid gap-1">
+        <div className="grid max-h-[280px] gap-1 overflow-y-auto pr-1">
           {SECTION_LIBRARY.map((section) => {
             const Icon = SECTION_ICONS[section.registryType] ?? Layers3Icon;
 
@@ -107,6 +111,11 @@ export function SectionListPanel({
             );
           })}
         </div>
+      </div>
+
+      <div className="mb-2 flex items-center justify-between px-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+        <span>Current page</span>
+        <span>{sections.length} blocks</span>
       </div>
 
       <div className="space-y-2">

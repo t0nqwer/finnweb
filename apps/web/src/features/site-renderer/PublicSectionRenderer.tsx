@@ -133,18 +133,20 @@ type PublicSectionRendererProps = {
   sections: PublicSection[];
   siteId: string;
   pageId: string;
+  showScrollProgress?: boolean;
 };
 
 export function PublicSectionRenderer({
   sections,
   siteId,
   pageId,
+  showScrollProgress = true,
 }: PublicSectionRendererProps) {
   const hasHighDesign = sections.some(isHighDesignSection);
 
   return (
     <div className={hasHighDesign ? "bg-[#FAFAFA]" : "divide-y divide-slate-100"}>
-      {hasHighDesign ? <HighDesignScrollProgress /> : null}
+      {hasHighDesign && showScrollProgress ? <HighDesignScrollProgress /> : null}
       {sections.map((section) => {
         const variantKey = getVariantKey(section);
         const Component =
