@@ -4,6 +4,8 @@ import {
   getSectionRegistryEntry,
   type BuilderSection,
 } from "../registry/section-registry";
+import { PublicSectionRenderer } from "@/features/site-renderer/PublicSectionRenderer";
+import type { PublicSection } from "@/features/site-renderer/public-site.api";
 import type { BuilderPreviewDevice } from "./DevicePreviewToggle";
 
 type BuilderCanvasProps = {
@@ -15,7 +17,7 @@ type BuilderCanvasProps = {
 };
 
 const CANVAS_WIDTH: Record<BuilderPreviewDevice, string> = {
-  desktop: "max-w-5xl",
+  desktop: "max-w-[1280px]",
   tablet: "max-w-2xl",
   mobile: "max-w-[390px]",
 };
@@ -58,6 +60,8 @@ export function BuilderCanvas({
         {!isLoading && sections.map((section) => {
           const selected = selectedSectionId === section.id;
           const hidden = section.isVisible === false;
+          const publicSection = toPublicSection(section);
+          const shouldUsePublicRenderer = isHighDesignSection(section);
           const registryEntry = getSectionRegistryEntry(section.type);
           const SectionComponent = registryEntry?.component;
           const sectionProps = {
@@ -66,10 +70,17 @@ export function BuilderCanvas({
           };
 
           return (
-            <button
+            <div
               key={section.id}
-              type="button"
               onClick={() => onSelectSection(section.id)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelectSection(section.id);
+                }
+              }}
+              role="button"
+              tabIndex={0}
               className={`block w-full border-b text-left transition ${
                 selected
                   ? "bg-[#FFF7E8] ring-2 ring-inset ring-[#FF8C00]"
@@ -78,17 +89,59 @@ export function BuilderCanvas({
             >
               {hidden ? (
                 <HiddenSectionPlaceholder section={section} />
+              ) : shouldUsePublicRenderer ? (
+                <PublicSectionRenderer
+                  sections={[publicSection]}
+                  siteId="builder-preview"
+                  pageId={section.pageId ?? "builder-page"}
+                />
               ) : SectionComponent ? (
                 <SectionComponent props={sectionProps} />
               ) : (
                 <UnknownSectionFallback section={section} />
               )}
-            </button>
+            </div>
           );
         })}
       </div>
     </div>
   );
+}
+
+function toPublicSection(section: BuilderSection): PublicSection {
+  return {
+    id: section.id,
+    type: section.sourceType ?? section.type,
+    name: section.label,
+    sortOrder: section.sortOrder,
+    isVisible: section.isVisible,
+    props: section.props,
+  };
+}
+
+function isHighDesignSection(section: BuilderSection) {
+  const variant =
+    typeof section.props.variant === "string" ? section.props.variant : "";
+  if (
+    [
+      "stickyAnimated",
+      "educationEditorial",
+      "metricStrip",
+      "featuredGrid",
+      "bentoLearning",
+      "bentoProof",
+      "logoStrip",
+      "categoryGrid",
+      "insightsGrid",
+      "splitAccordion",
+      "floatingAvatars",
+      "largeDark",
+    ].includes(variant)
+  ) {
+    return true;
+  }
+
+  return section.type === section.sourceType && !getSectionRegistryEntry(section.type);
 }
 
 function HiddenSectionPlaceholder({ section }: { section: BuilderSection }) {

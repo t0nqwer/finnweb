@@ -424,7 +424,9 @@
       ],
       "progressNotes": [
         "2026-05-06: Started audit/completion pass for existing Site Builder MVP without architecture rewrite.",
-        "2026-05-06: Completed builder MVP pass: web/api typecheck and build pass, builder route renders BuilderShell, builder API exports are complete, registry coverage now includes navbar/rich text/image/form/pricing/FAQ/testimonials, section library add selects the created section, move up/down reorder remains API-backed, publish is wired, and manual QA checklist was expanded."
+        "2026-05-06: Completed builder MVP pass: web/api typecheck and build pass, builder route renders BuilderShell, builder API exports are complete, registry coverage now includes navbar/rich text/image/form/pricing/FAQ/testimonials, section library add selects the created section, move up/down reorder remains API-backed, publish is wired, and manual QA checklist was expanded.",
+        "2026-05-13: Reopened to make builder canvas render imported/high-design template variants properly instead of falling back to older builder registry placeholders.",
+        "2026-05-13: Completed builder high-design preview bridge: BuilderCanvas now detects imported high-design variants and renders them through PublicSectionRenderer while normal builder sections still use the existing registry; desktop canvas width now supports 1280px preview."
       ]
     },
     {

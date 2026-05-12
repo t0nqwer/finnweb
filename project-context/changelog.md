@@ -2,6 +2,7 @@
 
 ## 2026-05-12
 
+- Updated builder canvas preview to render imported high-design template variants through `PublicSectionRenderer`, matching admin/public preview behavior while keeping normal builder registry rendering for standard sections. Desktop builder canvas now supports a 1280px preview width.
 - Fixed underfilled hero metrics after duplicate-section removal: high-design hero/metric renderers now preserve extracted stats but complete partial stat sets to four cards so the DevOnMars-style layout does not leave an empty column.
 - Removed duplicate stats in high-design education imports: deterministic drafts now keep metrics inside the hero instead of also adding a separate metric strip, and the DeepSeek prompt explicitly blocks duplicating hero stats as a second section.
 - Fixed remaining high-design import preview gaps: image capture now reads `srcset`, lazy image attributes, and CSS background URLs; education cards can reuse generic captured cards with images; metrics/features/cards render `value`/`label` data without blank placeholders; feature bento layout is balanced when only three cards are available.
