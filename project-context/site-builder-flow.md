@@ -156,6 +156,23 @@ Each section can switch to a same-type official section template via `PATCH .../
 
 After publish, editing draft pages does not affect the live public site until a new publish.
 
+### Next Publishing Direction: Worker Artifacts
+
+The next architecture step is artifact-first public serving. `PublishLog.snapshot` remains the deterministic source of truth, but a publish worker should generate isolated static artifacts for each publish version:
+
+```
+published/sites/{siteId}/v{version}/index.html
+published/sites/{siteId}/v{version}/styles.css
+published/sites/{siteId}/v{version}/assets/...
+published/sites/{siteId}/v{version}/manifest.json
+```
+
+Public routes should resolve the active artifact first and serve it directly from the customer domain/subdomain. If no artifact exists yet, keep the current snapshot renderer as fallback.
+
+Published artifact CSS must be separate from the FinnWeb app CSS and scoped with a wrapper such as `.fw-site-{siteId}.fw-version-{version}`. Imported/template animation CSS must be sanitized, namespaced, and paired with `prefers-reduced-motion` fallback. Do not run arbitrary imported JavaScript in public artifacts; map animation to safe CSS, `props.motion`, or approved FinnWeb renderer IDs.
+
+Detailed design: `docs/publish-worker-artifacts.md`.
+
 ---
 
 ## Public Rendering

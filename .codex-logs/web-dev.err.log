@@ -1,0 +1,12 @@
+⚠ Warning: Next.js inferred your workspace root, but it may not be correct.
+ We detected multiple lockfiles and selected the directory of C:\Users\jirap\Documents\GitHub\finnweb\pnpm-workspace.yaml as the root directory.
+ To silence this warning, set `turbopack.root` in your Next.js config, or consider removing one of the lockfiles if it's not needed.
+   See https://nextjs.org/docs/app/api-reference/config/next-config-js/turbopack#root-directory for more information.
+ Detected additional lockfiles: 
+   * C:\Users\jirap\Documents\GitHub\finnweb\apps\web\pnpm-workspace.yaml
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+[browser] Element not found: main (src/app/landing/page.tsx:122:14)
+[browser] Element not found: main (src/app/landing/page.tsx:74:14)
+[browser] Element not found: main (src/app/landing/page.tsx:85:14)
+[browser] Element not found: main (src/app/landing/page.tsx:97:14)

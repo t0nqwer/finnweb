@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-05-11
+
+- Recorded the template/import-template pipeline direction: imported ZIP/URL designs become editable FinnWeb template drafts first, then user site drafts, then publish-worker artifacts with isolated CSS/assets at publish time.
+- Added the worker-generated publish artifacts architecture design in `docs/publish-worker-artifacts.md`, defining artifact-first public serving, isolated per-site CSS, sanitized animation CSS, queue/storage direction, and snapshot-render fallback during migration.
+- Improved public-site animation support for high-design templates: public sections now read safe `props.motion` metadata through `MotionSection`, with scroll/load reveal presets, staggered reveal, scale-in, soft-float, marquee, button feedback, and `prefers-reduced-motion` fallback.
+- Added the website-to-template AI agent foundation: `docs/website-to-template-agent.md` defines the crawl, AI extraction, normalization, validation, and admin review pipeline; `@finnweb/shared/templates` now exports `WebsiteProfile` types and `createTemplateDraftFromWebsiteProfile()` for producing structured editable template drafts with safe motion metadata.
+- Extended the website-to-template agent with `createWebsiteProfileFromCapture()`, allowing deterministic browser/ZIP capture payloads to become normalized `WebsiteProfile` data before admin validation and template draft creation.
+- Added an admin dry-run import flow for website-to-template drafts: `POST /api/admin/templates/import-draft` returns generated template JSON with validation and no database writes, and the admin template dashboard can generate a draft from capture JSON into the existing editor.
+- Deleted all existing template data from the current database without running seed: website templates, template pages/sections/versions/installs/categories, section templates, and section template versions are now empty, and existing sections no longer retain `sectionTemplateId` references.
+- Disabled Prisma database seeding entirely by replacing `apps/api/prisma/seed.ts` with a no-op script. Running the seed command now performs no database writes.
+- Removed the old official website template seed block from `apps/api/prisma/seed.ts` so weak-looking starter templates are no longer recreated by seed runs.
+- Added seed-time archival for known legacy official template slugs (`official-sme-leadgen`, `official-clinic-booking`, `official-restaurant-reservation`, `official-real-estate-listing`, `official-agency-portfolio`) so existing seeded records stop appearing in customer template flows.
+
 ## 2026-05-10
 
 - Added admin template management workflow for validating JSON templates, saving valid templates as official, and changing template status between usable, not used, and archived.

@@ -37,3 +37,27 @@ export {
   getAvailableThemes,
   getAvailableContentPacks,
 } from "./generator/generate-template";
+
+// Website-to-template agent
+export {
+  createTemplateDraftFromWebsiteProfile,
+  createWebsiteProfileFromCapture,
+} from "./agent/website-to-template-agent";
+export type {
+  WebsiteAnimationSignal,
+  WebsiteDesignTokens,
+  WebsiteAsset,
+  CapturedWebsiteLink,
+  CapturedWebsiteImage,
+  CapturedWebsiteForm,
+  CapturedWebsitePage,
+  CapturedWebsiteSource,
+  WebsiteSectionAnalysis,
+  WebsitePageAnalysis,
+  WebsiteProfile,
+  WebsiteToTemplateAgentOptions,
+  TemplateDraftSection,
+  TemplateDraftPage,
+  WebsiteTemplateDraft,
+  WebsiteToTemplateDraftResult,
+} from "./agent/website-to-template-agent.types";

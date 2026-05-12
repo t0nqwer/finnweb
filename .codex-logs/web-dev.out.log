@@ -1,0 +1,14 @@
+▲ Next.js 16.2.1 (Turbopack)
+- Local:         http://127.0.0.1:3000
+- Network:       http://127.0.0.1:3000
+✓ Ready in 867ms
+
+ GET / 307 in 602ms (next.js: 235ms, proxy.ts: 95ms, application-code: 272ms)
+ GET /landing 200 in 176ms (next.js: 38ms, proxy.ts: 6ms, application-code: 132ms)
+ GET /login 200 in 58ms (next.js: 32ms, proxy.ts: 4ms, application-code: 22ms)
+ GET / 307 in 71ms (next.js: 5ms, proxy.ts: 6ms, application-code: 59ms)
+ GET /landing 200 in 59ms (next.js: 4ms, proxy.ts: 4ms, application-code: 51ms)
+ GET /mockup 404 in 604ms (next.js: 561ms, proxy.ts: 3ms, application-code: 41ms)
+ GET / 307 in 66ms (next.js: 4ms, proxy.ts: 6ms, application-code: 56ms)
+ GET /landing 200 in 55ms (next.js: 3ms, proxy.ts: 3ms, application-code: 49ms)
+ GET /mockup 404 in 50ms (next.js: 8ms, proxy.ts: 5ms, application-code: 37ms)

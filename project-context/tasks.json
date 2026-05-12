@@ -1,6 +1,238 @@
 {
-  "updatedAt": "2026-05-10",
+  "updatedAt": "2026-05-12",
   "tasks": [
+    {
+      "id": "import-template-to-editable-draft-artifact-pipeline",
+      "title": "Define imported template pipeline into editable drafts and publish artifacts",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "templates",
+      "estimatePoints": 2,
+      "owner": "unassigned",
+      "dependsOn": [
+        "website-to-template-agent",
+        "publish-worker-artifacts-isolated-css"
+      ],
+      "scope": [
+        "Record that imported templates must become editable FinnWeb template drafts, not raw published code",
+        "Define how imported template CSS, theme tokens, assets, and animation metadata flow into publish artifacts",
+        "Keep admin review between import and public use",
+        "Ensure imported template data is compiled into isolated per-site CSS only at publish time"
+      ],
+      "acceptanceCriteria": [
+        "Memory documents Template Source -> Editable FinnWeb Site -> Published Artifact flow",
+        "Task explains that imported CSS/animation belongs in template design data until publish worker compiles it",
+        "No automatic DB seeding or raw-code publishing is introduced",
+        "Future implementation can connect ZIP/URL import to admin review and artifact publishing"
+      ],
+      "progressNotes": [
+        "2026-05-11: Captured template/import-template direction: AI import creates a reviewable editable template draft; user sites are created from that template; publish worker compiles the site into isolated HTML/CSS/assets artifacts."
+      ]
+    },
+    {
+      "id": "publish-worker-artifacts-isolated-css",
+      "title": "Design worker-generated publish artifacts with isolated per-site CSS",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "publishing",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": [
+        "publish-public-render",
+        "high-design-template-renderer-elab"
+      ],
+      "scope": [
+        "Define publish artifact architecture for worker-generated HTML, CSS, and assets",
+        "Specify how per-site/per-version CSS is scoped so it does not conflict with FinnWeb app CSS",
+        "Plan backward-compatible migration from PublishLog snapshot rendering to artifact-first serving",
+        "Document queue, storage, fallback, cache, and validation steps"
+      ],
+      "acceptanceCriteria": [
+        "Architecture document explains artifact output paths, CSS isolation, and public serving flow",
+        "Site builder architecture reference mentions artifact-first serving with snapshot fallback",
+        "Project memory records the new publishing direction",
+        "No existing public rendering behavior is broken during the design step"
+      ],
+      "progressNotes": [
+        "2026-05-11: Started design step for worker-generated publish artifacts served directly with isolated per-site CSS.",
+        "2026-05-11: Added docs/publish-worker-artifacts.md and updated site-builder-flow, changelog, and memory. Design defines artifact output paths, CSS scoping, sanitizer rules, publish queue direction, public artifact-first serving, and snapshot fallback migration."
+      ]
+    },
+    {
+      "id": "website-to-template-agent",
+      "title": "Create AI agent foundation for turning any website into a template",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "templates",
+      "estimatePoints": 3,
+      "owner": "unassigned",
+      "dependsOn": [
+        "template-design-rules",
+        "disable-all-db-seeding"
+      ],
+      "scope": [
+        "Define the website-to-template agent workflow from crawl/screenshot to editable FinnWeb template JSON",
+        "Add shared conversion types and a deterministic draft builder for extracted website profiles",
+        "Keep generated templates reviewable and explicit instead of auto-seeding data into the database"
+      ],
+      "acceptanceCriteria": [
+        "Agent workflow document explains crawl, extraction, AI normalization, validation, and admin review",
+        "Shared package exports conversion types and a website-profile-to-template draft function",
+        "Tests cover conversion into supported FinnWeb section types and animation metadata",
+        "No database seed writes are introduced"
+      ],
+      "progressNotes": [
+        "2026-05-11: Started website-to-template AI agent foundation at user request.",
+        "2026-05-11: Added docs/website-to-template-agent.md plus shared WebsiteProfile types and createTemplateDraftFromWebsiteProfile() to convert extracted websites into reviewable FinnWeb template drafts with safe motion metadata. Shared package typecheck and focused agent tests passed.",
+        "2026-05-12: Reopened for implementation continuation by request.",
+        "2026-05-12: Added createWebsiteProfileFromCapture() so deterministic browser/ZIP captures can be normalized into WebsiteProfile before draft creation; shared typecheck and focused agent tests passed.",
+        "2026-05-12: Completed reopened implementation pass; website-to-template agent foundation now covers documented workflow, capture/profile/draft conversion types, focused tests, and no seed writes."
+      ]
+    },
+    {
+      "id": "website-to-template-admin-dry-run",
+      "title": "Add admin dry-run API for website-to-template drafts",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "templates",
+      "estimatePoints": 2,
+      "owner": "unassigned",
+      "dependsOn": [
+        "website-to-template-agent"
+      ],
+      "scope": [
+        "Accept deterministic captured website payloads from browser or ZIP import workers",
+        "Generate editable FinnWeb template draft JSON without saving or seeding data",
+        "Return admin validation result alongside confidence and warnings",
+        "Keep endpoint admin-only and compatible with existing template review flow"
+      ],
+      "acceptanceCriteria": [
+        "Admin can POST captured website data and receive a template draft",
+        "Response includes validation result from admin template validator",
+        "Endpoint performs no database writes",
+        "API/shared typecheck or focused tests pass"
+      ],
+      "progressNotes": [
+        "2026-05-12: Started admin dry-run API implementation to make website-to-template agent usable from tools/UI.",
+        "2026-05-12: Completed admin dry-run import flow: added POST /api/admin/templates/import-draft, capture DTO validation, dashboard capture JSON generator, docs, and passing API/shared/web typechecks."
+      ]
+    },
+    {
+      "id": "delete-all-template-data",
+      "title": "Delete all template data from database",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "templates",
+      "estimatePoints": 1,
+      "owner": "unassigned",
+      "dependsOn": [
+        "disable-all-db-seeding"
+      ],
+      "scope": [
+        "Delete website templates and related pages, sections, versions, installs, and categories from DB",
+        "Delete section templates and section template versions from DB",
+        "Ensure Prisma seed remains disabled so template data is not recreated"
+      ],
+      "acceptanceCriteria": [
+        "Template-related database tables have zero rows after cleanup",
+        "Existing site sections do not retain sectionTemplateId references",
+        "Seed remains a no-op"
+      ],
+      "progressNotes": [
+        "2026-05-11: Started deleting all template data from the database at user request.",
+        "2026-05-11: Deleted all live template data from the database without running seed. Counts went to zero for TemplateInstall (2->0), TemplateSection (137->0), TemplatePage (84->0), TemplateVersion (121->0), Template (60->0), TemplateCategory (7->0), SectionTemplateVersion (659->0), SectionTemplate (91->0), and Section.sectionTemplateId references (13->0)."
+      ]
+    },
+    {
+      "id": "disable-all-db-seeding",
+      "title": "Disable all Prisma database seeding",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "templates",
+      "estimatePoints": 1,
+      "owner": "unassigned",
+      "dependsOn": [],
+      "scope": [
+        "Replace Prisma seed with a no-op script",
+        "Ensure seed command performs no database writes",
+        "Document that no data should be seeded automatically"
+      ],
+      "acceptanceCriteria": [
+        "apps/api/prisma/seed.ts contains no Prisma writes",
+        "No template, section template, plan, or admin role data is seeded",
+        "Typecheck passes without running seed"
+      ],
+      "progressNotes": [
+        "2026-05-11: Started disabling all database seeding at user request.",
+        "2026-05-11: Replaced apps/api/prisma/seed.ts with a no-op script containing no Prisma imports or database writes; API typecheck passed without running seed."
+      ]
+    },
+    {
+      "id": "remove-official-template-seeds",
+      "title": "Remove bad-looking official website template seeds",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "templates",
+      "estimatePoints": 1,
+      "owner": "unassigned",
+      "dependsOn": [
+        "template-design-rules"
+      ],
+      "scope": [
+        "Stop seeding existing official website templates from Prisma seed",
+        "Archive known legacy official seed templates so they do not show in customer flows",
+        "Keep template infrastructure and section-template system intact for future high-design templates"
+      ],
+      "acceptanceCriteria": [
+        "Seed no longer creates the old official website templates",
+        "Known old official template slugs are archived during seed runs",
+        "Typecheck or targeted validation passes"
+      ],
+      "progressNotes": [
+        "2026-05-11: Started removal of old official website template seeds at user request because current template designs do not meet quality bar.",
+        "2026-05-11: Removed official website template creation from seed.ts and replaced it with archival for the old official seed slugs; API and web typecheck passed.",
+        "2026-05-11: Ran API Prisma seed after the code change so existing legacy official template records were archived in the current database."
+      ]
+    },
+    {
+      "id": "high-design-template-renderer-elab",
+      "title": "Add high-design animated template renderer inspired by E-Lab template",
+      "status": "done",
+      "priority": "high",
+      "phase": "phase-3",
+      "epic": "templates",
+      "estimatePoints": 5,
+      "owner": "unassigned",
+      "dependsOn": [
+        "template-design-rules",
+        "publish-public-render"
+      ],
+      "scope": [
+        "Inspect E-Lab Next.js template structure and animation approach",
+        "Add public renderer motion primitives for safe animated sections",
+        "Add high-design public section variants for E-Lab style pages",
+        "Map template section props/variants to these renderers",
+        "Document how external high-design React templates should be converted into FinnWeb structured templates"
+      ],
+      "acceptanceCriteria": [
+        "FinnWeb public renderer can render E-Lab style section variants from structured props",
+        "Animations use safe CSS/React primitives without raw arbitrary template JavaScript",
+        "Unsupported templates still fall back safely",
+        "Web typecheck passes"
+      ],
+      "progressNotes": [
+        "2026-05-10: Started E-Lab high-design animated template renderer support after inspecting external Next.js template.",
+        "2026-05-11: Continuing animation improvement pass for public renderer and template-import motion metadata.",
+        "2026-05-11: Completed motion renderer pass: public sections now wrap with MotionSection, read safe props.motion metadata, support scroll/load reveal presets, staggered reveal, scale, float, marquee, button feedback, and prefers-reduced-motion fallback. Web and shared typechecks passed."
+      ]
+    },
     {
       "id": "admin-template-edit-preview",
       "title": "Add admin template edit existing and preview workflow",

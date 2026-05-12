@@ -140,3 +140,221 @@
     @apply font-sans;
   }
 }
+
+@keyframes fw-reveal-in {
+  from {
+    opacity: 0;
+    transform: translate3d(var(--fw-reveal-x, 0), var(--fw-reveal-y, 40px), 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes fw-soft-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+@keyframes fw-marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@layer utilities {
+  .fw-motion-section {
+    --fw-motion-x: 0;
+    --fw-motion-y: 30px;
+    --fw-motion-scale: 1;
+    opacity: 0;
+    transform: translate3d(var(--fw-motion-x), var(--fw-motion-y), 0)
+      scale(var(--fw-motion-scale));
+    transition:
+      opacity 620ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform, opacity;
+  }
+
+  .fw-motion-section.is-visible {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  .fw-motion-subtle {
+    --fw-motion-y: 18px;
+  }
+
+  .fw-motion-strong {
+    --fw-motion-y: 48px;
+  }
+
+  .fw-motion-fade-down {
+    --fw-motion-y: -30px;
+  }
+
+  .fw-motion-fade-left {
+    --fw-motion-x: 34px;
+    --fw-motion-y: 0;
+  }
+
+  .fw-motion-fade-right {
+    --fw-motion-x: -34px;
+    --fw-motion-y: 0;
+  }
+
+  .fw-motion-scale-in {
+    --fw-motion-y: 18px;
+    --fw-motion-scale: 0.97;
+  }
+
+  .fw-motion-none {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .fw-motion-section.is-visible.fw-motion-soft-float {
+    animation: fw-soft-float 6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  }
+
+  .fw-motion-section.is-visible.fw-motion-marquee {
+    overflow: hidden;
+  }
+
+  .fw-motion-section.is-visible.fw-motion-marquee > * {
+    animation: fw-marquee 24s linear infinite;
+    width: max-content;
+  }
+
+  .fw-motion-section.is-visible.fw-motion-staggered-reveal
+    :where(.fw-stagger-item, li, article, figure) {
+    animation: fw-reveal-in 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .fw-motion-section.is-visible.fw-motion-staggered-reveal
+    :where(.fw-stagger-item, li, article, figure):nth-child(1) {
+    animation-delay: 80ms;
+  }
+
+  .fw-motion-section.is-visible.fw-motion-staggered-reveal
+    :where(.fw-stagger-item, li, article, figure):nth-child(2) {
+    animation-delay: 150ms;
+  }
+
+  .fw-motion-section.is-visible.fw-motion-staggered-reveal
+    :where(.fw-stagger-item, li, article, figure):nth-child(3) {
+    animation-delay: 220ms;
+  }
+
+  .fw-motion-section.is-visible.fw-motion-staggered-reveal
+    :where(.fw-stagger-item, li, article, figure):nth-child(4) {
+    animation-delay: 290ms;
+  }
+
+  .fw-motion-section.is-visible.fw-motion-staggered-reveal
+    :where(.fw-stagger-item, li, article, figure):nth-child(5) {
+    animation-delay: 360ms;
+  }
+
+  .fw-motion-section.is-visible.fw-motion-staggered-reveal
+    :where(.fw-stagger-item, li, article, figure):nth-child(6) {
+    animation-delay: 430ms;
+  }
+
+  .fw-motion-section :where(a, button) {
+    transition:
+      transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 240ms cubic-bezier(0.22, 1, 0.36, 1),
+      color 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .fw-motion-section :where(a, button):active {
+    transform: scale(0.98);
+  }
+
+  .fw-reveal {
+    --fw-reveal-x: 0;
+    --fw-reveal-y: 40px;
+    animation: fw-reveal-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    will-change: transform, opacity;
+  }
+
+  .fw-reveal-down {
+    --fw-reveal-y: -32px;
+  }
+
+  .fw-reveal-left {
+    --fw-reveal-x: 40px;
+    --fw-reveal-y: 0;
+  }
+
+  .fw-reveal-right {
+    --fw-reveal-x: -40px;
+    --fw-reveal-y: 0;
+  }
+
+  .fw-reveal-none {
+    --fw-reveal-x: 0;
+    --fw-reveal-y: 0;
+  }
+
+  .fw-stagger > .fw-stagger-item {
+    animation: fw-reveal-in 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    will-change: transform, opacity;
+  }
+
+  .fw-stagger > .fw-stagger-item:nth-child(1) {
+    animation-delay: 60ms;
+  }
+
+  .fw-stagger > .fw-stagger-item:nth-child(2) {
+    animation-delay: 150ms;
+  }
+
+  .fw-stagger > .fw-stagger-item:nth-child(3) {
+    animation-delay: 240ms;
+  }
+
+  .fw-stagger > .fw-stagger-item:nth-child(4) {
+    animation-delay: 330ms;
+  }
+
+  .fw-stagger > .fw-stagger-item:nth-child(5) {
+    animation-delay: 420ms;
+  }
+
+  .fw-stagger > .fw-stagger-item:nth-child(6) {
+    animation-delay: 510ms;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fw-motion-section,
+  .fw-motion-section.is-visible,
+  .fw-reveal,
+  .fw-stagger > .fw-stagger-item {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  .fw-motion-section.is-visible.fw-motion-soft-float,
+  .fw-motion-section.is-visible.fw-motion-marquee > *,
+  .fw-motion-section.is-visible.fw-motion-staggered-reveal
+    :where(.fw-stagger-item, li, article, figure) {
+    animation: none !important;
+  }
+}

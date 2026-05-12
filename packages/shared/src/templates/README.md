@@ -44,3 +44,9 @@ For a new reusable website template, usually create three files and update two i
 Before a template becomes official, check `docs/template-design-rules.md`.
 
 A generated site must not look like a blank page with blocks. It needs clear first-viewport hierarchy, real content in each visible section, mobile-safe Thai typography, and a strong conversion path.
+
+## AI Website Import Agent
+
+For turning an existing website into a template, use the agent flow in `docs/website-to-template-agent.md`.
+
+The shared package exposes `createTemplateDraftFromWebsiteProfile()`, which converts an extracted `WebsiteProfile` into a reviewable FinnWeb template draft. The extractor may use browser screenshots, DOM analysis, and AI reasoning, but the saved output must stay structured: pages, supported section types, editable props, design tokens, and safe motion metadata. Do not import arbitrary source-site JavaScript or seed imported templates directly into the database.

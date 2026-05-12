@@ -134,6 +134,21 @@ type TemplateValidationResponse = {
   data?: TemplateValidationResult;
 };
 
+type TemplateImportDraftResponse = {
+  success?: boolean;
+  data?: {
+    template?: Record<string, unknown>;
+    validation?: TemplateValidationResult;
+    confidence?: number;
+    warnings?: string[];
+    source?: {
+      url: string;
+      extractedPageCount: number;
+      extractedSectionCount: number;
+    };
+  };
+};
+
 type DashboardStat = {
   label: string;
   value: string;
@@ -190,6 +205,54 @@ const starterTemplateJson = JSON.stringify(
             },
           },
         ],
+      },
+    ],
+  },
+  null,
+  2,
+);
+
+const starterCaptureJson = JSON.stringify(
+  {
+    sourceUrl: "https://example.com",
+    name: "Example Brand",
+    language: "thai",
+    industry: "service",
+    goals: ["leads"],
+    styleKeywords: ["modern"],
+    pages: [
+      {
+        url: "https://example.com/",
+        title: "Example Brand",
+        metaDescription: "High-conversion services website.",
+        headings: ["Example Brand", "Services", "Contact"],
+        textBlocks: [
+          "We help customers understand the offer and contact the team quickly.",
+          "Fast launch",
+          "Clear conversion path",
+        ],
+        links: [
+          { label: "Services", href: "#services" },
+          { label: "Contact", href: "#contact" },
+        ],
+        images: [
+          {
+            url: "https://example.com/hero.jpg",
+            alt: "Example Brand hero",
+            width: 1600,
+            height: 900,
+          },
+        ],
+        forms: [
+          {
+            id: "contact-form",
+            title: "Contact",
+            action: "#contact",
+            fields: ["name", "email", "phone"],
+          },
+        ],
+        colorSamples: ["#1A1C23", "#2D2F39", "#FF8C00"],
+        fontFamilies: ["Kanit"],
       },
     ],
   },
@@ -260,12 +323,14 @@ export function AdminTemplatesDashboard() {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
   const [templateJson, setTemplateJson] = useState(starterTemplateJson);
+  const [captureJson, setCaptureJson] = useState(starterCaptureJson);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(
     null,
   );
   const [validationResult, setValidationResult] =
     useState<TemplateValidationResult | null>(null);
   const [isValidating, setIsValidating] = useState(false);
+  const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [updatingTemplateId, setUpdatingTemplateId] = useState<string | null>(
     null,
@@ -341,6 +406,14 @@ export function AdminTemplatesDashboard() {
       return JSON.parse(templateJson) as Record<string, unknown>;
     } catch {
       throw new Error("Template JSON is not valid.");
+    }
+  }
+
+  function parseCaptureJson() {
+    try {
+      return JSON.parse(captureJson) as Record<string, unknown>;
+    } catch {
+      throw new Error("Capture JSON is not valid.");
     }
   }
 
@@ -422,6 +495,49 @@ export function AdminTemplatesDashboard() {
       return response.payload.data;
     } finally {
       setIsValidating(false);
+    }
+  }
+
+  async function generateTemplateDraftFromCapture() {
+    const payload = parseCaptureJson();
+
+    setIsGeneratingDraft(true);
+    setActionMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetchApiWithTokenRefresh<TemplateImportDraftResponse>({
+        apiBaseUrl,
+        path: "/admin/templates/import-draft",
+        init: {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        },
+      });
+
+      const data = response.payload.data;
+      if (!response.response.ok || !data?.template || !data.validation) {
+        throw new Error("Could not generate template draft.");
+      }
+
+      setEditingTemplateId(null);
+      setTemplateJson(JSON.stringify(data.template, null, 2));
+      setValidationResult(data.validation);
+      setActionMessage(
+        `Generated draft with ${Math.round((data.confidence ?? 0) * 100)}% confidence.`,
+      );
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not generate template draft.",
+      );
+    } finally {
+      setIsGeneratingDraft(false);
     }
   }
 
@@ -743,6 +859,48 @@ export function AdminTemplatesDashboard() {
         </CardHeader>
         <CardContent className="grid grid-cols-1 gap-4 pt-4 xl:grid-cols-[1.25fr_0.75fr]">
           <div className="space-y-3">
+            <div className="rounded-lg border border-primary/25 bg-primary/10 p-3">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-sm font-semibold">Website capture import</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    Paste captured headings, links, images, forms, colors, and fonts.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-border/70 bg-black/10"
+                    disabled={isGeneratingDraft}
+                    onClick={() => {
+                      setCaptureJson(starterCaptureJson);
+                    }}
+                  >
+                    <FileCode2Icon data-icon="inline-start" />
+                    Example
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-linear-to-r from-primary to-[#ff4500] text-primary-foreground"
+                    disabled={isGeneratingDraft || isSavingTemplate || isValidating}
+                    onClick={() => void generateTemplateDraftFromCapture()}
+                  >
+                    <SparklesIcon data-icon="inline-start" />
+                    {isGeneratingDraft ? "Generating" : "Generate draft"}
+                  </Button>
+                </div>
+              </div>
+              <textarea
+                value={captureJson}
+                onChange={(event) => {
+                  setCaptureJson(event.target.value);
+                }}
+                spellCheck={false}
+                className="mt-3 min-h-52 w-full resize-y rounded-lg border border-border/70 bg-black/25 p-3 font-mono text-xs leading-6 text-foreground outline-none transition focus:border-primary/70 focus:ring-2 focus:ring-primary/20"
+                aria-label="Website capture JSON"
+              />
+            </div>
             <textarea
               value={templateJson}
               onChange={(event) => {

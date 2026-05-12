@@ -9,6 +9,10 @@ import {
   Post,
   UseGuards,
 } from "@nestjs/common";
+import {
+  createTemplateDraftFromWebsiteProfile,
+  createWebsiteProfileFromCapture,
+} from "@finnweb/shared/templates";
 import { Prisma } from "@/generated/prisma/client";
 import { AccessJwtGuard } from "@/common/guards/access-jwt.guard";
 import { PlatformAdminGuard } from "@/common/guards/platform-admin.guard";
@@ -16,6 +20,7 @@ import { PrismaService } from "@/prisma/prisma.service";
 import { CurrentUser } from "@/common/decorators/current-user.decorator";
 import { CreateTemplateDto } from "../templates/dto/create-template.dto";
 import { AdminTemplateValidationService } from "./admin-template-validation.service";
+import { ImportTemplateDraftDto } from "./dto/import-template-draft.dto";
 import { UpdateAdminTemplateStatusDto } from "./dto/update-admin-template-status.dto";
 
 @UseGuards(AccessJwtGuard, PlatformAdminGuard)
@@ -160,6 +165,24 @@ export class AdminTemplatesController {
     return {
       success: true,
       data: this.validator.validateTemplate(dto),
+    };
+  }
+
+  @Post("import-draft")
+  async importDraft(@Body() dto: ImportTemplateDraftDto) {
+    const profile = createWebsiteProfileFromCapture(dto);
+    const draftResult = createTemplateDraftFromWebsiteProfile(profile);
+    const validation = this.validator.validateTemplate(draftResult.template);
+
+    return {
+      success: true,
+      data: {
+        template: draftResult.template,
+        validation,
+        confidence: draftResult.confidence,
+        warnings: draftResult.warnings,
+        source: draftResult.source,
+      },
     };
   }
 
