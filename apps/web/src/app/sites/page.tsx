@@ -51,6 +51,20 @@ type SiteRecord = {
     name: string;
     slug: string;
   };
+  templateInstalls?: Array<{
+    id: string;
+    createdAt?: string;
+    template?: {
+      id: string;
+      name: string;
+      slug: string;
+      tags?: Record<string, unknown> | null;
+    } | null;
+    version?: {
+      id: string;
+      version: number;
+    } | null;
+  }>;
 };
 
 type SiteThemeConfig = {
@@ -92,6 +106,10 @@ function getSiteInitials(name: string) {
 
 function buildPublicSiteUrl(site: SiteRecord) {
   return `https://${site.slug}.finnweb.site`;
+}
+
+function getAttachedTemplate(site: SiteRecord) {
+  return site.templateInstalls?.[0] ?? null;
 }
 
 export default function SitesPage() {
@@ -716,6 +734,16 @@ function ThemeConfigPanel({
   onReset: () => void;
   onSave: () => void;
 }) {
+  const attachedTemplate = getAttachedTemplate(site);
+  const attachedTheme = normalizeSiteThemeConfig(
+    attachedTemplate?.template?.tags &&
+      typeof attachedTemplate.template.tags === "object" &&
+      "theme" in attachedTemplate.template.tags
+      ? attachedTemplate.template.tags.theme
+      : null,
+  );
+  const hasAttachedTheme = Boolean(attachedTemplate?.template?.tags);
+
   return (
     <Card className="border-border/70 bg-card/85">
       <CardHeader className="border-b border-border/60">
@@ -728,6 +756,19 @@ function ThemeConfigPanel({
             <CardDescription>
               ตั้งค่าสีและฟอนต์หลักของ {site.name} สำหรับ template และ publish artifact
             </CardDescription>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              <span className="rounded-lg border border-border/70 bg-background/30 px-2.5 py-1 text-muted-foreground">
+                Template: {attachedTemplate?.template?.name ?? "ยังไม่ได้ attach"}
+              </span>
+              {attachedTemplate?.version ? (
+                <span className="rounded-lg border border-border/70 bg-background/30 px-2.5 py-1 text-muted-foreground">
+                  Version {attachedTemplate.version.version}
+                </span>
+              ) : null}
+              <span className="rounded-lg border border-border/70 bg-background/30 px-2.5 py-1 text-muted-foreground">
+                Theme source: {hasAttachedTheme ? "template" : "site custom"}
+              </span>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button
@@ -791,46 +832,92 @@ function ThemeConfigPanel({
           </label>
         </div>
 
-        <div
-          className="rounded-lg border p-4"
-          style={{
-            backgroundColor: theme.backgroundColor,
-            borderColor: theme.surfaceColor,
-            color: theme.textColor,
-            fontFamily: `${theme.fontFamily}, system-ui, sans-serif`,
-          }}
-        >
-          <div
-            className="rounded-lg p-4"
-            style={{ backgroundColor: theme.surfaceColor }}
-          >
-            <p className="text-xs font-semibold uppercase tracking-[0.16em]">
-              Preview
-            </p>
-            <h3 className="mt-2 text-xl font-semibold">{site.name}</h3>
-            <p className="mt-2 text-sm opacity-75">
-              สีนี้จะเป็น token หลักให้ template และ renderer ใช้ต่อ
-            </p>
-            <button
-              type="button"
-              className="mt-4 rounded-lg px-4 py-2 text-sm font-semibold"
-              style={{
-                backgroundColor: theme.primaryColor,
-                color: theme.backgroundColor,
-              }}
-            >
-              Primary action
-            </button>
-            <span
-              className="ml-3 inline-flex rounded-lg px-3 py-2 text-sm font-semibold"
-              style={{ color: theme.accentColor }}
-            >
-              Accent
-            </span>
-          </div>
+        <div className="space-y-3">
+          <ThemePreviewCard site={site} theme={theme} label="Site theme" />
+          {attachedTemplate ? (
+            <div className="rounded-lg border border-border/70 bg-background/25 p-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                Attached template
+              </p>
+              <p className="mt-2 font-semibold">
+                {attachedTemplate.template?.name ?? "Unknown template"}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Theme tokens are copied into this site when the template is applied.
+              </p>
+              {hasAttachedTheme ? (
+                <div className="mt-3 flex gap-1.5">
+                  {[
+                    attachedTheme.primaryColor,
+                    attachedTheme.accentColor,
+                    attachedTheme.backgroundColor,
+                    attachedTheme.surfaceColor,
+                    attachedTheme.textColor,
+                  ].map((color) => (
+                    <span
+                      key={color}
+                      className="size-5 rounded-full border border-border"
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function ThemePreviewCard({
+  site,
+  theme,
+  label,
+}: {
+  site: SiteRecord;
+  theme: SiteThemeConfig;
+  label: string;
+}) {
+  return (
+    <div
+      className="rounded-lg border p-4"
+      style={{
+        backgroundColor: theme.backgroundColor,
+        borderColor: theme.surfaceColor,
+        color: theme.textColor,
+        fontFamily: `${theme.fontFamily}, system-ui, sans-serif`,
+      }}
+    >
+      <div
+        className="rounded-lg p-4"
+        style={{ backgroundColor: theme.surfaceColor }}
+      >
+        <p className="text-xs font-semibold uppercase tracking-[0.16em]">
+          {label}
+        </p>
+        <h3 className="mt-2 text-xl font-semibold">{site.name}</h3>
+        <p className="mt-2 text-sm opacity-75">
+          สีนี้จะเป็น token หลักให้ template และ renderer ใช้ต่อ
+        </p>
+        <button
+          type="button"
+          className="mt-4 rounded-lg px-4 py-2 text-sm font-semibold"
+          style={{
+            backgroundColor: theme.primaryColor,
+            color: theme.backgroundColor,
+          }}
+        >
+          Primary action
+        </button>
+        <span
+          className="ml-3 inline-flex rounded-lg px-3 py-2 text-sm font-semibold"
+          style={{ color: theme.accentColor }}
+        >
+          Accent
+        </span>
+      </div>
+    </div>
   );
 }
 

@@ -1724,7 +1724,9 @@
         "2026-05-13: Reopened because /sites still showed old dashboard behavior, including SiteEditorSimulator editing and finnweb.co public links instead of the current builder/public routing.",
         "2026-05-13: Completed /sites refresh: removed SiteEditorSimulator, routed edit actions to /sites/{siteId}/builder, updated public links to finnweb.site, added site control center summary, search, active-site panel, and builder/leads/public actions on each site card.",
         "2026-05-13: Reopened to add site-level theme config controls on /sites so imported/template sites expose editable brand colors and font tokens.",
-        "2026-05-13: Completed theme config addition: added PATCH /sites/:siteId/theme, normalized saved Site.themeConfig tokens, and added /sites UI to edit primary/accent/background/surface/text colors plus font family with live preview."
+        "2026-05-13: Completed theme config addition: added PATCH /sites/:siteId/theme, normalized saved Site.themeConfig tokens, and added /sites UI to edit primary/accent/background/surface/text colors plus font family with live preview.",
+        "2026-05-13: Reopened to attach template identity to theme config so sites show which template/theme their editable theme tokens came from.",
+        "2026-05-13: Completed template-theme attachment UX: /sites now includes latest TemplateInstall template/version metadata, shows attached template and theme source in Theme config, and previews attached template theme swatches alongside editable site tokens."
       ],
       "acceptanceCriteria": [
         "ผู้ใช้ SME ไทยสามารถค้นหาและจัดการ page ได้รวดเร็วบนมือถือ",

@@ -79,6 +79,7 @@
 - Fixed builder content edits for imported/high-design templates by syncing legacy editor fields such as `headline`, `body`, `featureOne`, `questions`, `quotes`, and `plans` back into the prop keys that public high-design renderers actually read.
 - Rebuilt `/sites` into a current dashboard control center: edit actions now open the real builder, public links use `finnweb.site`, site cards include builder/leads/public actions, and the old `SiteEditorSimulator` path was removed.
 - Added site-level theme config editing from `/sites`: users can adjust primary/accent/background/surface/text colors and font family, preview the token set, and save it through `PATCH /sites/:siteId/theme` into `Site.themeConfig`.
+- Attached template identity to site theme config UX: `/sites` now receives the latest `TemplateInstall` with template/version metadata and shows the attached template and theme source beside editable theme tokens.
 
 ## 2026-05-01
 

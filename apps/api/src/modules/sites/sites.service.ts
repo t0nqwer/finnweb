@@ -1749,6 +1749,28 @@ export class SitesService {
             pages: true,
           },
         },
+        templateInstalls: {
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1,
+          include: {
+            template: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                tags: true,
+              },
+            },
+            version: {
+              select: {
+                id: true,
+                version: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -1818,6 +1840,28 @@ export class SitesService {
         _count: {
           select: {
             pages: true,
+          },
+        },
+        templateInstalls: {
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1,
+          include: {
+            template: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                tags: true,
+              },
+            },
+            version: {
+              select: {
+                id: true,
+                version: true,
+              },
+            },
           },
         },
       },
