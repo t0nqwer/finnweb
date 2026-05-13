@@ -1720,7 +1720,9 @@
         "เพิ่ม search ใน page manager เพื่อค้นหา title/slug/path พร้อมแสดงจำนวนผลลัพธ์",
         "ปรับรายการ page และปุ่ม Edit/Delete ให้เหมาะกับมือถือ (responsive action area)",
         "เพิ่มข้อความ error ที่เป็นมิตรขึ้นสำหรับ slug/path/home page/plan limits และเพิ่ม CTA ไปหน้า subscription เมื่อชน limit",
-        "ตรวจสอบ TypeScript ของ apps/web ผ่าน (tsc --noEmit)"
+        "ตรวจสอบ TypeScript ของ apps/web ผ่าน (tsc --noEmit)",
+        "2026-05-13: Reopened because /sites still showed old dashboard behavior, including SiteEditorSimulator editing and finnweb.co public links instead of the current builder/public routing.",
+        "2026-05-13: Completed /sites refresh: removed SiteEditorSimulator, routed edit actions to /sites/{siteId}/builder, updated public links to finnweb.site, added site control center summary, search, active-site panel, and builder/leads/public actions on each site card."
       ],
       "acceptanceCriteria": [
         "ผู้ใช้ SME ไทยสามารถค้นหาและจัดการ page ได้รวดเร็วบนมือถือ",
