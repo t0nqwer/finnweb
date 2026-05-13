@@ -23,6 +23,7 @@ import { SitesService } from "./sites.service";
 import { SwitchSectionTemplateDto } from "./dto/switch-section-template.dto";
 import { PreviewTokenPolicyDto } from "./dto/preview-token.dto";
 import { ApplyTemplateDto } from "./dto/apply-site-template.dto";
+import { UpdateSiteThemeDto } from "./dto/update-site-theme.dto";
 
 @UseGuards(AccessJwtGuard)
 @Controller("sites")
@@ -72,6 +73,24 @@ export class SitesController {
     @Param("siteId") siteId: string,
   ) {
     const data = await this.sitesService.removeSite(userId, siteId);
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
+  @Patch(":siteId/theme")
+  async updateThemeConfig(
+    @CurrentUser("sub") userId: string,
+    @Param("siteId") siteId: string,
+    @Body() dto: UpdateSiteThemeDto,
+  ) {
+    const data = await this.sitesService.updateThemeConfig(
+      userId,
+      siteId,
+      dto,
+    );
 
     return {
       success: true,

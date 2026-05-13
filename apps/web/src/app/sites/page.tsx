@@ -10,7 +10,10 @@ import {
   GlobeIcon,
   HammerIcon,
   LayoutDashboardIcon,
+  PaletteIcon,
   PlusIcon,
+  RotateCcwIcon,
+  SaveIcon,
   SearchIcon,
   Trash2Icon,
 } from "lucide-react";
@@ -42,11 +45,30 @@ type SiteRecord = {
   name: string;
   slug: string;
   status?: string;
+  themeConfig?: Record<string, unknown> | null;
   workspace?: {
     id: string;
     name: string;
     slug: string;
   };
+};
+
+type SiteThemeConfig = {
+  primaryColor: string;
+  accentColor: string;
+  backgroundColor: string;
+  surfaceColor: string;
+  textColor: string;
+  fontFamily: string;
+};
+
+const DEFAULT_SITE_THEME: SiteThemeConfig = {
+  primaryColor: "#FF8C00",
+  accentColor: "#FFD700",
+  backgroundColor: "#FFFFFF",
+  surfaceColor: "#F9FAFB",
+  textColor: "#1A1C23",
+  fontFamily: "Kanit",
 };
 
 function getSiteStatusLabel(status?: string) {
@@ -82,6 +104,9 @@ export default function SitesPage() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [deletingSiteId, setDeletingSiteId] = useState<string | null>(null);
+  const [themeDraft, setThemeDraft] =
+    useState<SiteThemeConfig>(DEFAULT_SITE_THEME);
+  const [isSavingTheme, setIsSavingTheme] = useState(false);
 
   useEffect(() => {
     const stored = readStoredAuthState();
@@ -203,6 +228,10 @@ export default function SitesPage() {
   const publishedCount = sites.filter(isPublished).length;
   const draftCount = sites.length - publishedCount;
 
+  useEffect(() => {
+    setThemeDraft(normalizeSiteThemeConfig(selectedSite?.themeConfig));
+  }, [selectedSite?.id, selectedSite?.themeConfig]);
+
   function persistSelectedSite(site: SiteRecord) {
     persistAuthState({
       apiBaseUrl,
@@ -237,6 +266,70 @@ export default function SitesPage() {
 
   function openPublicSite(site: SiteRecord) {
     window.open(buildPublicSiteUrl(site), "_blank", "noopener,noreferrer");
+  }
+
+  function updateThemeField(key: keyof SiteThemeConfig, value: string) {
+    setThemeDraft((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  }
+
+  async function saveThemeConfig(site: SiteRecord) {
+    if (!accessToken) {
+      setErrorMessage("กรุณาเข้าสู่ระบบก่อนบันทึก Theme");
+      return;
+    }
+
+    const nextTheme = toThemePayload(themeDraft);
+    setIsSavingTheme(true);
+    setErrorMessage(null);
+    setStatusMessage(null);
+
+    try {
+      const { response, payload } = await fetchApiWithTokenRefresh({
+        apiBaseUrl,
+        path: `/sites/${site.id}/theme`,
+        init: {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            themeConfig: nextTheme,
+          }),
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          resolveSectionApiErrorMessage(payload, "บันทึก Theme ไม่สำเร็จ"),
+        );
+      }
+
+      const updatedSite =
+        typeof payload === "object" &&
+        payload &&
+        "data" in payload &&
+        payload.data &&
+        typeof payload.data === "object"
+          ? (payload.data as SiteRecord)
+          : { ...site, themeConfig: nextTheme };
+
+      setSites((currentSites) =>
+        currentSites.map((currentSite) =>
+          currentSite.id === site.id ? updatedSite : currentSite,
+        ),
+      );
+      setThemeDraft(normalizeSiteThemeConfig(updatedSite.themeConfig));
+      setStatusMessage(`บันทึก Theme ของ ${site.name} แล้ว`);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "บันทึก Theme ไม่สำเร็จ",
+      );
+    } finally {
+      setIsSavingTheme(false);
+    }
   }
 
   async function handleDeleteSite(site: SiteRecord) {
@@ -406,6 +499,19 @@ export default function SitesPage() {
             </CardContent>
           </Card>
         </section>
+
+        {selectedSite ? (
+          <ThemeConfigPanel
+            site={selectedSite}
+            theme={themeDraft}
+            isSaving={isSavingTheme}
+            onChange={updateThemeField}
+            onReset={() =>
+              setThemeDraft(normalizeSiteThemeConfig(selectedSite.themeConfig))
+            }
+            onSave={() => void saveThemeConfig(selectedSite)}
+          />
+        ) : null}
 
         {errorMessage ? (
           <Card className="border-destructive/50 bg-destructive/10">
@@ -593,4 +699,224 @@ function SiteStatusBadge({ site }: { site: SiteRecord }) {
       {getSiteStatusLabel(site.status)}
     </Badge>
   );
+}
+
+function ThemeConfigPanel({
+  site,
+  theme,
+  isSaving,
+  onChange,
+  onReset,
+  onSave,
+}: {
+  site: SiteRecord;
+  theme: SiteThemeConfig;
+  isSaving: boolean;
+  onChange: (key: keyof SiteThemeConfig, value: string) => void;
+  onReset: () => void;
+  onSave: () => void;
+}) {
+  return (
+    <Card className="border-border/70 bg-card/85">
+      <CardHeader className="border-b border-border/60">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <PaletteIcon className="size-4 text-[#FFD700]" />
+              Theme config
+            </CardTitle>
+            <CardDescription>
+              ตั้งค่าสีและฟอนต์หลักของ {site.name} สำหรับ template และ publish artifact
+            </CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="border-border/70 bg-background/30"
+              onClick={onReset}
+              disabled={isSaving}
+            >
+              <RotateCcwIcon data-icon="inline-start" />
+              Reset
+            </Button>
+            <Button
+              type="button"
+              className="bg-primary font-semibold text-primary-foreground"
+              onClick={onSave}
+              disabled={isSaving}
+            >
+              <SaveIcon data-icon="inline-start" />
+              {isSaving ? "Saving" : "Save theme"}
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="grid gap-5 p-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ThemeColorInput
+            label="Primary"
+            value={theme.primaryColor}
+            onChange={(value) => onChange("primaryColor", value)}
+          />
+          <ThemeColorInput
+            label="Accent"
+            value={theme.accentColor}
+            onChange={(value) => onChange("accentColor", value)}
+          />
+          <ThemeColorInput
+            label="Background"
+            value={theme.backgroundColor}
+            onChange={(value) => onChange("backgroundColor", value)}
+          />
+          <ThemeColorInput
+            label="Surface"
+            value={theme.surfaceColor}
+            onChange={(value) => onChange("surfaceColor", value)}
+          />
+          <ThemeColorInput
+            label="Text"
+            value={theme.textColor}
+            onChange={(value) => onChange("textColor", value)}
+          />
+          <label className="space-y-2">
+            <span className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              Font
+            </span>
+            <Input
+              value={theme.fontFamily}
+              onChange={(event) => onChange("fontFamily", event.target.value)}
+              placeholder="Kanit"
+            />
+          </label>
+        </div>
+
+        <div
+          className="rounded-lg border p-4"
+          style={{
+            backgroundColor: theme.backgroundColor,
+            borderColor: theme.surfaceColor,
+            color: theme.textColor,
+            fontFamily: `${theme.fontFamily}, system-ui, sans-serif`,
+          }}
+        >
+          <div
+            className="rounded-lg p-4"
+            style={{ backgroundColor: theme.surfaceColor }}
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.16em]">
+              Preview
+            </p>
+            <h3 className="mt-2 text-xl font-semibold">{site.name}</h3>
+            <p className="mt-2 text-sm opacity-75">
+              สีนี้จะเป็น token หลักให้ template และ renderer ใช้ต่อ
+            </p>
+            <button
+              type="button"
+              className="mt-4 rounded-lg px-4 py-2 text-sm font-semibold"
+              style={{
+                backgroundColor: theme.primaryColor,
+                color: theme.backgroundColor,
+              }}
+            >
+              Primary action
+            </button>
+            <span
+              className="ml-3 inline-flex rounded-lg px-3 py-2 text-sm font-semibold"
+              style={{ color: theme.accentColor }}
+            >
+              Accent
+            </span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ThemeColorInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="space-y-2">
+      <span className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+        {label}
+      </span>
+      <div className="flex gap-2">
+        <input
+          type="color"
+          value={normalizeColorInput(value)}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-9 w-11 shrink-0 rounded-lg border border-border bg-background p-1"
+        />
+        <Input value={value} onChange={(event) => onChange(event.target.value)} />
+      </div>
+    </label>
+  );
+}
+
+function normalizeSiteThemeConfig(value: unknown): SiteThemeConfig {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return DEFAULT_SITE_THEME;
+  }
+
+  const theme = value as Record<string, unknown>;
+
+  return {
+    primaryColor:
+      readThemeString(theme, "primaryColor") ||
+      readThemeString(theme, "--color-primary") ||
+      DEFAULT_SITE_THEME.primaryColor,
+    accentColor:
+      readThemeString(theme, "accentColor") ||
+      readThemeString(theme, "--color-primary-light") ||
+      DEFAULT_SITE_THEME.accentColor,
+    backgroundColor:
+      readThemeString(theme, "backgroundColor") ||
+      readThemeString(theme, "--color-background") ||
+      DEFAULT_SITE_THEME.backgroundColor,
+    surfaceColor:
+      readThemeString(theme, "surfaceColor") ||
+      readThemeString(theme, "--color-surface") ||
+      DEFAULT_SITE_THEME.surfaceColor,
+    textColor:
+      readThemeString(theme, "textColor") ||
+      readThemeString(theme, "--color-text-base") ||
+      DEFAULT_SITE_THEME.textColor,
+    fontFamily:
+      readThemeString(theme, "fontFamily") || DEFAULT_SITE_THEME.fontFamily,
+  };
+}
+
+function toThemePayload(theme: SiteThemeConfig) {
+  return {
+    primaryColor: normalizeColorInput(theme.primaryColor),
+    accentColor: normalizeColorInput(theme.accentColor),
+    backgroundColor: normalizeColorInput(theme.backgroundColor),
+    surfaceColor: normalizeColorInput(theme.surfaceColor),
+    textColor: normalizeColorInput(theme.textColor),
+    fontFamily: theme.fontFamily.trim() || DEFAULT_SITE_THEME.fontFamily,
+    "--color-primary": normalizeColorInput(theme.primaryColor),
+    "--color-primary-light": normalizeColorInput(theme.accentColor),
+    "--color-background": normalizeColorInput(theme.backgroundColor),
+    "--color-surface": normalizeColorInput(theme.surfaceColor),
+    "--color-text-base": normalizeColorInput(theme.textColor),
+  };
+}
+
+function readThemeString(theme: Record<string, unknown>, key: string) {
+  const value = theme[key];
+  return typeof value === "string" && value.trim() ? value : "";
+}
+
+function normalizeColorInput(value: string) {
+  return /^#[0-9a-fA-F]{6}$/.test(value)
+    ? value
+    : DEFAULT_SITE_THEME.primaryColor;
 }

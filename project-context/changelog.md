@@ -78,6 +78,7 @@
 - Added a builder-only option to `PublicSectionRenderer` so high-design scroll progress chrome is not duplicated when builder renders one section at a time.
 - Fixed builder content edits for imported/high-design templates by syncing legacy editor fields such as `headline`, `body`, `featureOne`, `questions`, `quotes`, and `plans` back into the prop keys that public high-design renderers actually read.
 - Rebuilt `/sites` into a current dashboard control center: edit actions now open the real builder, public links use `finnweb.site`, site cards include builder/leads/public actions, and the old `SiteEditorSimulator` path was removed.
+- Added site-level theme config editing from `/sites`: users can adjust primary/accent/background/surface/text colors and font family, preview the token set, and save it through `PATCH /sites/:siteId/theme` into `Site.themeConfig`.
 
 ## 2026-05-01
 

@@ -11,6 +11,7 @@ import type * as runtime from "@prisma/client/runtime/client";
 import { CreatePageDto } from "./dto/create-page.dto";
 import { CreateSiteDto } from "./dto/create-site.dto";
 import { ApplyTemplateDto } from "./dto/apply-site-template.dto";
+import { UpdateSiteThemeDto } from "./dto/update-site-theme.dto";
 import { UpdatePageDto } from "./dto/update-page.dto";
 import { CreateSectionDto } from "./dto/create-section.dto";
 import { UpdateSectionDto } from "./dto/update-section.dto";
@@ -40,6 +41,15 @@ type TemplateAnswersInput = {
   lineId?: string;
   logoUrl?: string;
 };
+
+function normalizeHexColor(value?: string) {
+  if (!value) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return /^#[0-9a-fA-F]{6}$/.test(trimmed) ? trimmed : null;
+}
 
 @Injectable()
 export class SitesService {
@@ -645,6 +655,61 @@ export class SitesService {
 
     const trimmed = value.trim();
     return trimmed ? trimmed : null;
+  }
+
+  private normalizeThemeConfig(themeConfig: Record<string, unknown>) {
+    const nextTheme: Record<string, string> = {};
+    const stringKeys = [
+      "primaryColor",
+      "accentColor",
+      "backgroundColor",
+      "surfaceColor",
+      "textColor",
+      "fontFamily",
+      "--color-primary",
+      "--color-primary-light",
+      "--color-background",
+      "--color-surface",
+      "--color-text-base",
+      "--color-text-muted",
+    ];
+
+    for (const key of stringKeys) {
+      const value = themeConfig[key];
+      if (typeof value === "string" && value.trim()) {
+        nextTheme[key] = value.trim().slice(0, 120);
+      }
+    }
+
+    nextTheme.primaryColor =
+      normalizeHexColor(nextTheme.primaryColor) ??
+      normalizeHexColor(nextTheme["--color-primary"]) ??
+      "#FF8C00";
+    nextTheme.accentColor =
+      normalizeHexColor(nextTheme.accentColor) ??
+      normalizeHexColor(nextTheme["--color-primary-light"]) ??
+      "#FFD700";
+    nextTheme.backgroundColor =
+      normalizeHexColor(nextTheme.backgroundColor) ??
+      normalizeHexColor(nextTheme["--color-background"]) ??
+      "#FFFFFF";
+    nextTheme.surfaceColor =
+      normalizeHexColor(nextTheme.surfaceColor) ??
+      normalizeHexColor(nextTheme["--color-surface"]) ??
+      "#F9FAFB";
+    nextTheme.textColor =
+      normalizeHexColor(nextTheme.textColor) ??
+      normalizeHexColor(nextTheme["--color-text-base"]) ??
+      "#1A1C23";
+    nextTheme.fontFamily = nextTheme.fontFamily || "Kanit";
+
+    nextTheme["--color-primary"] = nextTheme.primaryColor;
+    nextTheme["--color-primary-light"] = nextTheme.accentColor;
+    nextTheme["--color-background"] = nextTheme.backgroundColor;
+    nextTheme["--color-surface"] = nextTheme.surfaceColor;
+    nextTheme["--color-text-base"] = nextTheme.textColor;
+
+    return nextTheme;
   }
 
   private extractUtmFromReferrer(referrer?: string) {
@@ -1726,6 +1791,38 @@ export class SitesService {
   }
 
   // ─── Pages ────────────────────────────────────────────────────────────────────
+
+  async updateThemeConfig(
+    userId: string,
+    siteId: string,
+    dto: UpdateSiteThemeDto,
+  ) {
+    await this.getEditableSite(userId, siteId);
+    const themeConfig = this.normalizeThemeConfig(dto.themeConfig);
+
+    return this.prisma.site.update({
+      where: {
+        id: siteId,
+      },
+      data: {
+        themeConfig: themeConfig as runtime.InputJsonValue,
+      },
+      include: {
+        workspace: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        _count: {
+          select: {
+            pages: true,
+          },
+        },
+      },
+    });
+  }
 
   async createPage(userId: string, siteId: string, dto: CreatePageDto) {
     const site = await this.getAccessibleSite(userId, siteId);
