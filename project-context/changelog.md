@@ -76,6 +76,7 @@
 
 - Improved `/sites/{siteId}/builder` UX for imported/high-design templates: the canvas now behaves as the primary desktop preview, shows the selected section context, scrolls selected sections into view, and keeps section/list/edit panels easier to scan.
 - Added a builder-only option to `PublicSectionRenderer` so high-design scroll progress chrome is not duplicated when builder renders one section at a time.
+- Fixed builder content edits for imported/high-design templates by syncing legacy editor fields such as `headline`, `body`, `featureOne`, `questions`, `quotes`, and `plans` back into the prop keys that public high-design renderers actually read.
 
 ## 2026-05-01
 

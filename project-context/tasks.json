@@ -428,7 +428,9 @@
         "2026-05-13: Reopened to make builder canvas render imported/high-design template variants properly instead of falling back to older builder registry placeholders.",
         "2026-05-13: Completed builder high-design preview bridge: BuilderCanvas now detects imported high-design variants and renders them through PublicSectionRenderer while normal builder sections still use the existing registry; desktop canvas width now supports 1280px preview.",
         "2026-05-13: Reopened for site builder UX improvement first, focusing on a larger desktop-first preview, clearer selected-section context, and more usable side panels before deeper template editing work.",
-        "2026-05-13: Completed builder UX pass: canvas is now desktop-first with selected-section context and auto-scroll, side panels are scrollable/scannable with visibility counts and source badges, and builder high-design previews disable public scroll-progress chrome to avoid duplicated overlay artifacts."
+        "2026-05-13: Completed builder UX pass: canvas is now desktop-first with selected-section context and auto-scroll, side panels are scrollable/scannable with visibility counts and source badges, and builder high-design previews disable public scroll-progress chrome to avoid duplicated overlay artifacts.",
+        "2026-05-13: Reopened to fix builder content edits not updating imported/high-design rendered sections.",
+        "2026-05-13: Completed content edit sync fix: builder now propagates legacy editor aliases into high-design renderer props for title/subtitle/body/buttons, card items, FAQ questions, testimonial quotes, and pricing plan text so local preview and autosave update the actual rendered content."
       ]
     },
     {

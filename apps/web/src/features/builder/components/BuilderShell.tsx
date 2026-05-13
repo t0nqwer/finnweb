@@ -275,7 +275,11 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
         return;
       }
 
-      const mergedProps = { ...currentSection.props, ...nextProps };
+      const syncedProps = syncEditedSectionProps(
+        currentSection,
+        nextProps,
+      );
+      const mergedProps = { ...currentSection.props, ...syncedProps };
       const nextVersion = latestEditVersionRef.current + 1;
       latestEditVersionRef.current = nextVersion;
       latestVersionBySectionIdRef.current[sectionId] = nextVersion;
@@ -285,7 +289,7 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
       setSections((currentSections) =>
         currentSections.map((section) =>
           section.id === sectionId
-            ? { ...section, props: { ...section.props, ...nextProps } }
+            ? { ...section, props: { ...section.props, ...syncedProps } }
             : section,
         ),
       );
@@ -987,6 +991,102 @@ function serializeSectionPropsForApi(
   }
 
   return nextProps;
+}
+
+function syncEditedSectionProps(
+  section: BuilderSection,
+  nextProps: Record<string, unknown>,
+) {
+  const syncedProps = { ...nextProps };
+  const mergedProps = { ...section.props, ...nextProps };
+  const sourceType = section.sourceType ?? section.type;
+
+  syncStringAlias(syncedProps, nextProps, "headline", "title");
+  syncStringAlias(syncedProps, nextProps, "title", "headline");
+  syncStringAlias(syncedProps, nextProps, "subheadline", "subtitle");
+  syncStringAlias(syncedProps, nextProps, "subtitle", "subheadline");
+  syncStringAlias(syncedProps, nextProps, "description", "subtitle");
+  syncStringAlias(syncedProps, nextProps, "body", "description");
+  syncStringAlias(syncedProps, nextProps, "body", "subtitle");
+  syncStringAlias(syncedProps, nextProps, "primaryButtonText", "buttonText");
+  syncStringAlias(syncedProps, nextProps, "buttonText", "primaryButtonText");
+
+  if (hasAnyKey(nextProps, ["featureOne", "featureTwo", "featureThree"])) {
+    syncedProps.items = updateCardTitlesFromTextFields(mergedProps, [
+      "featureOne",
+      "featureTwo",
+      "featureThree",
+    ]);
+  }
+
+  if (sourceType === "FAQ" && "questions" in nextProps) {
+    syncedProps.items = splitLinesToObjects(nextProps.questions, "question");
+  }
+
+  if (sourceType === "TESTIMONIAL" && "quotes" in nextProps) {
+    syncedProps.items = splitLinesToObjects(nextProps.quotes, "quote");
+  }
+
+  if (sourceType === "PRICING" && "plans" in nextProps) {
+    syncedProps.items = splitLinesToObjects(nextProps.plans, "title");
+  }
+
+  return syncedProps;
+}
+
+function syncStringAlias(
+  target: Record<string, unknown>,
+  source: Record<string, unknown>,
+  fromKey: string,
+  toKey: string,
+) {
+  const value = source[fromKey];
+  if (typeof value === "string") {
+    target[toKey] = value;
+  }
+}
+
+function hasAnyKey(props: Record<string, unknown>, keys: string[]) {
+  return keys.some((key) => key in props);
+}
+
+function updateCardTitlesFromTextFields(
+  props: Record<string, unknown>,
+  keys: string[],
+) {
+  const currentItems = Array.isArray(props.items) ? props.items : [];
+
+  return keys
+    .map((key, index) => {
+      const title = props[key];
+      const currentItem = currentItems[index];
+      const baseItem =
+        currentItem && typeof currentItem === "object" && !Array.isArray(currentItem)
+          ? currentItem
+          : {};
+
+      if (typeof title !== "string" || !title.trim()) {
+        return baseItem;
+      }
+
+      return {
+        ...baseItem,
+        title,
+      };
+    })
+    .filter((item) => Object.keys(item).length > 0);
+}
+
+function splitLinesToObjects(value: unknown, key: string) {
+  if (typeof value !== "string") {
+    return [];
+  }
+
+  return value
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => ({ [key]: item }));
 }
 
 function copyStringProp(
