@@ -17,7 +17,16 @@ function listProp(
   const value = props[key];
   if (Array.isArray(value)) {
     return value
-      .map((item) => (typeof item === "string" ? item.trim() : ""))
+      .map((item) => {
+        if (typeof item === "string") {
+          return item.trim();
+        }
+        if (item && typeof item === "object" && "label" in item) {
+          const label = (item as { label?: unknown }).label;
+          return typeof label === "string" ? label.trim() : "";
+        }
+        return "";
+      })
       .filter(Boolean);
   }
 
@@ -39,10 +48,10 @@ function sectionTitle(
 ) {
   return (
     <div className="max-w-2xl">
-      <h2 className="font-kanit text-3xl font-semibold text-[#1A1C23]">
+      <h2 className="font-kanit text-3xl font-semibold text-[var(--fw-text,#F9FAFB)]">
         {textProp(props, "title", fallbackTitle)}
       </h2>
-      <p className="mt-2 text-sm leading-7 text-slate-500">
+      <p className="mt-2 text-sm leading-7 text-[var(--fw-muted,#9CA3AF)]">
         {textProp(props, "subtitle", fallbackSubtitle)}
       </p>
     </div>
@@ -53,18 +62,23 @@ export function NavbarSimpleSection({ props }: SectionComponentProps) {
   const menuItems = listProp(props, "menuItems", ["Home", "Services", "Contact"]);
 
   return (
-    <nav className="flex items-center justify-between gap-4 px-6 py-4 sm:px-10">
-      <span className="font-kanit text-xl font-semibold text-[#1A1C23]">
+    <nav className="flex items-center justify-between gap-4 border-b border-[var(--fw-border,#9CA3AF38)] bg-[var(--fw-bg,#1A1C23)] px-6 py-4 sm:px-10">
+      <span className="font-kanit text-xl font-semibold text-[var(--fw-text,#F9FAFB)]">
         {textProp(props, "brandName", "FinnWeb")}
       </span>
-      <div className="hidden items-center gap-5 text-sm text-slate-600 sm:flex">
+      <div className="hidden items-center gap-5 text-sm text-[var(--fw-muted,#9CA3AF)] sm:flex">
         {menuItems.map((item) => (
-          <span key={item}>{item}</span>
+          <a key={item} href={`#${item.toLowerCase().replace(/\s+/g, "-")}`}>
+            {item}
+          </a>
         ))}
       </div>
-      <span className="rounded-lg bg-[#FF8C00] px-3 py-2 text-sm font-semibold text-white">
+      <a
+        href={textProp(props, "buttonHref", "#contact")}
+        className="rounded-[var(--fw-radius-button,8px)] bg-[var(--fw-color-primary,#FF8C00)] px-3 py-2 text-sm font-semibold text-[var(--fw-text,#F9FAFB)]"
+      >
         {textProp(props, "buttonText", "Contact")}
-      </span>
+      </a>
     </nav>
   );
 }
@@ -73,10 +87,10 @@ export function RichTextBasicSection({ props }: SectionComponentProps) {
   return (
     <section className="px-6 py-12 sm:px-10">
       <article className="max-w-3xl">
-        <h2 className="font-kanit text-3xl font-semibold text-[#1A1C23]">
+        <h2 className="font-kanit text-3xl font-semibold text-[var(--fw-text,#F9FAFB)]">
           {textProp(props, "title", "About this business")}
         </h2>
-        <p className="mt-4 text-base leading-8 text-slate-600">
+        <p className="mt-4 text-base leading-8 text-[var(--fw-muted,#9CA3AF)]">
           {textProp(
             props,
             "body",
@@ -94,7 +108,7 @@ export function ImageSingleSection({ props }: SectionComponentProps) {
   return (
     <section className="px-6 py-12 sm:px-10">
       {sectionTitle(props, "Show your work", "Add one strong image for this page.")}
-      <div className="mt-6 aspect-[16/9] overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+      <div className="mt-6 aspect-[16/9] overflow-hidden rounded-[var(--fw-radius-card,10px)] border border-[var(--fw-border,#9CA3AF38)] bg-[var(--fw-surface,#2D2F39)]">
         {imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -103,8 +117,8 @@ export function ImageSingleSection({ props }: SectionComponentProps) {
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-slate-500">
-            Image preview
+          <div className="flex h-full items-center justify-center text-sm text-[var(--fw-muted,#9CA3AF)]">
+            พื้นที่รูปภาพ
           </div>
         )}
       </div>
@@ -115,7 +129,7 @@ export function ImageSingleSection({ props }: SectionComponentProps) {
 export function ContactFormPreviewSection({ props }: SectionComponentProps) {
   return (
     <section className="px-6 py-12 sm:px-10">
-      <div className="grid gap-6 rounded-lg border border-slate-200 bg-slate-50 p-6 sm:grid-cols-[1fr_280px]">
+      <div className="grid gap-6 rounded-[var(--fw-radius-card,10px)] border border-[var(--fw-border,#9CA3AF38)] bg-[var(--fw-surface,#2D2F39)] p-6 sm:grid-cols-[1fr_280px]">
         <div>
           {sectionTitle(
             props,
@@ -123,11 +137,11 @@ export function ContactFormPreviewSection({ props }: SectionComponentProps) {
             "Collect name, phone, email, and a short message.",
           )}
         </div>
-        <div className="space-y-3 rounded-lg bg-white p-4 shadow-sm">
-          <div className="h-9 rounded-md border border-slate-200 bg-slate-50" />
-          <div className="h-9 rounded-md border border-slate-200 bg-slate-50" />
-          <div className="h-20 rounded-md border border-slate-200 bg-slate-50" />
-          <div className="h-9 rounded-md bg-[#FF8C00]" />
+        <div className="space-y-3 rounded-lg bg-[var(--fw-bg,#1A1C23)] p-4 shadow-sm">
+          <div className="h-9 rounded-md border border-[var(--fw-border,#9CA3AF38)] bg-[var(--fw-panel,#252833)]" />
+          <div className="h-9 rounded-md border border-[var(--fw-border,#9CA3AF38)] bg-[var(--fw-panel,#252833)]" />
+          <div className="h-20 rounded-md border border-[var(--fw-border,#9CA3AF38)] bg-[var(--fw-panel,#252833)]" />
+          <div className="h-9 rounded-md bg-[var(--fw-color-primary,#FF8C00)]" />
         </div>
       </div>
     </section>
@@ -142,12 +156,12 @@ export function PricingCardsSection({ props }: SectionComponentProps) {
       {sectionTitle(props, "Packages", "Show simple choices so customers can decide quickly.")}
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
         {plans.slice(0, 3).map((plan, index) => (
-          <div key={plan} className="rounded-lg border border-slate-200 bg-white p-5">
-            <p className="font-kanit text-xl font-semibold text-[#1A1C23]">
+          <div key={plan} className="rounded-[var(--fw-radius-card,10px)] border border-[var(--fw-border,#9CA3AF38)] bg-[var(--fw-surface,#2D2F39)] p-5">
+            <p className="font-kanit text-xl font-semibold text-[var(--fw-text,#F9FAFB)]">
               {plan}
             </p>
-            <p className="mt-2 text-sm text-slate-500">
-              {index === 1 ? "Recommended option" : "Good fit package"}
+            <p className="mt-2 text-sm text-[var(--fw-muted,#9CA3AF)]">
+              {index === 1 ? "แพ็กเกจแนะนำ" : "ตัวเลือกที่เหมาะกับธุรกิจ"}
             </p>
           </div>
         ))}
@@ -166,10 +180,10 @@ export function FaqAccordionSection({ props }: SectionComponentProps) {
   return (
     <section className="px-6 py-12 sm:px-10">
       {sectionTitle(props, "FAQ", "Answer common questions before customers ask.")}
-      <div className="mt-6 divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white">
+      <div className="mt-6 divide-y divide-[var(--fw-border,#9CA3AF38)] rounded-[var(--fw-radius-card,10px)] border border-[var(--fw-border,#9CA3AF38)] bg-[var(--fw-surface,#2D2F39)]">
         {questions.slice(0, 5).map((question) => (
           <div key={question} className="px-5 py-4">
-            <p className="font-medium text-[#1A1C23]">{question}</p>
+            <p className="font-medium text-[var(--fw-text,#F9FAFB)]">{question}</p>
           </div>
         ))}
       </div>
@@ -189,7 +203,7 @@ export function TestimonialsGridSection({ props }: SectionComponentProps) {
       {sectionTitle(props, "Customer voices", "Build trust with short testimonials.")}
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
         {quotes.slice(0, 3).map((quote) => (
-          <blockquote key={quote} className="rounded-lg bg-slate-50 p-5 text-sm leading-7 text-slate-600">
+          <blockquote key={quote} className="rounded-[var(--fw-radius-card,10px)] bg-[var(--fw-surface,#2D2F39)] p-5 text-sm leading-7 text-[var(--fw-muted,#9CA3AF)]">
             {quote}
           </blockquote>
         ))}

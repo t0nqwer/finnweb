@@ -48,6 +48,7 @@ export class PublicSiteRenderService {
       orderBy: [{ version: "desc" }, { createdAt: "desc" }],
       select: {
         snapshot: true,
+        version: true,
       },
     });
 
@@ -70,7 +71,7 @@ export class PublicSiteRenderService {
       : {};
 
     return {
-      site: siteSnapshot,
+      site: { ...siteSnapshot, version: latestPublish.version },
       page: mapPublicPage(page),
       sections: mapVisibleSections(page),
     };
@@ -96,7 +97,7 @@ export class PublicSiteRenderService {
         action: "PUBLISH",
       },
       orderBy: [{ version: "desc" }, { createdAt: "desc" }],
-      select: { snapshot: true },
+      select: { snapshot: true, version: true },
     });
 
     if (!latestPublish) {
@@ -118,7 +119,7 @@ export class PublicSiteRenderService {
       : {};
 
     return {
-      site: siteSnapshot,
+      site: { ...siteSnapshot, version: latestPublish.version },
       page: mapPublicPage(page),
       sections: mapVisibleSections(page),
     };

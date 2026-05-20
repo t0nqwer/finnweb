@@ -23,35 +23,52 @@ function readBoolean(
 }
 
 export function ContactLineCtaSection({ props }: ContactLineCtaSectionProps) {
-  const title = readString(props, "title", "พร้อมคุยกับลูกค้าแล้ว");
+  const title = readString(props, "title", "พร้อมคุยกับลูกค้าทาง LINE");
   const description = readString(
     props,
     "description",
     readString(
       props,
       "subtitle",
-      "พื้นที่นี้จะกลายเป็นฟอร์มติดต่อหรือ LINE CTA ใน builder จริง",
+      "ให้ลูกค้าทักมาถามราคา นัดหมาย หรือขอคำปรึกษาได้ทันทีจากหน้าเว็บ",
     ),
   );
   const buttonText = readString(
     props,
     "buttonText",
-    readString(props, "submitLabel", "ทัก LINE"),
+    readString(props, "submitLabel", "ทัก LINE ตอนนี้"),
   );
-  const backgroundColor = readString(props, "backgroundColor", "#1A1C23");
+  const backgroundColor = readString(
+    props,
+    "backgroundColor",
+    "var(--fw-surface, #2D2F39)",
+  );
+  const href = readString(
+    props,
+    "href",
+    readString(props, "lineUrl", "https://line.me/R/ti/p/@finnweb"),
+  );
   const showIcon = readBoolean(props, "showIcon", true);
 
   return (
-    <div className="px-6 py-8 sm:px-10">
-      <div className="rounded-lg p-5 text-white" style={{ backgroundColor }}>
+    <div id="contact" className="px-6 py-10 sm:px-10">
+      <div
+        className="rounded-[var(--fw-radius-card,10px)] border border-[var(--fw-border,#9CA3AF38)] p-5 text-[var(--fw-text,#F9FAFB)] shadow-[var(--fw-depth-card,none)]"
+        style={{ backgroundColor }}
+      >
         {showIcon ? (
-          <MessageCircleIcon className="size-6 text-[#FFD700]" />
+          <MessageCircleIcon className="size-6 text-[var(--fw-color-primary-light,#FFD700)]" />
         ) : null}
         <p className="mt-3 font-kanit text-2xl font-semibold">{title}</p>
-        <p className="mt-2 text-sm leading-6 text-slate-300">{description}</p>
-        <span className="mt-5 inline-flex rounded-lg bg-[#FF8C00] px-4 py-2 text-sm font-semibold text-white">
+        <p className="mt-2 max-w-2xl text-sm leading-7 text-[var(--fw-muted,#9CA3AF)]">
+          {description}
+        </p>
+        <a
+          href={href}
+          className="mt-5 inline-flex rounded-[var(--fw-radius-button,8px)] bg-[var(--fw-color-primary,#FF8C00)] px-4 py-2 text-sm font-semibold text-[var(--fw-text,#F9FAFB)] shadow-[var(--fw-glow-primary,none)]"
+        >
           {buttonText}
-        </span>
+        </a>
       </div>
     </div>
   );

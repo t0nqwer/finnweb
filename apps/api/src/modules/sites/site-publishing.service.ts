@@ -294,6 +294,7 @@ export class SitePublishingService {
         defaultOgImageUrl: site.defaultOgImageUrl,
         primaryLanguage: site.primaryLanguage,
         timezone: site.timezone,
+        themeConfig: site.themeConfig,
       },
       pages: pageSnapshots,
       publishedAt: publishedAt.toISOString(),

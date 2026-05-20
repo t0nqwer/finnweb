@@ -121,6 +121,44 @@ describe("generateTemplate", () => {
     assert.equal(contact.props["phone"], "091-876-5432");
   });
 
+  it("generates premium aesthetic clinic showcase with complete motion sections", () => {
+    const result = generateTemplate({
+      industry: "clinic",
+      blueprintId: "aesthetic-clinic-landing-v1",
+      themeId: "deep-space-premium",
+      contentPackId: "aesthetic-clinic-th",
+    });
+
+    const home = result.pages[0];
+    assert.ok(home !== undefined);
+    assert.equal(result.themeConfig["--fw-bg"], "#1A1C23");
+    assert.equal(home.sections.length, 9);
+
+    const types = home.sections.map((section) => section.type);
+    for (const type of [
+      "NAVBAR",
+      "HERO",
+      "FEATURE",
+      "GALLERY",
+      "TESTIMONIAL",
+      "FAQ",
+      "CONTACT",
+      "FOOTER",
+    ]) {
+      assert.ok(types.includes(type), `should include ${type}`);
+    }
+
+    const hero = home.sections.find((section) => section.type === "HERO");
+    const gallery = home.sections.find((section) => section.type === "GALLERY");
+    const contact = home.sections.find((section) => section.type === "CONTACT");
+
+    assert.ok(Array.isArray(hero?.props["motion"]));
+    assert.ok(Array.isArray(gallery?.props["items"]));
+    assert.ok((gallery?.props["items"] as unknown[]).length >= 3);
+    assert.equal(contact?.props["href"], "https://line.me/R/ti/p/@lunara.clinic");
+    assert.equal(JSON.stringify(result).match(/\{\{[^}]+\}\}/g), null);
+  });
+
   it("supports 4 combinations without throwing", () => {
     const combos = [
       { themeId: "modern-orange", contentPackId: "mala-restaurant-th" },
@@ -198,6 +236,7 @@ describe("registry accessors", () => {
     const ids = list.map((t) => t.id);
     assert.ok(ids.includes("modern-orange"));
     assert.ok(ids.includes("luxury-dark"));
+    assert.ok(ids.includes("deep-space-premium"));
   });
 
   it("getAvailableContentPacks returns both packs", () => {
@@ -206,5 +245,6 @@ describe("registry accessors", () => {
     const ids = list.map((c) => c.id);
     assert.ok(ids.includes("mala-restaurant-th"));
     assert.ok(ids.includes("cafe-th"));
+    assert.ok(ids.includes("aesthetic-clinic-th"));
   });
 });

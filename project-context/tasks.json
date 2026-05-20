@@ -1,6 +1,53 @@
 {
-  "updatedAt": "2026-05-12",
+  "updatedAt": "2026-05-20",
   "tasks": [
+    {
+      "id": "site-builder-visual-premium-motion-engine",
+      "title": "ยกระดับคุณภาพ FinnWeb site builder: visual premium + first-party motion engine",
+      "status": "done",
+      "priority": "critical",
+      "phase": "phase-3",
+      "epic": "templates",
+      "estimatePoints": 13,
+      "owner": "unassigned",
+      "dependsOn": [
+        "publish-public-render",
+        "template-design-rules",
+        "high-design-template-renderer-elab"
+      ],
+      "scope": [
+        "Fix public renderer progressive enhancement so no-JS content remains visible",
+        "Inject scoped public theme tokens from published snapshot themeConfig with Deep Space default",
+        "Add safe JSON-only first-party motion directives and GSAP ScrollTrigger engine",
+        "Upgrade default/high-design sections to token-driven Thai-first premium output",
+        "Create Thai premium aesthetic clinic showcase blueprint, theme, content pack, and generator coverage",
+        "Verify typecheck/build, browser states, changelog, and task sync"
+      ],
+      "acceptanceCriteria": [
+        "Public render reads PublishLog.snapshot only and scopes CSS under fw-site/fw-version wrapper",
+        "No-JS and reduced-motion views keep all content visible",
+        "Motion uses validated props.motion JSON directives only with no arbitrary JS or raw HTML injection",
+        "Default Deep Space theme and FinnWeb tokens drive public sections",
+        "Aesthetic clinic showcase template renders meaningful Thai sections with working CTAs and premium motion",
+        "pnpm typecheck and pnpm build pass, with changelog and tasks.json updated"
+      ],
+      "progressNotes": [
+        "2026-05-20: Started visual premium + first-party motion engine task. Beginning Phase A with progressive enhancement, scoped theme token injection, and Deep Space defaults before motion/template upgrades.",
+        "2026-05-20: Phase A completed. Public publish snapshots now carry themeConfig; public APIs return version; public routes inject scoped fw-site/fw-version wrappers and Deep Space CSS variables; motion sections are visible by default and arm only after client setup. pnpm typecheck and pnpm build passed.",
+        "2026-05-20: Phase B completed. Added shared JSON-only motion directive normalizer with clamped parameters and wired public renderer to lazy-load GSAP + ScrollTrigger presets with reduced-motion/no-JS fallback and cleanup. pnpm typecheck and pnpm build passed.",
+        "2026-05-20: Phase C completed. Tokenized core public sections, improved Thai fallbacks/real CTA links, added GALLERY renderer support, and created the Thai premium aesthetic clinic showcase blueprint, Deep Space Premium theme, content pack, exports, and generator coverage. Focused generator test, pnpm typecheck, and pnpm build passed.",
+        "2026-05-20: Phase D completed for automated verification and documentation: updated changelog, memory, and task notes; synced tasks to Google Sheet. Browser dev server was started on local Next.js, but a full published-site browser pass requires a local published snapshot/API fixture for the showcase site.",
+        "2026-05-20: Reopened for P1 regression fix: short bottom-of-page sections, especially FOOTER, can stay opacity:0 with JS enabled because motion reveal triggers never fire at max scroll.",
+        "2026-05-20: Fixed follow-up regression where blanket 1200ms reveal timers caused all below-fold sections to reveal at scroll=0. Removed the MotionSection fallback timer and changed GSAP reveal safety from delayedCall to document-bottom-only safety listeners, preserving scroll reveal/stagger/clip motion.",
+        "2026-05-20: Browser QA with temporary clinic-preview harness and Chrome headless: after 2.2s at scroll=0, below-fold sections remained opacity 0; after scrolling to document bottom, footer section index 8 was opacity 1 on desktop 1440 and mobile 390; reduced-motion and no-JS kept content opacity 1. Temporary dev route and QA files were removed.",
+        "2026-05-20: Final verification after removing harness: pnpm typecheck and pnpm build passed.",
+        "2026-05-20: Reopened again for scroll-reveal regression: below-fold sections still reveal at scroll=0 due to GSAP ScrollTrigger start/top-bottom and inline opacity behavior.",
+        "2026-05-20: Fixed scroll-reveal regression after footer safety: deferred MotionSection observing/reveal until layout settles, explicitly kept armed unrevealed containers at opacity 0, preserved top 80% reveal starts and bottom-of-document footer safety. Browser QA confirmed desktop 1440x900 scroll=0 after 2.5s had no below-fold opacity >=0.1, incremental scroll revealed section 3 near the 80% trigger zone, desktop/mobile footers reached opacity 1 at bottom, and reduced-motion/no-JS content stayed visible. Temporary dev harness and QA files were removed; pnpm typecheck and pnpm build passed.",
+        "2026-05-20: Reopened for viewport resize regression: ScrollTrigger refresh after resize/rotate can fire reveal tweens for below-fold sections at scroll=0, removing lower-page scroll motion.",
+        "2026-05-20: Fixed viewport resize/rotate scroll-reveal regression. Replaced reveal preset fromTo+once ScrollTriggers with guarded paused tweens that play only when the trigger element is actually near the viewport or at document bottom, preserving parallax/pin refresh behavior and footer safety. Browser QA passed desktop cold load, desktop-to-mobile resize at scroll 0, resized scroll-to-bottom, cold mobile, and SSR/no-JS HTML checks; temporary dev harness and QA files were removed; pnpm typecheck and pnpm build passed.",
+        "2026-05-20: Re-verified in browser found two remaining failure modes: (a) above-fold sections with GSAP scroll-reveal stayed visibility:hidden because the paused tween never played for in-fold elements, and (b) CSS-engine sections with .fw-armed:not(.is-visible){opacity:0} inside @layer utilities were not honored by computed style in Next.js 16 Turbopack. Decoupled the engines: MotionSection now tags GSAP-directed sections via data-fw-motion-engine='gsap' and skips fw-armed/is-visible classes (GSAP owns inline opacity+visibility); CSS-engine sections get React-managed inline opacity:0+visibility:hidden while armed. Reveal presets (scroll-reveal/stagger-children/clip-reveal) skip the hide+tween path when the element is already in-fold at mount, so above-fold content stays visible by default; below-fold uses the guarded paused tween that only fires on real user scroll. Browser QA confirmed cold desktop 1440 scroll=0 above-fold visible/below-fold reveal-driven hidden; resize 1440→mobile at scroll=0 still hidden; progressive scroll reveals everything including footer; SSR no-JS keeps content visible. Temporary dev harness removed; pnpm typecheck and pnpm build passed."
+      ]
+    },
     {
       "id": "import-template-to-editable-draft-artifact-pipeline",
       "title": "Define imported template pipeline into editable drafts and publish artifacts",

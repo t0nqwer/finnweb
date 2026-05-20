@@ -215,18 +215,18 @@ const fallbackQuotes: QuoteItem[] = [
 export function ELabAnimatedNavbar({ props }: SectionProps) {
   const brandName = text(props.brandName, "E-Lab");
   const menuItems = linksFromProps(props.menuItems);
-  const primaryColor = text(props.primaryColor, "#0047FF");
+  const primaryColor = text(props.primaryColor, "var(--fw-color-primary, #FF8C00)");
 
   return (
     <header className="sticky top-0 z-50 w-full px-4 py-5 md:px-8">
       <Reveal
         direction="down"
-        className="mx-auto flex max-w-7xl items-center justify-between rounded-[2rem] border border-slate-200/70 bg-white/90 px-5 py-4 text-slate-950 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur-md md:rounded-full md:px-7"
+        className="mx-auto flex max-w-7xl items-center justify-between rounded-[2rem] border border-[var(--fw-border,#9CA3AF38)]/70 bg-[var(--fw-surface,#2D2F39)]/90 px-5 py-4 text-[var(--fw-text,#F9FAFB)] shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur-md md:rounded-full md:px-7"
       >
         <a href="#" className="text-2xl font-black tracking-normal md:text-3xl">
           {brandName}
         </a>
-        <nav className="hidden items-center gap-7 rounded-full border border-slate-200/70 bg-white px-7 py-3 text-sm font-bold lg:flex">
+        <nav className="hidden items-center gap-7 rounded-full border border-[var(--fw-border,#9CA3AF38)]/70 bg-[var(--fw-surface,#2D2F39)] px-7 py-3 text-sm font-bold lg:flex">
           {menuItems.slice(0, 5).map((item) => (
             <a
               key={item.label}
@@ -255,7 +255,7 @@ export function ELabAnimatedNavbar({ props }: SectionProps) {
           >
             {text(props.buttonText, "สมัครเรียน")}
           </a>
-          <button className="hidden rounded-full border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-bold lg:flex">
+          <button className="hidden rounded-full border border-[var(--fw-border,#9CA3AF38)] bg-slate-100 px-3 py-2 text-sm font-bold lg:flex">
             <ShoppingCart className="mr-2 h-4 w-4" />
             <span
               className="grid h-6 w-6 place-items-center rounded-full text-xs text-white"
@@ -275,7 +275,7 @@ export function ELabAnimatedNavbar({ props }: SectionProps) {
 }
 
 export function ELabEducationHero({ props }: SectionProps) {
-  const primaryColor = text(props.primaryColor, "#0047FF");
+  const primaryColor = text(props.primaryColor, "var(--fw-color-primary, #FF8C00)");
   const stats = arrayWithFallback<CardItem>(
     props.stats,
     Array.isArray(props.stats) && props.stats.length > 0
@@ -285,7 +285,7 @@ export function ELabEducationHero({ props }: SectionProps) {
   );
 
   return (
-    <section className="bg-[#FAFAFA] px-4 pb-20 pt-8 text-slate-950 md:px-8">
+    <section className="bg-[var(--fw-bg,#1A1C23)] px-4 pb-20 pt-8 text-[var(--fw-text,#F9FAFB)] md:px-8">
       <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-24">
         <Stagger className="relative z-10 space-y-8">
           <StaggerItem>
@@ -327,7 +327,7 @@ export function ELabEducationHero({ props }: SectionProps) {
               </a>
               <a
                 href={text(props.secondaryButtonHref, "#preview")}
-                className="inline-flex items-center rounded-full border border-slate-200 bg-white px-7 py-4 text-lg font-black text-slate-950 shadow-sm transition-transform hover:scale-[1.03]"
+                className="inline-flex items-center rounded-full border border-[var(--fw-border,#9CA3AF38)] bg-[var(--fw-surface,#2D2F39)] px-7 py-4 text-lg font-black text-[var(--fw-text,#F9FAFB)] shadow-sm transition-transform hover:scale-[1.03]"
               >
                 <Play className="mr-2 h-5 w-5" />
                 {text(props.secondaryButtonText, "ดูตัวอย่าง")}
@@ -352,11 +352,11 @@ export function ELabEducationHero({ props }: SectionProps) {
       </div>
 
       <Reveal delay={300}>
-        <Stagger className="mx-auto mt-24 grid max-w-7xl grid-cols-2 items-center gap-6 rounded-[2rem] border border-slate-200/70 bg-white p-6 shadow-xl shadow-slate-200/50 lg:grid-cols-4">
+        <Stagger className="mx-auto mt-24 grid max-w-7xl grid-cols-2 items-center gap-6 rounded-[2rem] border border-[var(--fw-border,#9CA3AF38)]/70 bg-[var(--fw-surface,#2D2F39)] p-6 shadow-xl shadow-slate-200/50 lg:grid-cols-4">
           {stats.slice(0, 4).map((stat, index) => (
             <StaggerItem
               key={`${cardTitle(stat, "metric")}-${index}`}
-              className={`space-y-1 rounded-2xl p-4 ${index === 3 ? "text-white lg:-translate-y-4 lg:scale-110 lg:p-8 lg:shadow-2xl" : "lg:border-l lg:border-slate-200"}`}
+              className={`space-y-1 rounded-2xl p-4 ${index === 3 ? "text-white lg:-translate-y-4 lg:scale-110 lg:p-8 lg:shadow-2xl" : "lg:border-l lg:border-[var(--fw-border,#9CA3AF38)]"}`}
               style={
                 index === 3
                   ? ({
@@ -370,7 +370,7 @@ export function ELabEducationHero({ props }: SectionProps) {
                 {cardTitle(stat)}
               </p>
               <p
-                className={`text-xs font-black uppercase tracking-[0.16em] ${index === 3 ? "text-white/80" : "text-slate-500"}`}
+                className={`text-xs font-black uppercase tracking-[0.16em] ${index === 3 ? "text-white/80" : "text-[var(--fw-muted,#9CA3AF)]"}`}
               >
                 {cardDescription(stat)}
               </p>
@@ -383,18 +383,18 @@ export function ELabEducationHero({ props }: SectionProps) {
 }
 
 export function ELabBentoFeatures({ props }: SectionProps) {
-  const primaryColor = text(props.primaryColor, "#0047FF");
+  const primaryColor = text(props.primaryColor, "var(--fw-color-primary, #FF8C00)");
   const items = arrayOfObjects<CardItem>(props.items, fallbackFeatures);
   const useCompactGrid = items.length <= 3;
 
   return (
-    <section className="bg-[#FAFAFA] px-4 py-24 text-slate-950 md:px-8">
+    <section className="bg-[var(--fw-bg,#1A1C23)] px-4 py-24 text-[var(--fw-text,#F9FAFB)] md:px-8">
       <div className="mx-auto max-w-7xl">
         <Reveal className="mb-16 max-w-3xl">
           <h2 className="text-4xl font-black tracking-normal md:text-6xl">
             {text(props.title, "เรียนง่ายขึ้น เห็นผลเร็วขึ้น")}
           </h2>
-          <p className="mt-5 text-lg font-medium leading-8 text-slate-600">
+          <p className="mt-5 text-lg font-medium leading-8 text-[var(--fw-muted,#9CA3AF)]">
             {text(
               props.subtitle,
               "ประสบการณ์เรียนรู้ที่ออกแบบให้ดูดี ใช้ง่าย และน่าเชื่อถือบนมือถือ",
@@ -405,7 +405,7 @@ export function ELabBentoFeatures({ props }: SectionProps) {
           {items.slice(0, 6).map((item, index) => (
             <StaggerItem
               key={`${cardTitle(item, "feature")}-${index}`}
-              className={`group rounded-[2rem] border border-slate-200/70 bg-white p-8 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl ${!useCompactGrid && index === 0 ? "md:col-span-2" : ""}`}
+              className={`group rounded-[2rem] border border-[var(--fw-border,#9CA3AF38)]/70 bg-[var(--fw-surface,#2D2F39)] p-8 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl ${!useCompactGrid && index === 0 ? "md:col-span-2" : ""}`}
             >
               <div
                 className="mb-8 grid h-16 w-16 place-items-center rounded-2xl text-white transition-transform duration-300 group-hover:scale-110"
@@ -422,7 +422,7 @@ export function ELabBentoFeatures({ props }: SectionProps) {
               <h3 className="text-2xl font-black tracking-normal">
                 {cardTitle(item)}
               </h3>
-              <p className="mt-4 text-base font-medium leading-7 text-slate-600">
+              <p className="mt-4 text-base font-medium leading-7 text-[var(--fw-muted,#9CA3AF)]">
                 {cardDescription(item)}
               </p>
             </StaggerItem>
@@ -434,7 +434,7 @@ export function ELabBentoFeatures({ props }: SectionProps) {
 }
 
 export function ELabFeaturedCourses({ props }: SectionProps) {
-  const primaryColor = text(props.primaryColor, "#0047FF");
+  const primaryColor = text(props.primaryColor, "var(--fw-color-primary, #FF8C00)");
   const courses = arrayOfObjects<CardItem>(props.items, fallbackCourses);
   const gridClass =
     courses.length <= 1
@@ -446,7 +446,7 @@ export function ELabFeaturedCourses({ props }: SectionProps) {
   return (
     <section
       id="courses"
-      className="bg-[#FAFAFA] px-4 py-24 text-slate-950 md:px-8"
+      className="bg-[var(--fw-bg,#1A1C23)] px-4 py-24 text-[var(--fw-text,#F9FAFB)] md:px-8"
     >
       <div className="mx-auto max-w-7xl">
         <Reveal className="mb-16 flex flex-col justify-between gap-8 md:flex-row md:items-end">
@@ -466,7 +466,7 @@ export function ELabFeaturedCourses({ props }: SectionProps) {
           {courses.slice(0, 6).map((course, index) => (
             <StaggerItem
               key={`${cardTitle(course, "course")}-${index}`}
-              className="group overflow-hidden rounded-[2rem] border border-slate-200/70 bg-white shadow-sm transition-shadow hover:shadow-xl"
+              className="group overflow-hidden rounded-[2rem] border border-[var(--fw-border,#9CA3AF38)]/70 bg-[var(--fw-surface,#2D2F39)] shadow-sm transition-shadow hover:shadow-xl"
             >
               <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
                 <img
@@ -492,14 +492,14 @@ export function ELabFeaturedCourses({ props }: SectionProps) {
                 <h3 className="text-2xl font-black tracking-normal">
                   {cardTitle(course)}
                 </h3>
-                <p className="mt-3 min-h-14 text-sm font-medium leading-6 text-slate-600">
+                <p className="mt-3 min-h-14 text-sm font-medium leading-6 text-[var(--fw-muted,#9CA3AF)]">
                   {cardDescription(course)}
                 </p>
                 <div className="mt-7 flex items-center justify-between">
                   <span className="text-lg font-black">
                     {course.price ?? "THB 990"}
                   </span>
-                  <span className="rounded-full bg-slate-100 px-4 py-2 text-xs font-black text-slate-600">
+                  <span className="rounded-full bg-slate-100 px-4 py-2 text-xs font-black text-[var(--fw-muted,#9CA3AF)]">
                     {course.meta ?? "Online"}
                   </span>
                 </div>
@@ -513,7 +513,7 @@ export function ELabFeaturedCourses({ props }: SectionProps) {
 }
 
 export function ELabMetricStrip({ props }: SectionProps) {
-  const primaryColor = text(props.primaryColor, "#0047FF");
+  const primaryColor = text(props.primaryColor, "var(--fw-color-primary, #FF8C00)");
   const stats = arrayWithFallback<CardItem>(
     props.items,
     Array.isArray(props.items) && props.items.length > 0
@@ -523,12 +523,12 @@ export function ELabMetricStrip({ props }: SectionProps) {
   );
 
   return (
-    <section className="bg-[#FAFAFA] px-4 py-16 text-slate-950 md:px-8">
-      <Stagger className="mx-auto grid max-w-7xl gap-4 rounded-[2rem] border border-slate-200/70 bg-white p-4 shadow-xl shadow-slate-200/50 sm:grid-cols-2 lg:grid-cols-4 lg:p-6">
+    <section className="bg-[var(--fw-bg,#1A1C23)] px-4 py-16 text-[var(--fw-text,#F9FAFB)] md:px-8">
+      <Stagger className="mx-auto grid max-w-7xl gap-4 rounded-[2rem] border border-[var(--fw-border,#9CA3AF38)]/70 bg-[var(--fw-surface,#2D2F39)] p-4 shadow-xl shadow-slate-200/50 sm:grid-cols-2 lg:grid-cols-4 lg:p-6">
         {stats.slice(0, 4).map((stat, index) => (
           <StaggerItem
             key={`${cardTitle(stat, "metric")}-${index}`}
-            className="rounded-3xl border border-slate-100 bg-slate-50 p-6"
+            className="rounded-3xl border border-[var(--fw-border,#9CA3AF38)] bg-slate-50 p-6"
           >
             <p
               className="text-4xl font-black tracking-normal md:text-5xl"
@@ -536,7 +536,7 @@ export function ELabMetricStrip({ props }: SectionProps) {
             >
               {cardTitle(stat)}
             </p>
-            <p className="mt-3 text-sm font-black uppercase tracking-[0.14em] text-slate-500">
+            <p className="mt-3 text-sm font-black uppercase tracking-[0.14em] text-[var(--fw-muted,#9CA3AF)]">
               {cardDescription(stat)}
             </p>
           </StaggerItem>
@@ -547,7 +547,7 @@ export function ELabMetricStrip({ props }: SectionProps) {
 }
 
 export function ELabCategoryGrid({ props }: SectionProps) {
-  const primaryColor = text(props.primaryColor, "#0047FF");
+  const primaryColor = text(props.primaryColor, "var(--fw-color-primary, #FF8C00)");
   const categories = arrayOfObjects<CardItem>(props.items, [
     {
       title: "Design",
@@ -572,13 +572,13 @@ export function ELabCategoryGrid({ props }: SectionProps) {
   ]);
 
   return (
-    <section className="bg-[#FAFAFA] px-4 py-24 text-slate-950 md:px-8">
+    <section className="bg-[var(--fw-bg,#1A1C23)] px-4 py-24 text-[var(--fw-text,#F9FAFB)] md:px-8">
       <div className="mx-auto max-w-7xl">
         <Reveal className="mb-14 max-w-2xl">
           <h2 className="text-4xl font-black tracking-normal md:text-6xl">
             {text(props.title, "à¹€à¸¥à¸·à¸­à¸à¸«à¸¡à¸§à¸”à¸—à¸µà¹ˆà¹ƒà¸Šà¹ˆ")}
           </h2>
-          <p className="mt-5 text-lg font-medium leading-8 text-slate-600">
+          <p className="mt-5 text-lg font-medium leading-8 text-[var(--fw-muted,#9CA3AF)]">
             {text(props.subtitle, "à¸ˆà¸±à¸”à¸à¸¥à¸¸à¹ˆà¸¡à¸„à¸­à¸£à¹Œà¸ªà¹ƒà¸«à¹‰à¸ªà¹à¸à¸™à¸‡à¹ˆà¸²à¸¢à¹à¸¥à¸°à¸”à¸¹à¸™à¹ˆà¸²à¹€à¸Šà¸·à¹ˆà¸­à¸–à¸·à¸­")}
           </p>
         </Reveal>
@@ -586,7 +586,7 @@ export function ELabCategoryGrid({ props }: SectionProps) {
           {categories.slice(0, 8).map((category, index) => (
             <StaggerItem
               key={`${cardTitle(category, "category")}-${index}`}
-              className="group min-h-64 rounded-[2rem] border border-slate-200/70 bg-white p-7 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl"
+              className="group min-h-64 rounded-[2rem] border border-[var(--fw-border,#9CA3AF38)]/70 bg-[var(--fw-surface,#2D2F39)] p-7 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl"
             >
               <div
                 className="mb-8 grid h-14 w-14 place-items-center rounded-2xl text-white"
@@ -600,7 +600,7 @@ export function ELabCategoryGrid({ props }: SectionProps) {
               <h3 className="mt-3 text-2xl font-black tracking-normal">
                 {cardTitle(category)}
               </h3>
-              <p className="mt-4 text-sm font-medium leading-7 text-slate-600">
+              <p className="mt-4 text-sm font-medium leading-7 text-[var(--fw-muted,#9CA3AF)]">
                 {cardDescription(category)}
               </p>
             </StaggerItem>
@@ -612,7 +612,7 @@ export function ELabCategoryGrid({ props }: SectionProps) {
 }
 
 export function ELabInsightsGrid({ props }: SectionProps) {
-  const primaryColor = text(props.primaryColor, "#0047FF");
+  const primaryColor = text(props.primaryColor, "var(--fw-color-primary, #FF8C00)");
   const articles = arrayOfObjects<CardItem>(props.items, [
     {
       title: "How to choose the right course",
@@ -632,7 +632,7 @@ export function ELabInsightsGrid({ props }: SectionProps) {
   ]);
 
   return (
-    <section className="bg-white px-4 py-24 text-slate-950 md:px-8">
+    <section className="bg-[var(--fw-surface,#2D2F39)] px-4 py-24 text-[var(--fw-text,#F9FAFB)] md:px-8">
       <div className="mx-auto max-w-7xl">
         <Reveal className="mb-14 flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <h2 className="max-w-2xl text-4xl font-black tracking-normal md:text-6xl">
@@ -640,7 +640,7 @@ export function ELabInsightsGrid({ props }: SectionProps) {
           </h2>
           <a
             href={text(props.buttonHref, "#")}
-            className="inline-flex w-fit items-center rounded-full border border-slate-200 bg-slate-950 px-6 py-3 text-sm font-black text-white transition-transform hover:scale-[1.03]"
+            className="inline-flex w-fit items-center rounded-full border border-[var(--fw-border,#9CA3AF38)] bg-slate-950 px-6 py-3 text-sm font-black text-white transition-transform hover:scale-[1.03]"
           >
             {text(props.buttonText, "à¸­à¹ˆà¸²à¸™à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”")}
             <ArrowRight className="ml-2 h-4 w-4" />
@@ -650,7 +650,7 @@ export function ELabInsightsGrid({ props }: SectionProps) {
           {articles.slice(0, 3).map((article, index) => (
             <StaggerItem
               key={`${cardTitle(article, "article")}-${index}`}
-              className="rounded-[2rem] border border-slate-200/70 bg-[#FAFAFA] p-8 shadow-sm"
+              className="rounded-[2rem] border border-[var(--fw-border,#9CA3AF38)]/70 bg-[var(--fw-bg,#1A1C23)] p-8 shadow-sm"
             >
               <p
                 className="mb-8 inline-flex rounded-full px-4 py-2 text-xs font-black text-white"
@@ -661,7 +661,7 @@ export function ELabInsightsGrid({ props }: SectionProps) {
               <h3 className="text-2xl font-black tracking-normal">
                 {cardTitle(article)}
               </h3>
-              <p className="mt-4 text-sm font-medium leading-7 text-slate-600">
+              <p className="mt-4 text-sm font-medium leading-7 text-[var(--fw-muted,#9CA3AF)]">
                 {cardDescription(article)}
               </p>
             </StaggerItem>
@@ -673,13 +673,13 @@ export function ELabInsightsGrid({ props }: SectionProps) {
 }
 
 export function ELabTestimonials({ props }: SectionProps) {
-  const primaryColor = text(props.primaryColor, "#0047FF");
+  const primaryColor = text(props.primaryColor, "var(--fw-color-primary, #FF8C00)");
   const quotes = arrayOfObjects<QuoteItem>(props.items, fallbackQuotes);
 
   return (
     <section
       id="reviews"
-      className="bg-[#FAFAFA] px-4 py-24 text-slate-950 md:px-8"
+      className="bg-[var(--fw-bg,#1A1C23)] px-4 py-24 text-[var(--fw-text,#F9FAFB)] md:px-8"
     >
       <div className="mx-auto max-w-7xl">
         <Reveal className="mb-16">
@@ -705,9 +705,9 @@ export function ELabTestimonials({ props }: SectionProps) {
           {quotes.slice(0, 4).map((quote, index) => (
             <StaggerItem
               key={`${quote.author}-${index}`}
-              className="rounded-[2rem] border border-slate-100 bg-white p-8 shadow-sm transition-shadow hover:shadow-md md:p-10"
+              className="rounded-[2rem] border border-[var(--fw-border,#9CA3AF38)] bg-[var(--fw-surface,#2D2F39)] p-8 shadow-sm transition-shadow hover:shadow-md md:p-10"
             >
-              <p className="mb-10 text-lg font-medium leading-8 text-slate-600">
+              <p className="mb-10 text-lg font-medium leading-8 text-[var(--fw-muted,#9CA3AF)]">
                 &quot;{quote.quote ?? quote.text}&quot;
               </p>
               <div className="flex items-center gap-4">
@@ -723,10 +723,10 @@ export function ELabTestimonials({ props }: SectionProps) {
                   />
                 </div>
                 <div>
-                  <div className="font-black text-slate-950">
+                  <div className="font-black text-[var(--fw-text,#F9FAFB)]">
                     {quote.author ?? "Customer"}
                   </div>
-                  <div className="text-sm font-medium text-slate-500">
+                  <div className="text-sm font-medium text-[var(--fw-muted,#9CA3AF)]">
                     {quote.role ?? "Learner"}
                   </div>
                 </div>
@@ -748,10 +748,10 @@ export function ELabLogoStrip({ props }: SectionProps) {
     : ["LINE", "Google", "Meta", "Canva", "Notion"];
 
   return (
-    <section className="border-y border-slate-100 bg-slate-50/70 px-4 py-16 text-slate-950 md:px-8">
+    <section className="border-y border-[var(--fw-border,#9CA3AF38)] bg-slate-50/70 px-4 py-16 text-[var(--fw-text,#F9FAFB)] md:px-8">
       <div className="mx-auto max-w-7xl">
         <Reveal>
-          <h2 className="mb-12 text-center text-sm font-black uppercase tracking-[0.18em] text-slate-500">
+          <h2 className="mb-12 text-center text-sm font-black uppercase tracking-[0.18em] text-[var(--fw-muted,#9CA3AF)]">
             {text(props.title, "ได้รับความไว้วางใจจากทีมชั้นนำ")}
           </h2>
         </Reveal>
@@ -772,7 +772,7 @@ export function ELabLogoStrip({ props }: SectionProps) {
 }
 
 export function ELabFloatingCta({ props }: SectionProps) {
-  const primaryColor = text(props.primaryColor, "#0047FF");
+  const primaryColor = text(props.primaryColor, "var(--fw-color-primary, #FF8C00)");
   const avatars = arrayOfObjects<CardItem>(props.avatars, [
     { imageUrl: "https://picsum.photos/seed/ctap1/200/200", title: "Learner" },
     { imageUrl: "https://picsum.photos/seed/ctap2/200/200", title: "Learner" },
@@ -781,7 +781,7 @@ export function ELabFloatingCta({ props }: SectionProps) {
   ]);
 
   return (
-    <section className="relative mx-auto max-w-7xl overflow-hidden bg-[#FAFAFA] px-4 py-28 text-center text-slate-950 md:px-8">
+    <section className="relative mx-auto max-w-7xl overflow-hidden bg-[var(--fw-bg,#1A1C23)] px-4 py-28 text-center text-[var(--fw-text,#F9FAFB)] md:px-8">
       <Stagger className="pointer-events-none absolute inset-0 z-10 mx-auto hidden h-full w-full max-w-4xl md:block">
         {avatars.slice(0, 4).map((avatar, index) => (
           <StaggerItem
@@ -809,7 +809,7 @@ export function ELabFloatingCta({ props }: SectionProps) {
         <h2 className="mx-auto mb-8 max-w-3xl text-5xl font-black tracking-normal md:text-6xl lg:text-7xl">
           {text(props.title, "พร้อมเริ่มเรียนแล้วหรือยัง")}
         </h2>
-        <p className="mx-auto mb-10 max-w-lg text-lg font-bold leading-8 text-slate-600">
+        <p className="mx-auto mb-10 max-w-lg text-lg font-bold leading-8 text-[var(--fw-muted,#9CA3AF)]">
           {text(props.subtitle, "เริ่มเส้นทางการเรียนรู้และอัปสกิลของคุณได้ทันที")}
         </p>
         <a
@@ -847,7 +847,7 @@ export function ELabSplitFaq({ props }: SectionProps) {
   );
 
   return (
-    <section className="bg-[#FAFAFA] px-4 py-24 text-slate-950 md:px-8">
+    <section className="bg-[var(--fw-bg,#1A1C23)] px-4 py-24 text-[var(--fw-text,#F9FAFB)] md:px-8">
       <div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-[1fr_300px] lg:gap-24">
         <div>
           <Reveal>
@@ -859,7 +859,7 @@ export function ELabSplitFaq({ props }: SectionProps) {
             {questions.map((item, index) => (
               <StaggerItem
                 key={`${item.question}-${index}`}
-                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+                className="rounded-2xl border border-[var(--fw-border,#9CA3AF38)] bg-[var(--fw-surface,#2D2F39)] p-6 shadow-sm"
               >
                 <div className="flex items-center justify-between gap-4">
                   <h3 className="text-lg font-black">{item.question}</h3>
@@ -867,7 +867,7 @@ export function ELabSplitFaq({ props }: SectionProps) {
                     +
                   </span>
                 </div>
-                <p className="mt-4 text-sm font-medium leading-7 text-slate-600">
+                <p className="mt-4 text-sm font-medium leading-7 text-[var(--fw-muted,#9CA3AF)]">
                   {item.answer}
                 </p>
               </StaggerItem>
@@ -881,7 +881,7 @@ export function ELabSplitFaq({ props }: SectionProps) {
           <h3 className="mb-4 text-xl font-black">
             {text(props.sideTitle, "ถามเราได้ทุกเรื่อง")}
           </h3>
-          <p className="mb-8 text-sm font-medium leading-7 text-slate-500">
+          <p className="mb-8 text-sm font-medium leading-7 text-[var(--fw-muted,#9CA3AF)]">
             {text(props.sideText, "หากมีคำถามเพิ่มเติม สามารถติดต่อทีมงานได้ทันที")}
           </p>
           <a

@@ -1,0 +1,157 @@
+import type { TemplateBlueprint } from "../types/template-factory.types";
+
+export const aestheticClinicLandingBlueprint: TemplateBlueprint = {
+  id: "aesthetic-clinic-landing-v1",
+  name: "Premium Aesthetic Clinic Landing Page",
+  industry: "clinic",
+  pages: [
+    {
+      key: "home",
+      title: "{{businessName}}",
+      slug: "home",
+      path: "/",
+      pageType: "LANDING",
+      isHomePage: true,
+      isPublished: false,
+      sortOrder: 0,
+      sections: [
+        {
+          key: "navbar",
+          type: "NAVBAR",
+          name: "Navigation",
+          sortOrder: 0,
+          isVisible: true,
+          defaultProps: {
+            brandName: "{{businessName}}",
+            logoUrl: "{{logoUrl}}",
+            menuItems: [
+              { label: "บริการ", href: "#services" },
+              { label: "ผลงาน", href: "#results" },
+              { label: "คำถาม", href: "#faq" },
+            ],
+            buttonText: "จองคิวผ่าน LINE",
+            buttonHref: "{{lineUrl}}",
+            motion: [{ preset: "scroll-progress", intensity: "subtle" }],
+          },
+        },
+        {
+          key: "hero",
+          type: "HERO",
+          name: "Hero",
+          sortOrder: 1,
+          isVisible: true,
+          defaultProps: {
+            eyebrow: "คลินิกความงามพรีเมียม",
+            title: "ดูแลผิวและรูปหน้าอย่างละเอียด โดยทีมแพทย์ที่เข้าใจคุณ",
+            subtitle:
+              "เริ่มจากประเมินปัญหาจริง วางแผนแบบเฉพาะบุคคล และติดตามผลหลังบริการผ่าน LINE",
+            buttonText: "ปรึกษาฟรีทาง LINE",
+            primaryButtonHref: "{{lineUrl}}",
+            imageUrl: "",
+            showImage: true,
+            motion: [
+              { preset: "parallax-bg", speed: 0.8, distance: 70 },
+              { preset: "scroll-reveal", distance: 42 },
+            ],
+          },
+        },
+        {
+          key: "services",
+          type: "FEATURE",
+          name: "Services",
+          sortOrder: 2,
+          isVisible: true,
+          defaultProps: {
+            title: "บริการที่ออกแบบเพื่อผลลัพธ์ดูเป็นธรรมชาติ",
+            items: [],
+            motion: [
+              { preset: "pin-section", pin: true, speed: 1 },
+              { preset: "stagger-children", stagger: 0.08 },
+            ],
+          },
+        },
+        {
+          key: "story",
+          type: "CONTENT",
+          name: "Before After Story",
+          sortOrder: 3,
+          isVisible: true,
+          defaultProps: {
+            variant: "featuredGrid",
+            title: "วางแผนก่อนทำทุกครั้ง ไม่ขายคอร์สเกินความจำเป็น",
+            subtitle:
+              "ทีมแพทย์อธิบายตัวเลือก ระยะเห็นผล และการดูแลหลังทำให้เข้าใจก่อนตัดสินใจ",
+            items: [],
+            motion: [{ preset: "sticky-story", pin: true, speed: 1.2 }],
+          },
+        },
+        {
+          key: "gallery",
+          type: "GALLERY",
+          name: "Gallery",
+          sortOrder: 4,
+          isVisible: true,
+          defaultProps: {
+            variant: "clipReveal",
+            title: "บรรยากาศและผลลัพธ์",
+            items: [],
+            motion: [{ preset: "clip-reveal", distance: 80 }],
+          },
+        },
+        {
+          key: "testimonials",
+          type: "TESTIMONIAL",
+          name: "Testimonials",
+          sortOrder: 5,
+          isVisible: true,
+          defaultProps: {
+            title: "เสียงจากลูกค้าที่กลับมาดูแลต่อเนื่อง",
+            items: [],
+            motion: [{ preset: "stagger-children", stagger: 0.09 }],
+          },
+        },
+        {
+          key: "faq",
+          type: "FAQ",
+          name: "FAQ",
+          sortOrder: 6,
+          isVisible: true,
+          defaultProps: {
+            variant: "splitAccordion",
+            title: "คำถามที่ลูกค้าถามบ่อย",
+            items: [],
+            motion: [{ preset: "scroll-reveal", distance: 54 }],
+          },
+        },
+        {
+          key: "contact",
+          type: "CONTACT",
+          name: "LINE CTA",
+          sortOrder: 7,
+          isVisible: true,
+          defaultProps: {
+            title: "ส่งรูปหรือทักมานัดประเมินเบื้องต้นได้เลย",
+            subtitle: "ตอบกลับในเวลาทำการ พร้อมแจ้งช่วงคิวและคำแนะนำก่อนเข้าคลินิก",
+            buttonText: "ทัก LINE เพื่อนัดคิว",
+            href: "{{lineUrl}}",
+            lineId: "{{lineId}}",
+            phone: "{{phone}}",
+            motion: [{ preset: "magnetic", intensity: "subtle" }],
+          },
+        },
+        {
+          key: "footer",
+          type: "FOOTER",
+          name: "Footer",
+          sortOrder: 8,
+          isVisible: true,
+          defaultProps: {
+            brandName: "{{businessName}}",
+            tagline: "คลินิกความงามที่ให้คำปรึกษาตรงไปตรงมาและดูแลผลลัพธ์ระยะยาว",
+            phone: "{{phone}}",
+          },
+        },
+      ],
+    },
+  ],
+};

@@ -17,16 +17,23 @@ export type {
 // Blueprints
 export {
   restaurantLandingBlueprint,
+  aestheticClinicLandingBlueprint,
   allBlueprints,
 } from "./blueprints/restaurant-landing.blueprint";
 
 // Themes
-export { modernOrangeTheme, luxuryDarkTheme, allThemes } from "./themes/index";
+export {
+  modernOrangeTheme,
+  luxuryDarkTheme,
+  deepSpacePremiumTheme,
+  allThemes,
+} from "./themes/index";
 
 // Content packs
 export {
   malaRestaurantThContentPack,
   cafeThContentPack,
+  aestheticClinicThContentPack,
   allContentPacks,
 } from "./content-packs/index";
 

@@ -21,7 +21,7 @@ function readBoolean(
 }
 
 export function HeroSplitImageSection({ props }: HeroSplitImageSectionProps) {
-  const eyebrow = readString(props, "eyebrow", "FinnWeb builder");
+  const eyebrow = readString(props, "eyebrow", "พร้อมเปิดรับลูกค้า");
   const headline = readString(
     props,
     "headline",
@@ -41,7 +41,11 @@ export function HeroSplitImageSection({ props }: HeroSplitImageSectionProps) {
     "primaryButtonText",
     readString(props, "buttonText", "ติดต่อผ่าน LINE"),
   );
-  const accentColor = readString(props, "accentColor", "#FF8C00");
+  const accentColor = readString(
+    props,
+    "accentColor",
+    "var(--fw-color-primary, #FF8C00)",
+  );
   const imageUrl = readString(props, "imageUrl", "");
   const imagePosition = readString(props, "imagePosition", "right");
   const showImage = readBoolean(props, "showImage", true);
@@ -56,22 +60,23 @@ export function HeroSplitImageSection({ props }: HeroSplitImageSectionProps) {
         >
           {eyebrow}
         </p>
-        <h2 className="mt-3 font-kanit text-4xl font-semibold leading-tight text-[#1A1C23]">
+        <h2 className="mt-3 font-kanit text-4xl font-semibold leading-tight text-[var(--fw-text,#F9FAFB)]">
           {headline}
         </h2>
-        <p className="mt-4 max-w-xl text-sm leading-7 text-slate-600">
+        <p className="mt-4 max-w-xl text-sm leading-7 text-[var(--fw-muted,#9CA3AF)]">
           {subheadline}
         </p>
-        <span
-          className="mt-6 inline-flex rounded-lg px-4 py-2 text-sm font-semibold text-white"
+        <a
+          href={readString(props, "primaryButtonHref", readString(props, "href", "#contact"))}
+          className="mt-6 inline-flex rounded-[var(--fw-radius-button,8px)] px-4 py-2 text-sm font-semibold text-[var(--fw-text,#F9FAFB)] shadow-[var(--fw-glow-primary,none)]"
           style={{ backgroundColor: accentColor }}
         >
           {primaryButtonText}
-        </span>
+        </a>
       </div>
       {showImage ? (
         <div className={imageFirst ? "md:order-1" : undefined}>
-          <div className="min-h-56 overflow-hidden rounded-lg border border-slate-200 bg-[linear-gradient(135deg,#FFF7E8,#FFD70033)] p-5">
+          <div className="min-h-56 overflow-hidden rounded-[var(--fw-radius-card,10px)] border border-[var(--fw-border,#9CA3AF38)] bg-[var(--fw-surface,#2D2F39)] p-5 shadow-[var(--fw-depth-card,none)]">
             {imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -80,7 +85,7 @@ export function HeroSplitImageSection({ props }: HeroSplitImageSectionProps) {
                 className="h-full min-h-48 w-full rounded-lg object-cover"
               />
             ) : (
-              <div className="h-full min-h-48 rounded-lg border border-white/70 bg-white/60" />
+              <div className="h-full min-h-48 rounded-lg border border-[var(--fw-border,#9CA3AF38)] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--fw-color-primary,#FF8C00)_26%,transparent),color-mix(in_srgb,var(--fw-color-primary-light,#FFD700)_16%,transparent))]" />
             )}
           </div>
         </div>

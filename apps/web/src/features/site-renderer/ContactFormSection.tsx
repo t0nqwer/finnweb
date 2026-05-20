@@ -23,15 +23,19 @@ export function ContactFormSection({ props }: ContactFormSectionProps) {
   const subtitle = readString(
     props,
     "subtitle",
-    "กรอกข้อมูลด้านล่างแล้วเราจะติดต่อกลับโดยเร็ว",
+    "ฝากข้อมูลไว้ แล้วทีมงานจะติดต่อกลับโดยเร็วที่สุด",
   );
   const buttonText = readString(props, "buttonText", "ส่งข้อมูล");
   const successMessage = readString(
     props,
     "successMessage",
-    "ส่งข้อมูลเรียบร้อยแล้ว ขอบคุณมากค่ะ!",
+    "ส่งข้อมูลเรียบร้อยแล้ว ขอบคุณมากค่ะ",
   );
-  const accentColor = readString(props, "accentColor", "#FF8C00");
+  const accentColor = readString(
+    props,
+    "accentColor",
+    "var(--fw-color-primary, #FF8C00)",
+  );
 
   const siteId = typeof props._siteId === "string" ? props._siteId : null;
   const pageId = typeof props._pageId === "string" ? props._pageId : undefined;
@@ -45,7 +49,6 @@ export function ContactFormSection({ props }: ContactFormSectionProps) {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
-  /** Honeypot — hidden from real users. Bots fill it in. */
   const [hp, setHp] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -78,19 +81,19 @@ export function ContactFormSection({ props }: ContactFormSectionProps) {
       setHp("");
     } else {
       setFormState("error");
-      const msg =
+      setErrorMessage(
         result.error === "NETWORK_ERROR"
-          ? "เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง"
-          : "เกิดข้อผิดพลาด กรุณาตรวจสอบข้อมูลแล้วลองใหม่";
-      setErrorMessage(msg);
+          ? "เชื่อมต่อไม่สำเร็จ กรุณาลองใหม่อีกครั้ง"
+          : "ส่งข้อมูลไม่สำเร็จ กรุณาตรวจสอบข้อมูลแล้วลองใหม่",
+      );
     }
   }
 
   if (formState === "success") {
     return (
       <div className="px-6 py-12 sm:px-10">
-        <div className="mx-auto max-w-lg rounded-lg border border-green-200 bg-green-50 p-6 text-center">
-          <p className="font-kanit text-lg font-semibold text-green-700">
+        <div className="mx-auto max-w-lg rounded-[var(--fw-radius-card,10px)] border border-emerald-400/35 bg-emerald-500/10 p-6 text-center">
+          <p className="font-kanit text-lg font-semibold text-emerald-200">
             {successMessage}
           </p>
         </div>
@@ -99,17 +102,22 @@ export function ContactFormSection({ props }: ContactFormSectionProps) {
   }
 
   const isSubmitting = formState === "submitting";
+  const inputClass =
+    "w-full rounded-[var(--fw-radius-button,8px)] border border-[var(--fw-border,#9CA3AF38)] bg-[var(--fw-panel,#252833)] px-3 py-2.5 text-sm text-[var(--fw-text,#F9FAFB)] placeholder:text-[var(--fw-muted,#9CA3AF)] focus:outline-none focus:ring-2 focus:ring-[var(--fw-color-primary,#FF8C00)]";
+  const labelClass =
+    "mb-1.5 block text-sm font-medium text-[var(--fw-text,#F9FAFB)]";
 
   return (
     <div className="px-6 py-12 sm:px-10">
-      <div className="mx-auto max-w-lg">
-        <h2 className="font-kanit text-3xl font-semibold text-[#1A1C23]">
+      <div className="mx-auto max-w-lg rounded-[var(--fw-radius-card,10px)] border border-[var(--fw-border,#9CA3AF38)] bg-[var(--fw-surface,#2D2F39)] p-6 shadow-[var(--fw-depth-card,none)]">
+        <h2 className="font-kanit text-3xl font-semibold text-[var(--fw-text,#F9FAFB)]">
           {title}
         </h2>
-        <p className="mt-2 text-sm leading-7 text-slate-500">{subtitle}</p>
+        <p className="mt-2 text-sm leading-7 text-[var(--fw-muted,#9CA3AF)]">
+          {subtitle}
+        </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
-          {/* Honeypot field — visually hidden from real users */}
           <div
             aria-hidden="true"
             style={{
@@ -135,11 +143,8 @@ export function ContactFormSection({ props }: ContactFormSectionProps) {
           </div>
 
           <div>
-            <label
-              htmlFor="cf-name"
-              className="mb-1.5 block text-sm font-medium text-[#1A1C23]"
-            >
-              ชื่อ – นามสกุล <span className="text-red-500">*</span>
+            <label htmlFor="cf-name" className={labelClass}>
+              ชื่อ - นามสกุล <span className="text-red-300">*</span>
             </label>
             <input
               id="cf-name"
@@ -149,18 +154,14 @@ export function ContactFormSection({ props }: ContactFormSectionProps) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="เช่น สมชาย ใจดี"
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-[#1A1C23] placeholder:text-slate-400 focus:outline-none focus:ring-2"
-              style={{ focusRingColor: accentColor } as React.CSSProperties}
+              className={inputClass}
               disabled={isSubmitting}
             />
           </div>
 
           <div>
-            <label
-              htmlFor="cf-phone"
-              className="mb-1.5 block text-sm font-medium text-[#1A1C23]"
-            >
-              เบอร์โทรศัพท์ <span className="text-red-500">*</span>
+            <label htmlFor="cf-phone" className={labelClass}>
+              เบอร์โทรศัพท์ <span className="text-red-300">*</span>
             </label>
             <input
               id="cf-phone"
@@ -170,18 +171,15 @@ export function ContactFormSection({ props }: ContactFormSectionProps) {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="เช่น 0812345678"
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-[#1A1C23] placeholder:text-slate-400 focus:outline-none focus:ring-2"
+              className={inputClass}
               disabled={isSubmitting}
             />
           </div>
 
           <div>
-            <label
-              htmlFor="cf-email"
-              className="mb-1.5 block text-sm font-medium text-[#1A1C23]"
-            >
+            <label htmlFor="cf-email" className={labelClass}>
               อีเมล{" "}
-              <span className="text-xs font-normal text-slate-400">
+              <span className="text-xs font-normal text-[var(--fw-muted,#9CA3AF)]">
                 (ไม่บังคับ)
               </span>
             </label>
@@ -192,18 +190,15 @@ export function ContactFormSection({ props }: ContactFormSectionProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="example@email.com"
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-[#1A1C23] placeholder:text-slate-400 focus:outline-none focus:ring-2"
+              className={inputClass}
               disabled={isSubmitting}
             />
           </div>
 
           <div>
-            <label
-              htmlFor="cf-message"
-              className="mb-1.5 block text-sm font-medium text-[#1A1C23]"
-            >
+            <label htmlFor="cf-message" className={labelClass}>
               ข้อความ{" "}
-              <span className="text-xs font-normal text-slate-400">
+              <span className="text-xs font-normal text-[var(--fw-muted,#9CA3AF)]">
                 (ไม่บังคับ)
               </span>
             </label>
@@ -214,19 +209,19 @@ export function ContactFormSection({ props }: ContactFormSectionProps) {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="บอกเราเพิ่มเติมเกี่ยวกับความต้องการของคุณ..."
-              className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm text-[#1A1C23] placeholder:text-slate-400 focus:outline-none focus:ring-2"
+              className={`${inputClass} resize-none`}
               disabled={isSubmitting}
             />
           </div>
 
           {errorMessage ? (
-            <p className="text-sm text-red-600">{errorMessage}</p>
+            <p className="text-sm text-red-300">{errorMessage}</p>
           ) : null}
 
           <button
             type="submit"
             disabled={isSubmitting || !name.trim() || !phone.trim()}
-            className="w-full rounded-lg px-4 py-3 text-sm font-semibold text-white transition disabled:opacity-50"
+            className="w-full rounded-[var(--fw-radius-button,8px)] px-4 py-3 text-sm font-semibold text-[var(--fw-text,#F9FAFB)] transition disabled:opacity-50"
             style={{ backgroundColor: accentColor }}
           >
             {isSubmitting ? "กำลังส่ง..." : buttonText}

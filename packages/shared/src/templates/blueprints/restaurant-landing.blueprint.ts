@@ -1,4 +1,7 @@
 import type { TemplateBlueprint } from "../types/template-factory.types";
+import { aestheticClinicLandingBlueprint } from "./aesthetic-clinic-landing.blueprint";
+
+export { aestheticClinicLandingBlueprint };
 
 /**
  * Restaurant Landing Page blueprint.
@@ -142,4 +145,7 @@ export const restaurantLandingBlueprint: TemplateBlueprint = {
   ],
 };
 
-export const allBlueprints = [restaurantLandingBlueprint];
+export const allBlueprints = [
+  restaurantLandingBlueprint,
+  aestheticClinicLandingBlueprint,
+];

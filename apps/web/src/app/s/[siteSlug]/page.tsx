@@ -1,7 +1,11 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { fetchPublicPage } from "@/features/site-renderer/public-site.api";
-import { PublicSectionRenderer } from "@/features/site-renderer/PublicSectionRenderer";
+import {
+  getPublicSiteClassName,
+  getPublicSiteThemeStyle,
+  PublicSectionRenderer,
+} from "@/features/site-renderer/PublicSectionRenderer";
 
 type Props = {
   params: Promise<{ siteSlug: string }>;
@@ -36,10 +40,19 @@ export default async function PublicSiteHomePage({ params }: Props) {
     notFound();
   }
 
-  const { sections, page } = data;
+  const { sections, page, site } = data;
   const siteId = typeof data.site.id === "string" ? data.site.id : "";
+  const version =
+    typeof site.version === "number" || typeof site.version === "string"
+      ? site.version
+      : 0;
 
   return (
-    <PublicSectionRenderer sections={sections} siteId={siteId} pageId={page.id} />
+    <div
+      className={getPublicSiteClassName(siteId, version)}
+      style={getPublicSiteThemeStyle(site)}
+    >
+      <PublicSectionRenderer sections={sections} siteId={siteId} pageId={page.id} />
+    </div>
   );
 }

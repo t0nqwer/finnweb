@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-05-20
+
+- Decoupled CSS-engine and GSAP-engine motion paths in `MotionSection` to fix scroll-reveal failures verified in browser: sections with `props.motion` directives now set `data-fw-motion-engine="gsap"` and skip the CSS `fw-armed`/`is-visible` classes (GSAP owns inline opacity/visibility); sections without directives use React-managed inline `opacity:0; visibility:hidden` while armed (deterministic, independent of `@layer utilities` cascade quirks). For in-fold reveal presets the GSAP hide+tween path is skipped (content stays visible by CSS default); for below-fold sections the guarded ScrollTrigger only fires once the user has actually scrolled.
+- Fixed the resize/rotate scroll-reveal regression: GSAP reveal presets now use guarded paused tweens that only play when the section is actually near the viewport, so `ScrollTrigger.refresh()` no longer reveals below-fold sections at scroll 0 while parallax/pin refresh behavior and footer bottom safety remain intact.
+- Fixed the follow-up scroll-reveal regression where pinned layout refresh could reveal below-fold sections at scroll 0: `MotionSection` now waits for layout to settle before observing/revealing, keeps unrevealed sections explicitly hidden while armed, and still reveals the final footer at document bottom.
+- Fixed the public motion footer regression without killing scroll reveal: removed blanket 1.2s reveal timers from `MotionSection`/GSAP safety paths, kept IntersectionObserver as the main reveal path, and limited fallback reveal to the document-bottom safety case so short final sections become visible while below-fold sections still animate on scroll.
+- Upgraded public rendering foundations for premium site output: published snapshots now include `Site.themeConfig`, public APIs return the publish version, and `/s/:siteSlug` routes wrap rendered pages in scoped `fw-site-{siteId} fw-version-{version}` containers with Deep Space CSS variables.
+- Fixed public motion progressive enhancement so sections are visible by default on SSR/no-JS, then arm reveal states only after the client motion engine is ready.
+- Added a first-party JSON-only motion normalizer in shared code and wired public sections to lazy-load GSAP + ScrollTrigger presets with reduced-motion/no-JS fallbacks and cleanup on unmount.
+- Converted default public section colors to FinnWeb token CSS variables, changed key CTA spans into real links, and added Thai fallback copy for core public sections.
+- Added the Thai “คลินิกความงามพรีเมียม” showcase template factory pack with aesthetic clinic blueprint, Deep Space Premium theme, Thai content pack, real image URLs, LINE CTA, and motion directives across hero, pinned services, sticky story, gallery, testimonials, FAQ, and contact.
+- Verified generator coverage, `pnpm typecheck`, and `pnpm build`.
+
 ## 2026-05-12
 
 - Updated builder canvas preview to render imported high-design template variants through `PublicSectionRenderer`, matching admin/public preview behavior while keeping normal builder registry rendering for standard sections. Desktop builder canvas now supports a 1280px preview width.
