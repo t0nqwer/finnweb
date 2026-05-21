@@ -67,7 +67,7 @@ FinnWeb is a high-speed SaaS website and landing page builder designed for the T
 
 1. Ignite: User registers and creates a workspace.
 2. Build: User adds sections (Hero, Form, CTA) via JSON-based editor.
-3. Launch: One-click publish to finnweb.co/sitename.
+3. Launch: One-click publish to a `*.finnweb.site` subdomain (or `/s/sitename`).
 4. Convert: Visitors submit forms; User receives real-time LINE/Email alerts.
 5. Scale: User upgrades to PRO for custom domains and unlimited sites.
 
