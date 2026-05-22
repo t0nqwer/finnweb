@@ -27,4 +27,8 @@ export default () => ({
     backoffMs: Number(process.env.QUEUE_BACKOFF_MS || 5000),
     workerConcurrency: Number(process.env.WORKER_CONCURRENCY || 5),
   },
+  lineOa: {
+    baseUrl: process.env.LINE_OA_API_BASE_URL || "https://api.line.me",
+    timeoutMs: Number(process.env.LINE_OA_TIMEOUT_MS || 5000),
+  },
 });

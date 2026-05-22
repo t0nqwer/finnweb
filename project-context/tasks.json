@@ -1,6 +1,40 @@
 {
-  "updatedAt": "2026-05-20",
+  "updatedAt": "2026-05-22",
   "tasks": [
+    {
+      "id": "line-oa-send-path-real",
+      "title": "FinnWeb LINE OA Lead Engine - real delivery path",
+      "status": "done",
+      "priority": "critical",
+      "phase": "phase-3",
+      "epic": "line-oa",
+      "estimatePoints": 13,
+      "owner": "unassigned",
+      "dependsOn": [
+        "line-oa-plan-quota-enforcement"
+      ],
+      "scope": [
+        "Create real LINE Messaging API push sender with provider abstraction",
+        "Add webhook routing and signature verification for LINE OA recipient capture",
+        "Move quota enforcement to send time and count successful delivery",
+        "Send lead notifications asynchronously via BullMQ with idempotency",
+        "Fallback to email after retries and expose delivery status"
+      ],
+      "acceptanceCriteria": [
+        "Public form submission still succeeds without auth and keeps the existing response shape",
+        "LINE OA push delivery uses Messaging API without logging or leaking tokens",
+        "FREE/BASIC quota blocks notification only while BUSINESS/PRO remain unlimited",
+        "Delivery is async, retry-safe, idempotent, and falls back to email on final failure",
+        "Sender/webhook tests, typecheck, build, and relevant API tests pass"
+      ],
+      "progressNotes": [
+        "2026-05-21: Phase 0 design note approved. Starting Phase A: Prisma delivery schema, LINE OA notification sender abstraction, webhook signature verification/routing, bot info discovery helper, centralized reason codes, and sender unit tests.",
+        "2026-05-21: Phase A completed for review. Added Prisma delivery/setup schema and migration, LINE OA HTTP provider + notification service, no-auth webhook controller with raw-body signature verification and follow recipient capture, centralized Thai reason-code constants, bot info discovery helper, and focused sender/webhook tests. pnpm typecheck and pnpm build passed; focused LINE OA tests passed; full api test command timed out after 10 minutes without TAP output.",
+        "2026-05-21: Phase B completed for review. Moved LINE OA quota enforcement into LineOaNotificationService send-time choke point, changed billing usage to count LineOaDelivery SENT rows only, removed submit-time LINE quota blocking from public lead capture, and migrated quota/billing tests. Existing owner form-settings update endpoint was not present, so bot-info discovery remains exposed as a service helper until that settings path exists. pnpm typecheck and pnpm build passed; focused Phase B tests passed; full api test command still timed out after 10 minutes without TAP output.",
+        "2026-05-22: Phase C completed for review. Added shared LINE OA lead job type, API enqueue path with deterministic BullMQ jobId, worker queue processor with global limiter, retryable vs unrecoverable error handling, fallback email to Form.notifyEmail then workspace owner email, no-email failure marking, and token-leak checks. pnpm typecheck and pnpm build passed; focused API + worker Phase C tests passed; full api test command still timed out after 10 minutes without TAP output.",
+        "2026-05-22: Phase D completed and task marked done. Updated changelog and LINE OA quota rollout documentation with implemented send path, send-time quota semantics, SENT-only usage source, validation/rollback SQL, manual real-OA verification steps, and tech debt notes for plaintext token storage plus worker/API cross-imports. Verified pnpm typecheck, pnpm build, focused API LINE/billing/sites tests, and worker retry/fallback/idempotency tests. Exact full API glob command timed out after 10 minutes without TAP output, so focused subsets are documented as the completed regression signal."
+      ]
+    },
     {
       "id": "site-builder-visual-premium-motion-engine",
       "title": "ยกระดับคุณภาพ FinnWeb site builder: visual premium + first-party motion engine",

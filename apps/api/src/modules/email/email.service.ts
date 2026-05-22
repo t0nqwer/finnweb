@@ -89,4 +89,60 @@ export class EmailService {
       throw new Error("EMAIL_SEND_FAILED");
     }
   }
+
+  async sendLeadNotificationFallbackEmail(input: {
+    to: string;
+    siteName: string;
+    lead: {
+      name?: string | null;
+      phone?: string | null;
+      email?: string | null;
+      message?: string | null;
+      createdAt: Date;
+    };
+    dashboardUrl: string;
+  }) {
+    if (!this.ensureConfigured()) {
+      return;
+    }
+
+    const leadName = input.lead.name?.trim() || "-";
+    const leadPhone = input.lead.phone?.trim() || "-";
+    const leadEmail = input.lead.email?.trim() || "-";
+    const leadMessage = input.lead.message?.trim() || "-";
+    const createdAt = input.lead.createdAt.toLocaleString("th-TH", {
+      timeZone: "Asia/Bangkok",
+    });
+
+    const { error } = await this.resend!.emails.send({
+      from: this.fromEmail,
+      to: [input.to],
+      subject: `FinnWeb lead ใหม่จาก ${input.siteName}`,
+      html: `
+        <p>มี lead ใหม่จากเว็บไซต์ ${input.siteName}</p>
+        <ul>
+          <li>ชื่อ: ${leadName}</li>
+          <li>เบอร์: ${leadPhone}</li>
+          <li>อีเมล: ${leadEmail}</li>
+          <li>ข้อความ: ${leadMessage}</li>
+          <li>เวลา: ${createdAt}</li>
+        </ul>
+        <p><a href="${input.dashboardUrl}">เปิด Dashboard</a></p>
+      `,
+      text: [
+        `มี lead ใหม่จากเว็บไซต์ ${input.siteName}`,
+        `ชื่อ: ${leadName}`,
+        `เบอร์: ${leadPhone}`,
+        `อีเมล: ${leadEmail}`,
+        `ข้อความ: ${leadMessage}`,
+        `เวลา: ${createdAt}`,
+        `Dashboard: ${input.dashboardUrl}`,
+      ].join("\n"),
+    });
+
+    if (error) {
+      this.logger.error(`Resend lead fallback email failed: ${error.message}`);
+      throw new Error("EMAIL_SEND_FAILED");
+    }
+  }
 }

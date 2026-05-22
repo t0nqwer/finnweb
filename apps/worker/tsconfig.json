@@ -5,6 +5,12 @@
     "moduleResolution": "NodeNext",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["../api/src/*"],
+      "@finnweb/shared": ["../../packages/shared/src/index.ts"],
+      "@finnweb/shared/*": ["../../packages/shared/src/*"]
+    },
     "outDir": "dist",
     "noEmit": false
   },

@@ -11,6 +11,7 @@ import { RedisModule } from "./modules/redis/redis.module";
 import { TemplatesModule } from "./modules/templates/templates.module";
 import { SectionTemplatesModule } from "./modules/section-templates/section-templates.module";
 import { AdminModule } from "./modules/admin/admin.module";
+import { LineOaModule } from "./modules/line-oa/line-oa.module";
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { AdminModule } from "./modules/admin/admin.module";
     TemplatesModule,
     SectionTemplatesModule,
     AdminModule,
+    LineOaModule,
     AuthModule,
     BillingModule,
   ],

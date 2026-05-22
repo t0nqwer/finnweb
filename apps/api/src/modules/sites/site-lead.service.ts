@@ -3,18 +3,27 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
+  Optional,
 } from "@nestjs/common";
 import type * as runtime from "@prisma/client/runtime/client";
+import { JobsService } from "@/jobs/jobs.service";
 import { PrismaService } from "@/prisma/prisma.service";
-import { PLAN_GATING_ERROR_CODES } from "@/common/constants/plan-gating-errors.constant";
 import { GetSiteLeadsQueryDto } from "./dto/get-site-leads-query.dto";
 import { SubmitPublicLeadDto } from "./dto/submit-public-lead.dto";
 import { extractPublishedPagesFromSnapshot } from "./site-render-helpers";
 
 @Injectable()
 export class SiteLeadService {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(SiteLeadService.name);
+
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Optional()
+    @Inject(JobsService)
+    private readonly jobsService?: JobsService,
+  ) {}
 
   private async getAccessibleSite(userId: string, siteId: string) {
     const site = await this.prisma.site.findFirst({
@@ -99,62 +108,6 @@ export class SiteLeadService {
         utmMedium: null,
         utmCampaign: null,
       };
-    }
-  }
-
-  private async assertLineOaQuotaAvailableForForm(form: {
-    lineOaAccessToken?: string | null;
-    site: {
-      workspaceId: string;
-      workspace: {
-        subscriptions: Array<{
-          plan: {
-            lineOaMonthlyQuota: number | null;
-          };
-        }>;
-      };
-    };
-  }) {
-    if (!form.lineOaAccessToken?.trim()) {
-      return;
-    }
-
-    const currentPlan = form.site.workspace.subscriptions[0]?.plan;
-    const quota = currentPlan ? currentPlan.lineOaMonthlyQuota : 5;
-
-    if (quota === null) {
-      return;
-    }
-
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    const used = await this.prisma.formSubmission.count({
-      where: {
-        createdAt: {
-          gte: monthStart,
-          lt: monthEnd,
-        },
-        form: {
-          site: {
-            workspaceId: form.site.workspaceId,
-          },
-          lineOaAccessToken: {
-            not: null,
-          },
-        },
-        NOT: {
-          form: {
-            lineOaAccessToken: "",
-          },
-        },
-      },
-    });
-
-    if (used >= quota) {
-      throw new BadRequestException(
-        PLAN_GATING_ERROR_CODES.LINE_OA_QUOTA_REACHED.code,
-      );
     }
   }
 
@@ -358,35 +311,8 @@ export class SiteLeadService {
       select: {
         id: true,
         lineOaAccessToken: true,
-        site: {
-          select: {
-            workspaceId: true,
-            workspace: {
-              select: {
-                subscriptions: {
-                  where: {
-                    isCurrent: true,
-                  },
-                  include: {
-                    plan: {
-                      select: {
-                        lineOaMonthlyQuota: true,
-                      },
-                    },
-                  },
-                  orderBy: {
-                    createdAt: "desc",
-                  },
-                  take: 1,
-                },
-              },
-            },
-          },
-        },
       },
     });
-
-    await this.assertLineOaQuotaAvailableForForm(form);
 
     const normalizedData = {
       name: normalizedName,
@@ -417,6 +343,10 @@ export class SiteLeadService {
       },
     });
 
+    if (form.lineOaAccessToken?.trim()) {
+      this.dispatchLineOaNotification(submission.id);
+    }
+
     return {
       submissionId: submission.id,
       createdAt: submission.createdAt.toISOString(),
@@ -424,5 +354,30 @@ export class SiteLeadService {
       pageId: normalizedPageId,
       formId: form.id,
     };
+  }
+
+  private dispatchLineOaNotification(submissionId: string) {
+    if (!this.jobsService) {
+      return;
+    }
+
+    void this.jobsService
+      .enqueueLineOaLeadNotification({ formSubmissionId: submissionId })
+      .then((result) => {
+        if (!result.queued) {
+          this.logger.warn(
+            `LINE OA notification queue disabled for submission ${submissionId}`,
+          );
+        }
+      })
+      .catch((error: unknown) => {
+        const code =
+          error instanceof Error && error.message
+            ? error.message
+            : "LINE_OA_NOTIFICATION_ENQUEUE_FAILED";
+        this.logger.warn(
+          `LINE OA notification enqueue failed for submission ${submissionId}: ${code}`,
+        );
+      });
   }
 }

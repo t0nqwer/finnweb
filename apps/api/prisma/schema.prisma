@@ -589,6 +589,26 @@ enum FormStatus {
   DISABLED
 }
 
+enum LineOaRecipientType {
+  USER
+  GROUP
+  ROOM
+}
+
+enum LineOaSetupStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+enum LineOaDeliveryStatus {
+  PENDING
+  SKIPPED
+  SENT
+  FAILED
+  FALLBACK_SENT
+}
+
 enum FormFieldType {
   TEXT
   TEXTAREA
@@ -619,6 +639,11 @@ model Form {
   notifyEmail       String?
   webhookUrl        String?
   lineOaAccessToken String?
+  lineOaChannelSecret String?
+  lineOaBotUserId     String?
+  lineOaRecipientId   String?
+  lineOaRecipientType LineOaRecipientType @default(USER)
+  lineOaSetupStatus   LineOaSetupStatus   @default(PENDING)
 
   settings  Json?
   createdAt DateTime @default(now())
@@ -629,11 +654,13 @@ model Form {
 
   fields      FormField[]
   submissions FormSubmission[]
+  lineOaDeliveries LineOaDelivery[]
 
   @@unique([siteId, slug])
   @@index([siteId])
   @@index([pageId])
   @@index([status])
+  @@index([lineOaBotUserId])
 }
 
 model FormField {
@@ -679,8 +706,32 @@ model FormSubmission {
   createdAt DateTime @default(now())
 
   form Form @relation(fields: [formId], references: [id], onDelete: Cascade)
+  lineOaDelivery LineOaDelivery?
 
   @@index([formId, createdAt])
+}
+
+model LineOaDelivery {
+  id               String              @id @default(cuid())
+  formSubmissionId String              @unique
+  formId           String
+  status           LineOaDeliveryStatus @default(PENDING)
+  reasonCode       String?
+  customerMessage  String?
+  lineRequestId    String?
+  attemptCount     Int                 @default(0)
+  attemptedAt      DateTime?
+  sentAt           DateTime?
+  failedAt         DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  formSubmission FormSubmission @relation(fields: [formSubmissionId], references: [id], onDelete: Cascade)
+  form           Form           @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@index([formId, status])
+  @@index([status, sentAt])
+  @@index([reasonCode])
 }
 
 // endregion

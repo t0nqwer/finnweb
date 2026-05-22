@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
-import { BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
+import { LineOaNotificationService } from "../line-oa-notification/line-oa-notification.service";
+import { LineOaProvider } from "../line-oa-notification/line-oa-message.types";
 import { SiteLeadService } from "./site-lead.service";
 
 type LeadQuotaContext = {
@@ -18,6 +19,9 @@ function uniqueSuffix(label: string) {
 describe("SiteLeadService LINE OA quota", () => {
   let prisma: PrismaService;
   let siteLeadService: SiteLeadService;
+  let lineOaNotificationService: LineOaNotificationService;
+  let lineOaProvider: LineOaProvider & { pushCount: number };
+  let enqueuedSubmissionIds: string[];
   const createdUserIds: string[] = [];
 
   before(async () => {
@@ -39,7 +43,35 @@ describe("SiteLeadService LINE OA quota", () => {
       },
     });
 
-    siteLeadService = new SiteLeadService(prisma);
+    lineOaProvider = {
+      pushCount: 0,
+      async pushMessage() {
+        this.pushCount += 1;
+        return {
+          lineRequestId: `line-request-${this.pushCount}`,
+        };
+      },
+      async getBotInfo() {
+        return {
+          userId: "Ubot",
+        };
+      },
+    };
+
+    lineOaNotificationService = new LineOaNotificationService(
+      prisma,
+      lineOaProvider,
+    );
+    enqueuedSubmissionIds = [];
+    siteLeadService = new SiteLeadService(prisma, {
+      async enqueueLineOaLeadNotification(payload: { formSubmissionId: string }) {
+        enqueuedSubmissionIds.push(payload.formSubmissionId);
+        return {
+          queued: true,
+          jobId: `line-oa-lead:${payload.formSubmissionId}`,
+        };
+      },
+    } as never);
   });
 
   after(async () => {
@@ -122,6 +154,10 @@ describe("SiteLeadService LINE OA quota", () => {
         slug: "public-site",
         status: "ACTIVE",
         lineOaAccessToken: "line-token",
+        lineOaBotUserId: "Ubot",
+        lineOaRecipientId: "Uowner",
+        lineOaRecipientType: "USER",
+        lineOaSetupStatus: "VERIFIED",
       },
       select: {
         id: true,
@@ -136,33 +172,71 @@ describe("SiteLeadService LINE OA quota", () => {
     };
   }
 
-  it("blocks LINE OA-enabled public lead submissions when FREE quota is reached", async () => {
+  async function waitForFinalDelivery(submissionId: string) {
+    for (let index = 0; index < 40; index += 1) {
+      const delivery = await prisma.lineOaDelivery.findUnique({
+        where: {
+          formSubmissionId: submissionId,
+        },
+      });
+
+      if (delivery && delivery.status !== "PENDING") {
+        return delivery;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+
+    return null;
+  }
+
+  it("keeps public lead submission successful and skips LINE OA when FREE quota is reached", async () => {
     const context = await createContext("free-reached", "FREE");
 
-    await prisma.formSubmission.createMany({
-      data: Array.from({ length: 5 }, (_, index) => ({
-        formId: context.formId,
+    for (let index = 0; index < 5; index += 1) {
+      const existingSubmission = await prisma.formSubmission.create({
         data: {
-          name: `Existing Lead ${index + 1}`,
-          phone: "0812345678",
+          formId: context.formId,
+          data: {
+            name: `Existing Lead ${index + 1}`,
+            phone: "0812345678",
+          },
         },
-      })),
+      });
+
+      await prisma.lineOaDelivery.create({
+        data: {
+          formSubmissionId: existingSubmission.id,
+          formId: context.formId,
+          status: "SENT",
+          sentAt: new Date(),
+        },
+      });
+    }
+
+    const result = await siteLeadService.submitPublicLead(context.siteId, {
+      name: "Skipped Lead",
+      phone: "0812345678",
     });
 
-    await assert.rejects(
-      () =>
-        siteLeadService.submitPublicLead(context.siteId, {
-          name: "Blocked Lead",
-          phone: "0812345678",
-        }),
-      (error) =>
-        error instanceof BadRequestException &&
-        error.message === "LINE_OA_QUOTA_REACHED",
+    assert.equal(result.siteId, context.siteId);
+    assert.equal(result.formId, context.formId);
+    assert.equal(enqueuedSubmissionIds.includes(result.submissionId), true);
+
+    await lineOaNotificationService.sendLeadNotificationForSubmission(
+      result.submissionId,
     );
+
+    const delivery = await waitForFinalDelivery(result.submissionId);
+
+    assert.ok(delivery);
+    assert.equal(delivery.status, "SKIPPED");
+    assert.equal(delivery.reasonCode, "LINE_OA_QUOTA_REACHED");
   });
 
-  it("allows LINE OA-enabled public lead submissions for BUSINESS unlimited quota", async () => {
+  it("sends LINE OA notifications for BUSINESS unlimited quota", async () => {
     const context = await createContext("business-unlimited", "BUSINESS");
+    const pushCountBefore = lineOaProvider.pushCount;
 
     await prisma.formSubmission.createMany({
       data: Array.from({ length: 5 }, (_, index) => ({
@@ -181,5 +255,17 @@ describe("SiteLeadService LINE OA quota", () => {
 
     assert.equal(result.siteId, context.siteId);
     assert.equal(result.formId, context.formId);
+    assert.equal(enqueuedSubmissionIds.includes(result.submissionId), true);
+
+    await lineOaNotificationService.sendLeadNotificationForSubmission(
+      result.submissionId,
+    );
+
+    const delivery = await waitForFinalDelivery(result.submissionId);
+
+    assert.ok(delivery);
+    assert.equal(delivery.status, "SENT");
+    assert.equal(delivery.reasonCode, null);
+    assert.equal(lineOaProvider.pushCount, pushCountBefore + 1);
   });
 });

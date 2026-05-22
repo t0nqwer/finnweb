@@ -287,7 +287,7 @@ describe("Billing checkout integration", () => {
     );
   });
 
-  it("reports LINE OA monthly usage and quota reached for FREE workspaces", async () => {
+  it("reports LINE OA monthly usage from successful delivery rows for FREE workspaces", async () => {
     const context = await createWorkspaceContext("line-oa-free-usage");
 
     const site = await prisma.site.create({
@@ -313,14 +313,35 @@ describe("Billing checkout integration", () => {
       },
     });
 
-    await prisma.formSubmission.createMany({
-      data: Array.from({ length: 5 }, (_, index) => ({
+    for (let index = 0; index < 5; index += 1) {
+      const submission = await prisma.formSubmission.create({
+        data: {
+          formId: form.id,
+          data: {
+            name: `Lead ${index + 1}`,
+            phone: "0812345678",
+          },
+        },
+      });
+
+      await prisma.lineOaDelivery.create({
+        data: {
+          formSubmissionId: submission.id,
+          formId: form.id,
+          status: "SENT",
+          sentAt: new Date(),
+        },
+      });
+    }
+
+    await prisma.formSubmission.create({
+      data: {
         formId: form.id,
         data: {
-          name: `Lead ${index + 1}`,
+          name: "Unsent Lead",
           phone: "0812345678",
         },
-      })),
+      },
     });
 
     const usage = await billingService.getPlanUsage(

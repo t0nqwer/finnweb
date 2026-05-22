@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-05-22
+
+- Implemented the real LINE OA lead delivery path with LINE Messaging API push support, per-form channel token usage, webhook signature verification, bot info discovery helper, and follow-event recipient capture.
+- Moved LINE OA quota enforcement to send time: public form submission now still succeeds, while FREE/BASIC quota exhaustion records `LineOaDelivery.status = SKIPPED` with `LINE_OA_QUOTA_REACHED`; BUSINESS/PRO remain unlimited with `Plan.lineOaMonthlyQuota = null`.
+- Migrated `/billing/plan-usage` LINE OA usage to count successful `LineOaDelivery` rows (`status = SENT`, current-month `sentAt`) instead of submission rows with a token. Owner-visible usage may decrease compared with the previous telemetry because failed/skipped/fallback deliveries are no longer counted as LINE sends.
+- Added async BullMQ delivery for LINE OA leads with deterministic `jobId = line-oa-lead:{formSubmissionId}`, global queue limiter, retryable/non-retryable LINE error handling, idempotent delivery status, and fallback email after retry exhaustion.
+- Added fallback email behavior for failed LINE delivery: send to `Form.notifyEmail`, then workspace owner email; if no email exists, keep delivery failed with `LINE_OA_FALLBACK_EMAIL_MISSING`. Fallback email does not count toward LINE OA quota.
+- Added focused coverage for LINE sender success/errors/timeouts/rate limits, webhook signature/recipient capture, send-time quota skip, unlimited plan delivery, billing usage from `SENT`, retry success, retry exhaustion fallback, no-email failure, idempotency, and token leak checks. Verified `pnpm typecheck` and `pnpm build`; the full API glob test command still times out locally after 10 minutes, so focused API and worker subsets were used for regression signal.
+- Technical debt recorded: `Form.lineOaAccessToken` is still stored plaintext at rest, and the worker currently imports API services directly for the modular-monolith worker path. Both should be revisited in a hardening/refactor task.
+
 ## 2026-05-20
 
 - Decoupled CSS-engine and GSAP-engine motion paths in `MotionSection` to fix scroll-reveal failures verified in browser: sections with `props.motion` directives now set `data-fw-motion-engine="gsap"` and skip the CSS `fw-armed`/`is-visible` classes (GSAP owns inline opacity/visibility); sections without directives use React-managed inline `opacity:0; visibility:hidden` while armed (deterministic, independent of `@layer utilities` cascade quirks). For in-fold reveal presets the GSAP hide+tween path is skipped (content stays visible by CSS default); for below-fold sections the guarded ScrollTrigger only fires once the user has actually scrolled.

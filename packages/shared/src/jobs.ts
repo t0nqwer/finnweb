@@ -1,9 +1,11 @@
 export const JOB_QUEUE_NAMES = {
   billing: "billing",
+  lineOa: "line-oa",
 } as const;
 
 export const JOB_NAMES = {
   billingStripeEvent: "billing.stripe.event",
+  lineOaLeadNotification: "line-oa.lead.notification",
 } as const;
 
 export const SUPPORTED_BILLING_EVENT_TYPES = [
@@ -23,6 +25,10 @@ export type BillingStripeEventPayload = {
   eventType: SupportedBillingEventType;
   object: Record<string, unknown>;
   queuedAt: string;
+};
+
+export type LineOaLeadNotificationPayload = {
+  formSubmissionId: string;
 };
 
 export function isSupportedBillingEventType(

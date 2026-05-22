@@ -327,23 +327,16 @@ export class BillingRepository {
     const monthStart = new Date(at.getFullYear(), at.getMonth(), 1);
     const monthEnd = new Date(at.getFullYear(), at.getMonth() + 1, 1);
 
-    return this.prisma.formSubmission.count({
+    return this.prisma.lineOaDelivery.count({
       where: {
-        createdAt: {
+        status: "SENT",
+        sentAt: {
           gte: monthStart,
           lt: monthEnd,
         },
         form: {
           site: {
             workspaceId,
-          },
-          lineOaAccessToken: {
-            not: null,
-          },
-        },
-        NOT: {
-          form: {
-            lineOaAccessToken: "",
           },
         },
       },
