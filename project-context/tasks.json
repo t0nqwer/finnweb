@@ -1,6 +1,38 @@
 {
-  "updatedAt": "2026-05-22",
+  "updatedAt": "2026-08-11T00:00:00.000Z",
   "tasks": [
+    {
+      "id": "page-quality-engine",
+      "title": "ระบบสร้างหน้าเว็บให้สมบูรณ์: shared page-quality engine + AI fill ไทย + publish gate + builder guardrails",
+      "status": "in-progress",
+      "priority": "critical",
+      "phase": "phase-1",
+      "epic": "site-quality",
+      "estimatePoints": 21,
+      "owner": "unassigned",
+      "dependsOn": [
+        "site-builder-visual-premium-motion-engine"
+      ],
+      "scope": [
+        "Phase A: extract one shared page-quality rules engine in packages/shared (structure, content, Thai typography, brand tokens/contrast, SEO, media) and rewire the admin template validator to it",
+        "Phase B: enforce the engine as a publish gate in the API with an on-demand quality endpoint",
+        "Phase C: surface live quality issues in the builder and constrain the editor to design tokens",
+        "Phase D: consumer Thai AI content fill via DeepSeek, validated and repaired against the same engine with deterministic content-pack fallback",
+        "Phase E: expand blueprints/content packs per vertical with a zero-error quality bar as the acceptance gate"
+      ],
+      "acceptanceCriteria": [
+        "One rule catalog in packages/shared is the single source of truth used by admin validation, publish gate, builder, and AI fill",
+        "Admin template validation keeps its existing response shape and no previously savable template becomes unsavable",
+        "Publish is blocked on error-severity issues and reports Thai owner-facing messages",
+        "AI-generated Thai copy is never published without passing the same engine, with deterministic fallback when the LLM is unavailable",
+        "Every rule has focused unit tests and pnpm typecheck plus build pass"
+      ],
+      "progressNotes": [
+        "2026-08-11: เริ่มงาน. สำรวจแล้วพบว่าเกณฑ์คุณภาพกระจายอยู่ 3 ที่ที่ไม่เชื่อมกัน: AdminTemplateValidationService (ผูกกับ CreateTemplateDto ใช้ได้แค่ admin), กฎภาษาอังกฤษใน DeepSeek prompt ของ admin-template-ai.service.ts, และ DESIGN.json/brand-book.md ที่อ่านได้ด้วยคนเท่านั้น.",
+        "2026-08-11: Phase A เสร็จ. เพิ่ม packages/shared/src/quality/ เป็น pure engine (structure, content, media, SEO, theme/brand/Thai typography) มี stage site vs template เพื่อไม่ให้แม่พิมพ์ที่มี placeholder บันทึกไม่ได้ ทุก issue มีทั้ง message อังกฤษและ ownerMessage ไทย. เปลี่ยน AdminTemplateValidationService ให้เรียก engine โดยคงรูปแบบ response เดิม (valid/summary/issues) และคงกฎ metadata/customCss ของเทมเพลตไว้. เทสต์ 45 + 5 ผ่าน, typecheck ผ่าน.",
+        "2026-08-11: ผลตรวจเทมเพลตที่มีอยู่ด้วย engine (stage site): restaurant+mala 77, restaurant+cafe 77, clinic 84 — ไม่ผ่านสักตัว. สาเหตุจริง: blueprint ปล่อย logoUrl/imageUrl เป็นค่าว่าง (renderer วาดกล่อง gradient เปล่าแทนรูป) และไม่มีธีมไหนกำหนด line-height เลยทั้งที่ brand book บังคับ >= 1.7 สำหรับภาษาไทย. จะแก้ใน Phase E."
+      ]
+    },
     {
       "id": "line-oa-send-path-real",
       "title": "FinnWeb LINE OA Lead Engine - real delivery path",

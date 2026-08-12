@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-11
+
+- Added a shared page-quality engine in `packages/shared/src/quality/` as the single source of truth for what a finished FinnWeb page looks like: structure (lead-capture path, section order, required fields), content (unresolved placeholders, filler copy, empty cards, duplicate/overlong headlines, Thai-copy expectation), media (empty image slots, placeholder hosts, alt text), SEO (title/description length, OG image), and theme (WCAG contrast, Thai line height >= 1.7, Thai-capable fonts, Controlled Flame Rule). The engine is pure — no NestJS, no DOM — so the API, worker, builder, and AI fill can all run it.
+- Every issue carries both a developer `message` (English) and an owner-facing `ownerMessage` (Thai) so the same rule can serve logs and the builder UI without a second translation table.
+- Introduced a quality `stage`: `site` holds a real site to the full bar, while `template` treats placeholders, empty media slots, and missing SEO copy as advisory because create-site fills them in later. `TEMPLATE_BLOCKING_CODES` pins the template-blocking set to exactly what the old validator refused, so no previously savable template became unsavable.
+- Rewired `AdminTemplateValidationService` onto the shared engine, preserving its response shape (`valid` / `summary` / `issues`) and its template-only rules (matching metadata, unsafe `customCss`). Issue codes are now the shared vocabulary (e.g. `TEMPLATE_PAGES_REQUIRED` → `SITE_PAGES_REQUIRED`); the admin dashboard renders codes generically so no UI change was needed.
+- Audited the shipped templates with the engine at site stage: restaurant+mala 77, restaurant+cafe 77, aesthetic-clinic 84 — none passes. Causes are real defects, not rule noise: blueprints ship `logoUrl`/`imageUrl` empty (the public renderer draws an empty gradient tile in place of the photo) and no theme defines a line-height token at all despite the brand book requiring >= 1.7 for Thai. Queued for the template pass.
+- Coverage: 45 engine tests plus 5 admin validator tests, `pnpm typecheck` and `pnpm build` pass.
+
 ## 2026-05-22
 
 - Implemented the real LINE OA lead delivery path with LINE Messaging API push support, per-form channel token usage, webhook signature verification, bot info discovery helper, and follow-event recipient capture.
