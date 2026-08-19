@@ -27,6 +27,7 @@ import { SectionListPanel } from "./SectionListPanel";
 import { QualityPanel } from "./QualityPanel";
 import {
   PublishQualityError,
+  generatePageContent,
   type SiteQualityResult,
 } from "../api/builder.api";
 import { evaluateBuilderPage } from "../lib/page-quality";
@@ -43,6 +44,14 @@ type PendingSave = {
 };
 
 const AUTOSAVE_DELAY_MS = 800;
+
+/** Why nothing was rewritten, in the owner's language. */
+const FILL_FALLBACK_MESSAGES: Record<string, string> = {
+  ai_disabled: "ยังไม่ได้เปิดใช้งาน AI (ไม่มี DEEPSEEK_API_KEY) จึงยังไม่ได้แก้ข้อความ",
+  ai_unavailable: "ตอนนี้เรียก AI ไม่สำเร็จ ข้อความเดิมถูกเก็บไว้ตามเดิม",
+  no_usable_copy: "หน้านี้ยังไม่มีช่องข้อความให้ AI เขียน",
+  not_better: "ข้อความที่ AI เสนอมาไม่ผ่านเกณฑ์คุณภาพ จึงเก็บข้อความเดิมไว้",
+};
 
 export function BuilderShell({ siteId }: BuilderShellProps) {
   const [apiBaseUrl, setApiBaseUrl] = useState(DEFAULT_API_BASE_URL);
@@ -62,6 +71,7 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
   const [serverQuality, setServerQuality] = useState<SiteQualityResult | null>(
     null,
   );
+  const [isGeneratingContent, setIsGeneratingContent] = useState(false);
   const sectionsRef = useRef<BuilderSection[]>([]);
   const saveTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>(
     {},
@@ -580,6 +590,62 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
     [apiBaseUrl, isMutatingSection, selectedPageId, selectedSectionId, siteId],
   );
 
+  const generateContentWithAi = useCallback(async () => {
+    if (isGeneratingContent || !selectedPageId) {
+      return;
+    }
+
+    setIsGeneratingContent(true);
+    setActionMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const { data } = await generatePageContent({
+        apiBaseUrl,
+        siteId,
+        pageId: selectedPageId,
+      });
+
+      if (!data.usedAi) {
+        setActionMessage(
+          FILL_FALLBACK_MESSAGES[data.fallbackReason ?? ""] ??
+            "ยังไม่ได้แก้ข้อความ",
+        );
+        return;
+      }
+
+      // Apply through the ordinary edit path so AI copy is saved, validated,
+      // and undoable exactly like copy typed by hand.
+      let changedSections = 0;
+      for (const section of data.sections) {
+        if (section.changedKeys.length === 0) {
+          continue;
+        }
+        const changedProps = Object.fromEntries(
+          section.changedKeys.map((key) => [key, section.props[key]]),
+        );
+        updateSectionProps(section.id, changedProps);
+        changedSections += 1;
+      }
+
+      setActionMessage(
+        `AI เขียนข้อความใหม่ให้ ${changedSections} section แล้ว ตรวจดูแล้วแก้เพิ่มได้`,
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "เรียก AI ไม่สำเร็จ",
+      );
+    } finally {
+      setIsGeneratingContent(false);
+    }
+  }, [
+    apiBaseUrl,
+    isGeneratingContent,
+    selectedPageId,
+    siteId,
+    updateSectionProps,
+  ]);
+
   const publishCurrentSite = useCallback(async () => {
     if (isPublishing) {
       return;
@@ -669,6 +735,10 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
               }}
               footerSlot={
                 <QualityPanel
+                  onGenerateContent={() => {
+                    void generateContentWithAi();
+                  }}
+                  isGeneratingContent={isGeneratingContent}
                   report={serverQuality ?? qualityReport}
                   scope={serverQuality ? "site" : "page"}
                   sections={sections}

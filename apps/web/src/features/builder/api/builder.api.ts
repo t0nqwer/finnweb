@@ -247,6 +247,37 @@ export async function publishSite({
   });
 }
 
+export type ContentFillProposal = {
+  pageId: string;
+  usedAi: boolean;
+  fallbackReason?: "ai_disabled" | "ai_unavailable" | "no_usable_copy" | "not_better";
+  attempts: number;
+  quality: SiteQualityResult;
+  sections: Array<{
+    id: string;
+    type: string;
+    props: Record<string, unknown>;
+    changedKeys: string[];
+  }>;
+};
+
+/** Asks the API for Thai copy for one page. Returns a proposal, saves nothing. */
+export async function generatePageContent({
+  apiBaseUrl = DEFAULT_API_BASE_URL,
+  siteId,
+  pageId,
+}: BuilderApiArgs & { siteId: string; pageId: string }) {
+  return requestBuilderApi<ContentFillProposal>({
+    apiBaseUrl,
+    path: `/sites/${siteId}/pages/${pageId}/ai-content`,
+    init: {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    },
+  });
+}
+
 /** Authoritative quality report for the whole site, without publishing it. */
 export async function fetchSiteQuality({
   apiBaseUrl = DEFAULT_API_BASE_URL,

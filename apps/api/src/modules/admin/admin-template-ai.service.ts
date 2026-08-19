@@ -1,106 +1,34 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import type { ImportTemplateDraftDto } from "./dto/import-template-draft.dto";
-
-type DeepSeekMessage = {
-  role: "system" | "user";
-  content: string;
-};
-
-type DeepSeekChoice = {
-  message?: {
-    content?: string;
-  };
-};
-
-type DeepSeekResponse = {
-  choices?: DeepSeekChoice[];
-};
+import { DeepSeekClient } from "../ai/deepseek.client";
 
 @Injectable()
 export class AdminTemplateAiService {
-  private readonly logger = new Logger(AdminTemplateAiService.name);
+  constructor(
+    @Inject(DeepSeekClient) private readonly deepSeek: DeepSeekClient,
+  ) {}
 
   isEnabled() {
-    return Boolean(process.env.DEEPSEEK_API_KEY?.trim());
+    return this.deepSeek.isEnabled();
   }
 
   async enhanceTemplateDraft(
     capture: ImportTemplateDraftDto,
     template: Record<string, unknown>,
   ) {
-    const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
-    if (!apiKey) {
-      return {
-        template,
-        usedAi: false,
-      };
+    const result = await this.deepSeek.completeJson<{
+      template?: Record<string, unknown>;
+    }>({
+      system:
+        "You are a senior website-to-template reconstruction designer for FinnWeb. Return only strict JSON. Build editable templates from captured source data using only approved FinnWeb section types and safe motion metadata.",
+      user: this.buildPrompt(capture, template),
+    });
+
+    if (!result.usedAi || !result.data?.template) {
+      return { template, usedAi: false };
     }
 
-    const prompt = this.buildPrompt(capture, template);
-    const messages: DeepSeekMessage[] = [
-      {
-        role: "system",
-        content:
-          "You are a senior website-to-template reconstruction designer for FinnWeb. Return only strict JSON. Build editable templates from captured source data using only approved FinnWeb section types and safe motion metadata.",
-      },
-      {
-        role: "user",
-        content: prompt,
-      },
-    ];
-
-    const response = await fetch(
-      process.env.DEEPSEEK_BASE_URL?.trim() || "https://api.deepseek.com/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: process.env.DEEPSEEK_MODEL?.trim() || "deepseek-chat",
-          temperature: 0.2,
-          response_format: { type: "json_object" },
-          messages,
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      const body = await response.text();
-      this.logger.warn(`DeepSeek API failed: ${response.status} ${body.slice(0, 400)}`);
-      return {
-        template,
-        usedAi: false,
-      };
-    }
-
-    const payload = (await response.json()) as DeepSeekResponse;
-    const content = payload.choices?.[0]?.message?.content?.trim();
-
-    if (!content) {
-      return {
-        template,
-        usedAi: false,
-      };
-    }
-
-    try {
-      const parsed = JSON.parse(content) as { template?: Record<string, unknown> };
-      if (!parsed?.template || typeof parsed.template !== "object") {
-        return { template, usedAi: false };
-      }
-
-      return {
-        template: parsed.template,
-        usedAi: true,
-      };
-    } catch {
-      return {
-        template,
-        usedAi: false,
-      };
-    }
+    return { template: result.data.template, usedAi: true };
   }
 
   private buildPrompt(

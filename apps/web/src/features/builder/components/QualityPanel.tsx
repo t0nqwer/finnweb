@@ -7,6 +7,8 @@ import type { BuilderSection } from "../registry/section-registry";
 import { sectionIdOfIssue } from "../lib/page-quality";
 
 type QualityPanelProps = {
+  onGenerateContent?: () => void;
+  isGeneratingContent?: boolean;
   report: QualityReport | SiteQualityResult;
   /** "site" when the report came back from a refused publish. */
   scope?: "page" | "site";
@@ -23,6 +25,8 @@ export function QualityPanel({
   scope = "page",
   sections,
   onSelectSection,
+  onGenerateContent,
+  isGeneratingContent = false,
 }: QualityPanelProps) {
   const { errorCount, warningCount } = report.summary;
 
@@ -43,6 +47,23 @@ export function QualityPanel({
           {report.score}/100
         </span>
       </div>
+
+      {onGenerateContent ? (
+        <button
+          type="button"
+          onClick={onGenerateContent}
+          disabled={isGeneratingContent}
+          className={
+            isGeneratingContent
+              ? "cursor-not-allowed rounded-lg border border-white/5 px-3 py-2 text-sm leading-[1.7] text-slate-500"
+              : "rounded-lg border border-white/10 px-3 py-2 text-sm leading-[1.7] text-slate-200 transition hover:border-white/25 hover:bg-white/[0.06]"
+          }
+        >
+          {isGeneratingContent
+            ? "กำลังให้ AI เขียนข้อความ..."
+            : "ให้ AI ช่วยเขียนข้อความไทย"}
+        </button>
+      ) : null}
 
       {report.issues.length === 0 ? (
         <p className="flex items-center gap-2 rounded-lg border border-emerald-500/25 bg-emerald-950/20 px-3 py-2 text-sm leading-[1.7] text-emerald-100">

@@ -16,6 +16,7 @@ import { CreatePageDto } from "./dto/create-page.dto";
 import { CreateSiteDto } from "./dto/create-site.dto";
 import { UpdatePageDto } from "./dto/update-page.dto";
 import { CreateSectionDto } from "./dto/create-section.dto";
+import { GeneratePageContentDto } from "./dto/generate-page-content.dto";
 import { UpdateSectionDto } from "./dto/update-section.dto";
 import { ReorderSectionsDto } from "./dto/reorder-sections.dto";
 import { GetSiteLeadsQueryDto } from "./dto/get-site-leads-query.dto";
@@ -24,14 +25,20 @@ import { SwitchSectionTemplateDto } from "./dto/switch-section-template.dto";
 import { PreviewTokenPolicyDto } from "./dto/preview-token.dto";
 import { ApplyTemplateDto } from "./dto/apply-site-template.dto";
 import { UpdateSiteThemeDto } from "./dto/update-site-theme.dto";
+import { SiteContentAiService } from "./site-content-ai.service";
 
 @UseGuards(AccessJwtGuard)
 @Controller("sites")
 export class SitesController {
   private readonly sitesService: SitesService;
+  private readonly siteContentAiService: SiteContentAiService;
 
-  constructor(@Inject(SitesService) sitesService: SitesService) {
+  constructor(
+    @Inject(SitesService) sitesService: SitesService,
+    @Inject(SiteContentAiService) siteContentAiService: SiteContentAiService,
+  ) {
     this.sitesService = sitesService;
+    this.siteContentAiService = siteContentAiService;
   }
 
   @Post()
@@ -91,6 +98,26 @@ export class SitesController {
       siteId,
       dto,
     );
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
+  @Post(":siteId/pages/:pageId/ai-content")
+  async generatePageContent(
+    @CurrentUser("sub") userId: string,
+    @Param("siteId") siteId: string,
+    @Param("pageId") pageId: string,
+    @Body() dto: GeneratePageContentDto,
+  ) {
+    const data = await this.siteContentAiService.proposePageContent({
+      userId,
+      siteId,
+      pageId,
+      profile: dto,
+    });
 
     return {
       success: true,
