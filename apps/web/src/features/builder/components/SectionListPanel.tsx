@@ -37,6 +37,8 @@ const SECTION_ICONS: Partial<Record<SectionType, typeof LayoutIcon>> = {
 };
 
 type SectionListPanelProps = {
+  /** Rendered under the list — used for the page quality report. */
+  footerSlot?: ReactNode;
   sections: BuilderSection[];
   selectedSectionId: string;
   isMutatingSection?: boolean;
@@ -58,6 +60,7 @@ export function SectionListPanel({
   onMoveSection,
   onDuplicateSection,
   onDeleteSection,
+  footerSlot,
 }: SectionListPanelProps) {
   const visibleCount = sections.filter((section) => section.isVisible !== false)
     .length;
@@ -211,6 +214,8 @@ export function SectionListPanel({
           );
         })}
       </div>
+
+      {footerSlot ? <div className="-mx-4 -mb-4 mt-4">{footerSlot}</div> : null}
     </aside>
   );
 }

@@ -60,6 +60,41 @@ export type PublishSiteResult = {
   publishedAt: string;
 };
 
+export type QualityIssueView = {
+  severity: "error" | "warning";
+  code: string;
+  path: string;
+  message: string;
+  ownerMessage: string;
+};
+
+export type SiteQualityResult = {
+  siteId: string;
+  passed: boolean;
+  score: number;
+  summary: {
+    errorCount: number;
+    warningCount: number;
+    pageCount: number;
+    sectionCount: number;
+  };
+  issues: QualityIssueView[];
+};
+
+/**
+ * Publish refused the site. Carries the server's full report so the builder can
+ * list what to fix instead of showing one opaque error code.
+ */
+export class PublishQualityError extends Error {
+  readonly quality: SiteQualityResult | null;
+
+  constructor(message: string, quality: SiteQualityResult | null) {
+    super(message);
+    this.name = "PublishQualityError";
+    this.quality = quality;
+  }
+}
+
 type BuilderApiArgs = {
   apiBaseUrl?: string;
 };
@@ -192,6 +227,34 @@ export async function publishSite({
     init: {
       method: "POST",
     },
+    onErrorPayload: (payload) => {
+      const quality =
+        payload &&
+        typeof payload === "object" &&
+        "quality" in payload &&
+        payload.quality &&
+        typeof payload.quality === "object"
+          ? (payload.quality as SiteQualityResult)
+          : null;
+
+      return quality
+        ? new PublishQualityError(
+            resolveApiError(payload, "Publish was refused."),
+            quality,
+          )
+        : null;
+    },
+  });
+}
+
+/** Authoritative quality report for the whole site, without publishing it. */
+export async function fetchSiteQuality({
+  apiBaseUrl = DEFAULT_API_BASE_URL,
+  siteId,
+}: BuilderApiArgs & { siteId: string }) {
+  return requestBuilderApi<SiteQualityResult>({
+    apiBaseUrl,
+    path: `/sites/${siteId}/quality`,
   });
 }
 
@@ -199,10 +262,13 @@ async function requestBuilderApi<T>({
   apiBaseUrl,
   path,
   init,
+  onErrorPayload,
 }: {
   apiBaseUrl: string;
   path: string;
   init?: RequestInit;
+  /** Lets a caller turn a specific error body into a richer error. */
+  onErrorPayload?: (payload: unknown) => Error | null;
 }) {
   const { response, payload, authState } =
     await fetchApiWithTokenRefresh<ApiResponse<T>>({
@@ -212,7 +278,10 @@ async function requestBuilderApi<T>({
     });
 
   if (!response.ok) {
-    throw new Error(resolveApiError(payload, "Builder API request failed"));
+    throw (
+      onErrorPayload?.(payload) ??
+      new Error(resolveApiError(payload, "Builder API request failed"))
+    );
   }
 
   if (!payload || !("data" in payload)) {

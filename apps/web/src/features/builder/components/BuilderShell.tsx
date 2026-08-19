@@ -24,6 +24,12 @@ import type { BuilderPreviewDevice } from "./DevicePreviewToggle";
 import type { SaveStatusState } from "./SaveStatus";
 import { SectionEditPanel } from "./SectionEditPanel";
 import { SectionListPanel } from "./SectionListPanel";
+import { QualityPanel } from "./QualityPanel";
+import {
+  PublishQualityError,
+  type SiteQualityResult,
+} from "../api/builder.api";
+import { evaluateBuilderPage } from "../lib/page-quality";
 
 type BuilderShellProps = {
   siteId: string;
@@ -53,6 +59,9 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatusState>("saved");
+  const [serverQuality, setServerQuality] = useState<SiteQualityResult | null>(
+    null,
+  );
   const sectionsRef = useRef<BuilderSection[]>([]);
   const saveTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>(
     {},
@@ -196,6 +205,24 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
       cancelled = true;
     };
   }, [apiBaseUrl, selectedPageId, siteId]);
+
+  const selectedPage = useMemo(
+    () => pages.find((page) => page.id === selectedPageId) ?? null,
+    [pages, selectedPageId],
+  );
+
+  // Same engine the publish gate runs, evaluated locally so the verdict updates
+  // as the owner edits instead of only when they press publish.
+  const qualityReport = useMemo(
+    () => evaluateBuilderPage({ page: selectedPage, sections }),
+    [selectedPage, sections],
+  );
+
+  // A server verdict describes the site as it was when publish was attempted;
+  // the moment the owner edits, the local report is the current truth again.
+  useEffect(() => {
+    setServerQuality(null);
+  }, [sections, selectedPageId]);
 
   const selectedSection = useMemo(
     () =>
@@ -570,9 +597,19 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
       setPublicUrl(data.publicUrl ?? null);
       setActionMessage(`Published version ${data.version}.`);
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Could not publish site.",
-      );
+      if (error instanceof PublishQualityError && error.quality) {
+        // Server-side rules see the whole site (duplicate slugs, theme
+        // contrast), so keep its verdict rather than the local page report.
+        setServerQuality(error.quality);
+        const { errorCount } = error.quality.summary;
+        setErrorMessage(
+          `ยังเผยแพร่ไม่ได้ — ต้องแก้อีก ${errorCount} จุด (ดูรายการด้านซ้าย)`,
+        );
+      } else {
+        setErrorMessage(
+          error instanceof Error ? error.message : "Could not publish site.",
+        );
+      }
     } finally {
       setIsPublishing(false);
     }
@@ -630,6 +667,14 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
               onDeleteSection={(sectionId) => {
                 void deleteSection(sectionId);
               }}
+              footerSlot={
+                <QualityPanel
+                  report={serverQuality ?? qualityReport}
+                  scope={serverQuality ? "site" : "page"}
+                  sections={sections}
+                  onSelectSection={setSelectedSectionId}
+                />
+              }
             />
             <BuilderCanvas
               sections={sections}
