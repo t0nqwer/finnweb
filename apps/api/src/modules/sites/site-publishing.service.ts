@@ -226,6 +226,12 @@ export class SitePublishingService {
 
     return {
       siteId: site.id,
+      // Returned so the builder can run the theme rules locally instead of
+      // silently skipping contrast and Thai line-height while editing.
+      themeConfig:
+        site.themeConfig && typeof site.themeConfig === "object"
+          ? (site.themeConfig as Record<string, string>)
+          : null,
       ...this.evaluateDraftQuality(site, pages),
     };
   }

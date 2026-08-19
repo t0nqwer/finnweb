@@ -70,6 +70,7 @@ export type QualityIssueView = {
 
 export type SiteQualityResult = {
   siteId: string;
+  themeConfig?: Record<string, string> | null;
   passed: boolean;
   score: number;
   summary: {

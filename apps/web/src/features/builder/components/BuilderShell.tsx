@@ -27,6 +27,7 @@ import { SectionListPanel } from "./SectionListPanel";
 import { QualityPanel } from "./QualityPanel";
 import {
   PublishQualityError,
+  fetchSiteQuality,
   generatePageContent,
   type SiteQualityResult,
 } from "../api/builder.api";
@@ -72,6 +73,9 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
     null,
   );
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
+  const [themeConfig, setThemeConfig] = useState<Record<string, string> | null>(
+    null,
+  );
   const sectionsRef = useRef<BuilderSection[]>([]);
   const saveTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>(
     {},
@@ -224,9 +228,31 @@ export function BuilderShell({ siteId }: BuilderShellProps) {
   // Same engine the publish gate runs, evaluated locally so the verdict updates
   // as the owner edits instead of only when they press publish.
   const qualityReport = useMemo(
-    () => evaluateBuilderPage({ page: selectedPage, sections }),
-    [selectedPage, sections],
+    () => evaluateBuilderPage({ page: selectedPage, sections, themeConfig }),
+    [selectedPage, sections, themeConfig],
   );
+
+  // The theme drives contrast and Thai typography rules, which a page's own
+  // sections cannot answer. Fetched once so the live panel runs the full rule
+  // set rather than quietly skipping those checks.
+  useEffect(() => {
+    let cancelled = false;
+
+    void fetchSiteQuality({ apiBaseUrl, siteId })
+      .then(({ data }) => {
+        if (!cancelled) {
+          setThemeConfig(data.themeConfig ?? null);
+        }
+      })
+      .catch(() => {
+        // A missing theme only costs the theme-level rules locally; publish
+        // still evaluates them server-side.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBaseUrl, siteId]);
 
   // A server verdict describes the site as it was when publish was attempted;
   // the moment the owner edits, the local report is the current truth again.
