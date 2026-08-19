@@ -2715,129 +2715,14 @@ export class SitesService {
     );
   }
 
-  private hasUnresolvedPlaceholders(value: unknown): boolean {
-    if (typeof value === "string") {
-      return /\{\{\s*[a-zA-Z0-9_]+\s*\}\}/.test(value);
-    }
-
-    if (Array.isArray(value)) {
-      return value.some((item) => this.hasUnresolvedPlaceholders(item));
-    }
-
-    if (this.isPlainObject(value)) {
-      return Object.values(value).some((item) =>
-        this.hasUnresolvedPlaceholders(item),
-      );
-    }
-
-    return false;
-  }
-
-  private getRequiredFieldMissingForPublish(
-    sectionType: string,
-    props: unknown,
-  ): string | null {
-    if (!this.isPlainObject(props)) {
-      return "props";
-    }
-
-    const getTrimmed = (key: string) => {
-      const value = props[key];
-      return typeof value === "string" ? value.trim() : "";
-    };
-
-    switch (sectionType) {
-      case "HERO":
-      case "CTA":
-      case "FORM":
-      case "CONTACT": {
-        return getTrimmed("title") ? null : "title";
-      }
-      case "NAVBAR": {
-        const menuItems = props.menuItems;
-        if (!Array.isArray(menuItems) || menuItems.length === 0) {
-          return "menuItems";
-        }
-        return null;
-      }
-      case "BOOKING": {
-        return getTrimmed("title") ? null : "title";
-      }
-      case "COMPARISON": {
-        const plans = props.plans;
-        if (!Array.isArray(plans) || plans.length === 0) {
-          return "plans";
-        }
-        return null;
-      }
-      default:
-        return null;
-    }
-  }
-
-  private validatePublishContent(
-    pages: Array<{
-      id: string;
-      title: string;
-      slug: string;
-      seoTitle: string | null;
-      seoDescription: string | null;
-      seoKeywords: string | null;
-      ogImageUrl: string | null;
-      sections: Array<{
-        id: string;
-        type: string;
-        name: string | null;
-        isVisible: boolean;
-        props: unknown;
-      }>;
-    }>,
-  ) {
-    for (const page of pages) {
-      if (
-        this.hasUnresolvedPlaceholders(page.title) ||
-        this.hasUnresolvedPlaceholders(page.slug) ||
-        this.hasUnresolvedPlaceholders(page.seoTitle) ||
-        this.hasUnresolvedPlaceholders(page.seoDescription) ||
-        this.hasUnresolvedPlaceholders(page.seoKeywords) ||
-        this.hasUnresolvedPlaceholders(page.ogImageUrl)
-      ) {
-        throw new BadRequestException(
-          `PUBLISH_UNRESOLVED_PLACEHOLDERS_IN_PAGE:${page.id}`,
-        );
-      }
-
-      for (const section of page.sections) {
-        if (
-          this.hasUnresolvedPlaceholders(section.name) ||
-          this.hasUnresolvedPlaceholders(section.props)
-        ) {
-          throw new BadRequestException(
-            `PUBLISH_UNRESOLVED_PLACEHOLDERS_IN_SECTION:${section.id}`,
-          );
-        }
-
-        if (!section.isVisible) {
-          continue;
-        }
-
-        const missingField = this.getRequiredFieldMissingForPublish(
-          section.type,
-          section.props,
-        );
-        if (missingField) {
-          throw new BadRequestException(
-            `PUBLISH_REQUIRED_FIELD_MISSING:${section.type}:${missingField}`,
-          );
-        }
-      }
-    }
-  }
-
   // ─── Publishing (facade → SitePublishingService) ──────────────────────────────
 
   async publishSite(userId: string, siteId: string) {
     return this.sitePublishingService.publishSite(userId, siteId);
+  }
+
+  async getSiteQuality(userId: string, siteId: string) {
+    return this.sitePublishingService.getSiteQuality(userId, siteId);
   }
 
   private resolvePreviewTokenExpiryDays(input?: number) {

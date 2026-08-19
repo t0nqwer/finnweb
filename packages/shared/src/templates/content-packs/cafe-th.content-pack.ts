@@ -42,7 +42,6 @@ export const cafeThContentPack: ContentPack = {
             "เมล็ดกาแฟคุณภาพ บาริสต้ามือโปร เบเกอรี่อบสดทุกเช้า ยินดีต้อนรับทุกเวลา",
           buttonText: "ดูเมนูเครื่องดื่ม",
           buttonHref: "#menu",
-          imageUrl: "",
         },
         features: {
           title: "เหตุผลที่ Bloom Café ไม่เหมือนที่อื่น",

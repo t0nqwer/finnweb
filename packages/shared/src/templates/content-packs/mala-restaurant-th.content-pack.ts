@@ -41,7 +41,6 @@ export const malaRestaurantThContentPack: ContentPack = {
           subtitle: "วัตถุดิบสดใหม่ทุกวัน เลือกระดับความเผ็ด 1–10 ได้ตามใจชอบ",
           buttonText: "ดูเมนู & ราคา",
           buttonHref: "#menu",
-          imageUrl: "",
         },
         features: {
           title: "ทำไมต้องมาที่ มาล่า เฮ้าส์",

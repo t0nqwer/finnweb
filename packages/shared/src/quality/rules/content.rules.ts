@@ -22,6 +22,16 @@ import {
 /** Headlines longer than this wrap badly on mobile. */
 const MAX_HEADLINE_LENGTH = 70;
 
+/** Page fields that are published verbatim and must not carry a placeholder. */
+const PAGE_TEXT_FIELDS = [
+  "title",
+  "slug",
+  "seoTitle",
+  "seoDescription",
+  "seoKeywords",
+  "ogImageUrl",
+] as const;
+
 export function checkPageContent(
   page: QualityPage,
   basePath: string,
@@ -31,12 +41,37 @@ export function checkPageContent(
   const sections = Array.isArray(page.sections) ? page.sections : [];
   const headlines = new Map<string, string>();
 
+  for (const field of PAGE_TEXT_FIELDS) {
+    const value = trimmedString(page[field]);
+    if (value && containsPlaceholder(value)) {
+      emit({
+        severity: "error",
+        code: "CONTENT_PLACEHOLDER_UNRESOLVED",
+        path: `${basePath}.${field}`,
+        message: `Unresolved placeholder in page ${field}: ${value}`,
+        ownerMessage: `ข้อมูลหน้า (${field}) ยังมีตัวแปรที่ไม่ถูกแทนที่: ${value}`,
+      });
+    }
+  }
+
   sections.forEach((section, index) => {
     if (section.isVisible === false) {
       return;
     }
 
     const sectionPath = `${basePath}.sections[${index}]`;
+
+    const sectionName = trimmedString(section.name);
+    if (sectionName && containsPlaceholder(sectionName)) {
+      emit({
+        severity: "error",
+        code: "CONTENT_PLACEHOLDER_UNRESOLVED",
+        path: `${sectionPath}.name`,
+        message: `Unresolved placeholder in ${section.type} name: ${sectionName}`,
+        ownerMessage: `ชื่อ section ${section.type} ยังมีตัวแปรที่ไม่ถูกแทนที่: ${sectionName}`,
+      });
+    }
+
     const props = section.props;
     if (!props) {
       return;

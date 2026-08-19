@@ -10,6 +10,7 @@ import { allBlueprints } from "../blueprints/restaurant-landing.blueprint";
 import { allThemes } from "../themes/index";
 import { allContentPacks } from "../content-packs/index";
 import type { GenerateTemplateInput } from "../types/template-factory.types";
+import { MEDIA_KEYS } from "../../quality/props";
 
 // ---------------------------------------------------------------------------
 // Registry helpers
@@ -130,6 +131,12 @@ export function generateTemplate(
             unknown
           >;
 
+          // 5. Drop media slots that resolved to nothing. Shipping an empty
+          //    imageUrl makes the public renderer paint a blank tile where the
+          //    photo belongs; omitting the prop lets the section lay itself out
+          //    without one.
+          props = stripEmptyMediaProps(props) as Record<string, unknown>;
+
           return {
             type: blueprintSection.type,
             name: blueprintSection.name ?? null,
@@ -200,6 +207,28 @@ export function generateTemplate(
 // ---------------------------------------------------------------------------
 // Placeholder resolution utilities
 // ---------------------------------------------------------------------------
+
+const MEDIA_PROP_KEYS = new Set<string>(MEDIA_KEYS);
+
+/** Recursively removes media props whose value is an empty string. */
+function stripEmptyMediaProps(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripEmptyMediaProps(item));
+  }
+
+  if (isObject(value)) {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(
+          ([key, item]) =>
+            !(MEDIA_PROP_KEYS.has(key) && typeof item === "string" && !item.trim()),
+        )
+        .map(([key, item]) => [key, stripEmptyMediaProps(item)]),
+    );
+  }
+
+  return value;
+}
 
 function replacePlaceholders(
   value: string | null | undefined,

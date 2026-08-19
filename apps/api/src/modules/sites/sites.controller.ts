@@ -98,6 +98,19 @@ export class SitesController {
     };
   }
 
+  @Get(":siteId/quality")
+  async getSiteQuality(
+    @CurrentUser("sub") userId: string,
+    @Param("siteId") siteId: string,
+  ) {
+    const data = await this.sitesService.getSiteQuality(userId, siteId);
+
+    return {
+      success: true,
+      data,
+    };
+  }
+
   @Post(":siteId/publish")
   async publishSite(
     @CurrentUser("sub") userId: string,

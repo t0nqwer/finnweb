@@ -310,6 +310,20 @@ describe("content rules", () => {
     assert.ok(codesOf(report.issues).includes("CONTENT_PLACEHOLDER_UNRESOLVED"));
   });
 
+  it("blocks placeholders left in page-level fields", () => {
+    const report = evaluateSiteQuality(
+      goodSite(goodPage({ seoTitle: "{{businessName}} | ปรึกษาฟรี" })),
+    );
+
+    const issue = report.issues.find(
+      (candidate) => candidate.code === "CONTENT_PLACEHOLDER_UNRESOLVED",
+    );
+
+    assert.ok(issue);
+    assert.match(issue.path, /seoTitle$/);
+    assert.equal(report.passed, false);
+  });
+
   it("blocks filler copy in any language", () => {
     for (const filler of ["Lorem ipsum dolor sit amet", "ข้อความตัวอย่าง"]) {
       const page = withSections([
@@ -609,15 +623,17 @@ describe("theme rules", () => {
 });
 
 describe("seo rules", () => {
-  it("treats a missing SEO title as an error on the home page", () => {
+  it("reports a missing SEO title without blocking publish", () => {
     const report = evaluateSiteQuality(goodSite(goodPage({ seoTitle: "" })));
     const issue = report.issues.find((candidate) => candidate.code === "SEO_TITLE_MISSING");
 
     assert.ok(issue);
-    assert.equal(issue.severity, "error");
+    assert.equal(issue.severity, "warning");
+    assert.equal(report.passed, true, "the renderer falls back to the page title");
+    assert.ok(report.score < 100, "it should still cost score");
   });
 
-  it("treats a missing SEO title as a warning on an inner page", () => {
+  it("reports a missing SEO title on an inner page too", () => {
     const inner = goodPage({
       isHomePage: false,
       pageType: "NORMAL",

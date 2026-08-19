@@ -26,8 +26,11 @@ export function checkPageSeo(
   const seoDescription = trimmedString(page.seoDescription);
 
   if (!seoTitle) {
+    // Warning, not an error: the renderer falls back to the page title, so a
+    // missing SEO title costs ranking rather than breaking the page. It still
+    // keeps the score off 100 so "perfect" means perfect.
     emit({
-      severity: page.isHomePage ? "error" : "warning",
+      severity: "warning",
       code: "SEO_TITLE_MISSING",
       path: `${basePath}.seoTitle`,
       message: "Page has no SEO title; search results will fall back to the page title.",

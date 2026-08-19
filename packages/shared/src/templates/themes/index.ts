@@ -14,6 +14,8 @@ export const modernOrangeTheme: ThemePack = {
     "--color-border": "#E2E8F0",
     "--font-heading": "'Kanit', sans-serif",
     "--font-body": "'Kanit', sans-serif",
+    // brand-book.md: Thai vowels clip below 1.7
+    "--line-height-base": "1.75",
     "--radius-card": "12px",
     "--radius-button": "8px",
   },
@@ -46,6 +48,8 @@ export const luxuryDarkTheme: ThemePack = {
     "--color-border": "#2E2E36",
     "--font-heading": "'Kanit', sans-serif",
     "--font-body": "'Kanit', sans-serif",
+    // brand-book.md: Thai vowels clip below 1.7
+    "--line-height-base": "1.75",
     "--radius-card": "4px",
     "--radius-button": "4px",
   },
@@ -89,6 +93,8 @@ export const deepSpacePremiumTheme: ThemePack = {
     "--fw-border": "#9CA3AF38",
     "--font-heading": "'Kanit', sans-serif",
     "--font-body": "'Kanit', sans-serif",
+    // brand-book.md: Thai vowels clip below 1.7
+    "--line-height-base": "1.75",
     "--radius-card": "10px",
     "--radius-button": "8px",
     "--fw-radius-card": "10px",

@@ -1,6 +1,35 @@
 import { BadRequestException, Inject, Injectable } from "@nestjs/common";
 import type * as runtime from "@prisma/client/runtime/client";
+import {
+  blockingIssues,
+  evaluateSiteQuality,
+  type QualityIssue,
+  type QualityPage,
+  type QualityReport,
+} from "@finnweb/shared";
 import { PrismaService } from "@/prisma/prisma.service";
+
+/** A draft page with the fields publish needs, as loaded from Prisma. */
+type PublishablePage = {
+  id: string;
+  title: string;
+  slug: string;
+  path: string | null;
+  pageType: string;
+  isHomePage: boolean;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  seoKeywords: string | null;
+  ogImageUrl: string | null;
+  sections: Array<{
+    id: string;
+    type: string;
+    name: string | null;
+    sortOrder: number;
+    isVisible: boolean;
+    props: unknown;
+  }>;
+};
 
 @Injectable()
 export class SitePublishingService {
@@ -62,134 +91,33 @@ export class SitePublishingService {
     return `https://${input.slug}.finnweb.co`;
   }
 
-  private isPlainObject(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null && !Array.isArray(value);
+  private toQualityPages(pages: PublishablePage[]): QualityPage[] {
+    return pages.map((page) => ({
+      title: page.title,
+      slug: page.slug,
+      path: page.path,
+      pageType: page.pageType,
+      isHomePage: page.isHomePage,
+      // Publishing marks every page published, so SEO rules apply as they will
+      // apply to the live site rather than to the current draft flags.
+      isPublished: true,
+      seoTitle: page.seoTitle,
+      seoDescription: page.seoDescription,
+      seoKeywords: page.seoKeywords,
+      ogImageUrl: page.ogImageUrl,
+      sections: page.sections.map((section) => ({
+        type: section.type,
+        name: section.name,
+        sortOrder: section.sortOrder,
+        isVisible: section.isVisible,
+        props: (section.props ?? null) as Record<string, unknown> | null,
+      })),
+    }));
   }
 
-  private hasUnresolvedPlaceholders(value: unknown): boolean {
-    if (typeof value === "string") {
-      return /\{\{\s*[a-zA-Z0-9_]+\s*\}\}/.test(value);
-    }
-
-    if (Array.isArray(value)) {
-      return value.some((item) => this.hasUnresolvedPlaceholders(item));
-    }
-
-    if (this.isPlainObject(value)) {
-      return Object.values(value).some((item) =>
-        this.hasUnresolvedPlaceholders(item),
-      );
-    }
-
-    return false;
-  }
-
-  private getRequiredFieldMissingForPublish(
-    sectionType: string,
-    props: unknown,
-  ): string | null {
-    if (!this.isPlainObject(props)) {
-      return "props";
-    }
-
-    const getTrimmed = (key: string) => {
-      const value = props[key];
-      return typeof value === "string" ? value.trim() : "";
-    };
-
-    switch (sectionType) {
-      case "HERO":
-      case "CTA":
-      case "FORM":
-      case "CONTACT": {
-        return getTrimmed("title") ? null : "title";
-      }
-      case "NAVBAR": {
-        const menuItems = props.menuItems;
-        if (!Array.isArray(menuItems) || menuItems.length === 0) {
-          return "menuItems";
-        }
-        return null;
-      }
-      case "BOOKING": {
-        return getTrimmed("title") ? null : "title";
-      }
-      case "COMPARISON": {
-        const plans = props.plans;
-        if (!Array.isArray(plans) || plans.length === 0) {
-          return "plans";
-        }
-        return null;
-      }
-      default:
-        return null;
-    }
-  }
-
-  private validatePublishContent(
-    pages: Array<{
-      id: string;
-      title: string;
-      slug: string;
-      seoTitle: string | null;
-      seoDescription: string | null;
-      seoKeywords: string | null;
-      ogImageUrl: string | null;
-      sections: Array<{
-        id: string;
-        type: string;
-        name: string | null;
-        isVisible: boolean;
-        props: unknown;
-      }>;
-    }>,
-  ) {
-    for (const page of pages) {
-      if (
-        this.hasUnresolvedPlaceholders(page.title) ||
-        this.hasUnresolvedPlaceholders(page.slug) ||
-        this.hasUnresolvedPlaceholders(page.seoTitle) ||
-        this.hasUnresolvedPlaceholders(page.seoDescription) ||
-        this.hasUnresolvedPlaceholders(page.seoKeywords) ||
-        this.hasUnresolvedPlaceholders(page.ogImageUrl)
-      ) {
-        throw new BadRequestException(
-          `PUBLISH_UNRESOLVED_PLACEHOLDERS_IN_PAGE:${page.id}`,
-        );
-      }
-
-      for (const section of page.sections) {
-        if (
-          this.hasUnresolvedPlaceholders(section.name) ||
-          this.hasUnresolvedPlaceholders(section.props)
-        ) {
-          throw new BadRequestException(
-            `PUBLISH_UNRESOLVED_PLACEHOLDERS_IN_SECTION:${section.id}`,
-          );
-        }
-
-        if (!section.isVisible) {
-          continue;
-        }
-
-        const missingField = this.getRequiredFieldMissingForPublish(
-          section.type,
-          section.props,
-        );
-        if (missingField) {
-          throw new BadRequestException(
-            `PUBLISH_REQUIRED_FIELD_MISSING:${section.type}:${missingField}`,
-          );
-        }
-      }
-    }
-  }
-
-  async publishSite(userId: string, siteId: string) {
-    const site = await this.getAccessibleSite(userId, siteId);
-
-    const pages = await this.prisma.page.findMany({
-      where: { siteId: site.id },
+  private async loadPublishablePages(siteId: string) {
+    return this.prisma.page.findMany({
+      where: { siteId },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       include: {
         sections: {
@@ -205,6 +133,107 @@ export class SitePublishingService {
         },
       },
     });
+  }
+
+  /** Runs the shared page-quality engine over a site's current draft content. */
+  private evaluateDraftQuality(
+    site: { themeConfig: unknown },
+    pages: PublishablePage[],
+  ): QualityReport {
+    return evaluateSiteQuality({
+      pages: this.toQualityPages(pages),
+      themeConfig:
+        site.themeConfig && typeof site.themeConfig === "object"
+          ? (site.themeConfig as Record<string, string>)
+          : null,
+      locale: "th",
+    });
+  }
+
+  /**
+   * Restates an engine issue in the error string this endpoint has always
+   * returned, so existing clients keep working while the full report rides
+   * along in the response body.
+   */
+  private legacyPublishMessage(
+    issue: QualityIssue,
+    pages: PublishablePage[],
+  ): string | null {
+    const match = /^pages\[(\d+)\](?:\.sections\[(\d+)\])?/.exec(issue.path);
+    if (!match) {
+      return null;
+    }
+
+    const page = pages[Number(match[1])];
+    if (!page) {
+      return null;
+    }
+
+    const section =
+      match[2] === undefined ? undefined : page.sections[Number(match[2])];
+
+    if (issue.code === "CONTENT_PLACEHOLDER_UNRESOLVED") {
+      return section
+        ? `PUBLISH_UNRESOLVED_PLACEHOLDERS_IN_SECTION:${section.id}`
+        : `PUBLISH_UNRESOLVED_PLACEHOLDERS_IN_PAGE:${page.id}`;
+    }
+
+    if (issue.code === "SECTION_REQUIRED_FIELD_MISSING" && section) {
+      const field = issue.path.split(".props.").pop() ?? "props";
+      return `PUBLISH_REQUIRED_FIELD_MISSING:${section.type}:${field}`;
+    }
+
+    return null;
+  }
+
+  /**
+   * Publish refuses anything the engine rates as an error — a half-finished
+   * page going live is the failure mode this gate exists to prevent.
+   */
+  private assertPublishable(report: QualityReport, pages: PublishablePage[]) {
+    if (report.passed) {
+      return;
+    }
+
+    const errors = blockingIssues(report);
+
+    // Preserve the original precedence: placeholders were reported before
+    // missing required fields, so clients keyed on those strings see no change.
+    let message: string | null = null;
+    for (const code of [
+      "CONTENT_PLACEHOLDER_UNRESOLVED",
+      "SECTION_REQUIRED_FIELD_MISSING",
+    ]) {
+      const issue = errors.find((candidate) => candidate.code === code);
+      const legacy = issue ? this.legacyPublishMessage(issue, pages) : null;
+      if (legacy) {
+        message = legacy;
+        break;
+      }
+    }
+
+    throw new BadRequestException({
+      code: "PUBLISH_QUALITY_CHECK_FAILED",
+      message: message ?? "PUBLISH_QUALITY_CHECK_FAILED",
+      quality: report,
+    });
+  }
+
+  /** On-demand quality report for the builder, without publishing anything. */
+  async getSiteQuality(userId: string, siteId: string) {
+    const site = await this.getAccessibleSite(userId, siteId);
+    const pages = await this.loadPublishablePages(site.id);
+
+    return {
+      siteId: site.id,
+      ...this.evaluateDraftQuality(site, pages),
+    };
+  }
+
+  async publishSite(userId: string, siteId: string) {
+    const site = await this.getAccessibleSite(userId, siteId);
+
+    const pages = await this.loadPublishablePages(site.id);
 
     if (pages.length === 0) {
       throw new BadRequestException("PUBLISH_NO_PAGES");
@@ -222,24 +251,7 @@ export class SitePublishingService {
       throw new BadRequestException("PUBLISH_HOME_SECTION_REQUIRED");
     }
 
-    this.validatePublishContent(
-      pages.map((page) => ({
-        id: page.id,
-        title: page.title,
-        slug: page.slug,
-        seoTitle: page.seoTitle,
-        seoDescription: page.seoDescription,
-        seoKeywords: page.seoKeywords,
-        ogImageUrl: page.ogImageUrl,
-        sections: page.sections.map((section) => ({
-          id: section.id,
-          type: section.type,
-          name: section.name,
-          isVisible: section.isVisible,
-          props: section.props,
-        })),
-      })),
-    );
+    this.assertPublishable(this.evaluateDraftQuality(site, pages), pages);
 
     const pageSnapshots = pages.map((page) => ({
       id: page.id,

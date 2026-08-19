@@ -36,6 +36,7 @@ export const aestheticClinicThContentPack: ContentPack = {
           buttonText: "ปรึกษาแพทย์ทาง LINE",
           imageUrl:
             "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=1600&q=85",
+          imageAlt: "ห้องทรีตเมนต์ของคลินิกความงาม บรรยากาศสงบและสะอาด",
         },
         services: {
           title: "โปรแกรมยอดนิยมสำหรับลูกค้าที่ต้องการผลลัพธ์พรีเมียม",
